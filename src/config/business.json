@@ -1,0 +1,187 @@
+{
+  "name": "Peluquería Bella Vista",
+  "tagline": "Corte, color y barbería en el centro de Valparaíso",
+  "greeting": "¡Hola! 👋 Soy el asistente de Peluquería Bella Vista. Puedo ayudarte con horarios, precios, servicios y cómo llegar. ¿Qué necesitas saber?",
+  "greetingRepeat": "¡Aquí sigo! ¿En qué más te ayudo?",
+  "fallback": "Perdona, no estoy seguro de haber entendido eso. Puedo ayudarte con estos temas:",
+  "handoff": "Si prefieres, escríbenos directamente al +56 9 1234 5678 y te atiende una persona del equipo.",
+  "topics": [
+    "Horarios de atención",
+    "Precios",
+    "Servicios",
+    "Cómo llegar",
+    "Reservar una hora",
+    "Formas de pago"
+  ],
+  "intents": [
+    {
+      "id": "saludo",
+      "keywords": [
+        "hola",
+        "buenas",
+        "buenos dias",
+        "buenas tardes",
+        "buenas noches",
+        "hey",
+        "que tal"
+      ],
+      "answer": "¡Hola! 👋 Cuéntame, ¿qué necesitas saber?"
+    },
+    {
+      "id": "horarios",
+      "keywords": [
+        "horario",
+        "horarios",
+        "hora de atencion",
+        "abren",
+        "cierran",
+        "abierto",
+        "cerrado",
+        "atienden",
+        "a que hora",
+        "domingo",
+        "sabado",
+        "fin de semana"
+      ],
+      "answer": "Atendemos de lunes a viernes de 10:00 a 20:00 y los sábados de 10:00 a 17:00. Los domingos permanecemos cerrados. 🕒"
+    },
+    {
+      "id": "precios",
+      "keywords": [
+        "precio",
+        "precios",
+        "cuanto cuesta",
+        "cuanto vale",
+        "valor",
+        "tarifa",
+        "cobran",
+        "cuanto sale",
+        "caro",
+        "barato"
+      ],
+      "answer": "Nuestros precios son: corte de dama $12.000 · corte de varón $9.000 · barba $6.000 · color desde $25.000 · peinado desde $15.000. 💇"
+    },
+    {
+      "id": "servicios",
+      "keywords": [
+        "servicio",
+        "servicios",
+        "que hacen",
+        "ofrecen",
+        "corte",
+        "color",
+        "tinte",
+        "barba",
+        "peinado",
+        "manicure",
+        "trabajos",
+        "cortar",
+        "cortarme",
+        "pelo",
+        "cabello",
+        "mechas",
+        "tratamiento",
+        "uñas"
+      ],
+      "answer": "Ofrecemos corte de dama y varón, barbería, coloración y mechas, peinados para eventos, tratamientos capilares y manicure. ✂️"
+    },
+    {
+      "id": "ubicacion",
+      "keywords": [
+        "donde estan",
+        "direccion",
+        "ubicacion",
+        "como llegar",
+        "lugar",
+        "local",
+        "mapa",
+        "queda"
+      ],
+      "answer": "Estamos en Av. Brasil 1234, local 3, Valparaíso, a una cuadra de la Plaza Victoria. 📍"
+    },
+    {
+      "id": "reservas",
+      "keywords": [
+        "reservar",
+        "reserva",
+        "agendar",
+        "cita",
+        "hora",
+        "turno",
+        "pedir hora",
+        "disponibilidad"
+      ],
+      "answer": "Puedes reservar tu hora llamando o escribiendo por WhatsApp al +56 9 1234 5678. ¡Pronto podrás agendar directamente por aquí! 📅"
+    },
+    {
+      "id": "pagos",
+      "keywords": [
+        "pago",
+        "pagos",
+        "pagar",
+        "efectivo",
+        "tarjeta",
+        "debito",
+        "credito",
+        "transferencia",
+        "aceptan"
+      ],
+      "answer": "Aceptamos efectivo, tarjetas de débito y crédito, y transferencia bancaria. 💳"
+    },
+    {
+      "id": "contacto",
+      "keywords": [
+        "telefono",
+        "contacto",
+        "whatsapp",
+        "correo",
+        "email",
+        "llamar",
+        "numero"
+      ],
+      "answer": "Puedes contactarnos al +56 9 1234 5678 o escribirnos a hola@bellavista.cl. 📞"
+    },
+    {
+      "id": "agradecimiento",
+      "keywords": [
+        "gracias",
+        "muchas gracias",
+        "genial",
+        "perfecto",
+        "buenisimo",
+        "excelente"
+      ],
+      "answer": "¡De nada! 😊 ¿Necesitas algo más?"
+    },
+    {
+      "id": "cierre",
+      "keywords": [
+        "no",
+        "nada",
+        "nada mas",
+        "ninguna",
+        "ok",
+        "listo",
+        "vale",
+        "eso es todo",
+        "estoy bien",
+        "no gracias",
+        "no nada",
+        "asi esta bien"
+      ],
+      "answer": "¡Perfecto! Si te surge cualquier otra duda, aquí estaré. 😊"
+    },
+    {
+      "id": "despedida",
+      "keywords": [
+        "chao",
+        "adios",
+        "hasta luego",
+        "nos vemos",
+        "bye",
+        "me voy"
+      ],
+      "answer": "¡Hasta pronto! Que tengas un excelente día. 👋"
+    }
+  ]
+}

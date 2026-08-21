@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PymeBot — Sandbox</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🤖%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <header class="header">
+        <div class="avatar" aria-hidden="true">🤖</div>
+        <div class="header-text">
+          <h1 id="business-name">PymeBot</h1>
+          <p id="business-tagline">Cargando…</p>
+        </div>
+        <button id="reset" class="reset" type="button" title="Reiniciar conversación">
+          Reiniciar
+        </button>
+      </header>
+
+      <section id="messages" class="messages" aria-live="polite" aria-label="Conversación"></section>
+
+      <div id="topics" class="topics"></div>
+
+      <form id="form" class="composer" autocomplete="off">
+        <input
+          id="input"
+          class="input"
+          type="text"
+          placeholder="Escribe tu pregunta…"
+          maxlength="1000"
+          aria-label="Mensaje"
+        />
+        <button class="send" type="submit" aria-label="Enviar">Enviar</button>
+      </form>
+
+      <footer class="footer">
+        Ambiente sandbox · Módulo 1 · las conversaciones no se guardan
+      </footer>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
