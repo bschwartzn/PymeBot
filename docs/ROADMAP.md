@@ -200,7 +200,10 @@ Un módulo solo se considera cerrado cuando:
 - API HTTP (`src/server.js`): `POST /api/chat`, `POST /api/reset`, `GET /api/business`, `GET /health`.
 - Sandbox web (`public/`) sin frameworks ni build.
 - Negocio de ejemplo con 11 intenciones (`src/config/business.json`).
-- 54 tests automáticos (`npm test`) + validación manual en navegador con Chromium.
+- Sandbox autocontenido en un solo archivo (`dist/sandbox.html`), generado desde el
+  código fuente por `scripts/build-sandbox.js`, para probar el bot sin instalar nada.
+- 56 tests automáticos (`npm test`) + validación manual en navegador con Chromium
+  (tema claro, tema oscuro y móvil).
 
 **Errores detectados durante la validación y corregidos**
 
@@ -214,6 +217,7 @@ Un módulo solo se considera cerrado cuando:
 | 6 | `"no, gracias"` ganaba `agradecimiento`, que contesta *"¿Necesitas algo más?"* → bucle | Conversación manual | La frase `no gracias` pasa a la intención `cierre`, que puntúa más alto |
 | 7 | 404 en la consola del navegador por el favicon | Validación en Chromium | Favicon SVG embebido en el HTML |
 | 8 | El saludo inicial y la respuesta a `"hola"` repetían la misma lista de temas | Validación en Chromium | Se acortó la respuesta de la intención `saludo` |
+| 9 | El sandbox solo corría en `localhost`, así que no se podía probar desde otra máquina | Al intentar abrirlo | Build que empaqueta el mismo motor en un HTML autocontenido, con tests que impiden que se desincronice del código fuente |
 
 **Decisiones de diseño previstas desde el inicio** (no fueron errores, pero sostienen la
 calidad del módulo): normalización de acentos, mayúsculas y signos `¿ ¡`; tolerancia al

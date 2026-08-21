@@ -1,0 +1,591 @@
+<title>PymeBot Sandbox</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+  rel="stylesheet"
+/>
+
+<style>
+  :root {
+    --ground: #eef2f0;
+    --surface: #ffffff;
+    --raised: #f4f7f5;
+    --ink: #13201c;
+    --muted: #5f706a;
+    --faint: #8c9c96;
+    --line: #dce4e0;
+    --accent: #0c7f62;
+    --accent-ink: #ffffff;
+    --accent-wash: #e6f2ee;
+    --signal: #9a5716;
+    --signal-wash: #f9efe4;
+
+    --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+    --font-body: "Instrument Sans", ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-data: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0b1310;
+      --surface: #141f1b;
+      --raised: #1b2823;
+      --ink: #e8efeb;
+      --muted: #93a49d;
+      --faint: #6d7f78;
+      --line: #263430;
+      --accent: #3cbd95;
+      --accent-ink: #06231b;
+      --accent-wash: #17322a;
+      --signal: #d9a45f;
+      --signal-wash: #2e2418;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0b1310;
+    --surface: #141f1b;
+    --raised: #1b2823;
+    --ink: #e8efeb;
+    --muted: #93a49d;
+    --faint: #6d7f78;
+    --line: #263430;
+    --accent: #3cbd95;
+    --accent-ink: #06231b;
+    --accent-wash: #17322a;
+    --signal: #d9a45f;
+    --signal-wash: #2e2418;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    justify-content: center;
+  }
+
+  .shell {
+    width: min(660px, 100%);
+    min-height: 100vh;
+    background: var(--surface);
+    border-inline: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ---------- Identidad ---------- */
+
+  .masthead {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px 16px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .mark {
+    width: 44px;
+    height: 44px;
+    flex: none;
+    border-radius: 13px;
+    background: var(--accent-wash);
+    color: var(--accent);
+    display: grid;
+    place-items: center;
+  }
+  .mark svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .identity {
+    flex: 1;
+    min-width: 0;
+  }
+  .identity h1 {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+  }
+  .identity p {
+    margin: 1px 0 0;
+    font-size: 13.5px;
+    color: var(--muted);
+  }
+
+  .badge {
+    font-family: var(--font-data);
+    font-size: 10.5px;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-wash);
+    border-radius: 999px;
+    padding: 5px 10px;
+    flex: none;
+  }
+
+  /* ---------- Transcripción ---------- */
+
+  .transcript {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 22px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .brief {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .brief strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+  .brief p {
+    margin: 0;
+  }
+  .brief p + p {
+    margin-top: 7px;
+  }
+
+  .turn {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    max-width: 82%;
+  }
+  .turn.from-bot {
+    align-self: flex-start;
+  }
+  .turn.from-person {
+    align-self: flex-end;
+    align-items: flex-end;
+  }
+
+  .bubble {
+    padding: 11px 15px;
+    border-radius: 17px;
+    font-size: 15px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .from-bot .bubble {
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-bottom-left-radius: 5px;
+  }
+  .from-person .bubble {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border-bottom-right-radius: 5px;
+  }
+
+  /* Diagnóstico: lo que hace útil un sandbox es ver por qué contestó eso. */
+  .readout {
+    font-family: var(--font-data);
+    font-size: 11.5px;
+    font-variant-numeric: tabular-nums;
+    color: var(--faint);
+    padding-left: 3px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .readout .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex: none;
+  }
+  .readout.no-match {
+    color: var(--signal);
+  }
+  .readout.no-match .dot {
+    background: var(--signal);
+  }
+  body.hide-readout .readout {
+    display: none;
+  }
+
+  .thinking {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 15px;
+  }
+  .thinking i {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--faint);
+    animation: pulse 1.2s infinite;
+  }
+  .thinking i:nth-child(2) {
+    animation-delay: 0.18s;
+  }
+  .thinking i:nth-child(3) {
+    animation-delay: 0.36s;
+  }
+  @keyframes pulse {
+    0%, 60%, 100% { opacity: 0.25; }
+    30% { opacity: 0.95; }
+  }
+
+  /* ---------- Controles ---------- */
+
+  .suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 12px 22px 0;
+  }
+
+  .chip {
+    font-family: inherit;
+    font-size: 13px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 13px;
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .chip:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .chip.probe {
+    border-style: dashed;
+    color: var(--signal);
+    border-color: color-mix(in srgb, var(--signal) 45%, var(--line));
+  }
+
+  .composer {
+    display: flex;
+    gap: 9px;
+    padding: 14px 22px;
+  }
+
+  .field {
+    flex: 1;
+    min-width: 0;
+    font-family: inherit;
+    font-size: 15px;
+    color: var(--ink);
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 11px 17px;
+  }
+  .field::placeholder {
+    color: var(--faint);
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .send {
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--accent-ink);
+    background: var(--accent);
+    border: 0;
+    border-radius: 999px;
+    padding: 0 21px;
+    cursor: pointer;
+  }
+  .send:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+
+  .statusbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 0 22px 18px;
+    font-size: 12.5px;
+    color: var(--faint);
+  }
+
+  .ghost {
+    font-family: inherit;
+    font-size: 12.5px;
+    color: var(--muted);
+    background: transparent;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 5px 12px;
+    cursor: pointer;
+  }
+  .ghost:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+  }
+  .controls {
+    display: flex;
+    gap: 7px;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * {
+      animation: none !important;
+      transition: none !important;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .masthead, .transcript, .suggestions, .composer, .statusbar {
+      padding-inline: 15px;
+    }
+    .turn { max-width: 90%; }
+  }
+</style>
+
+<div class="shell">
+  <header class="masthead">
+    <div class="mark" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="7" width="18" height="13" rx="4" />
+        <path d="M12 7V3.5" />
+        <circle cx="12" cy="2.6" r="1.2" fill="currentColor" stroke="none" />
+        <path d="M8.6 12.4v1.6M15.4 12.4v1.6" />
+        <path d="M9.6 16.6h4.8" />
+      </svg>
+    </div>
+    <div class="identity">
+      <h1 id="negocio-nombre">PymeBot</h1>
+      <p id="negocio-rubro"></p>
+    </div>
+    <span class="badge">Sandbox</span>
+  </header>
+
+  <section class="transcript" id="transcript" aria-live="polite" aria-label="Conversación con el asistente">
+    <div class="brief">
+      <p>
+        <strong>Esto es el Módulo 1 de PymeBot.</strong> El mismo motor que corre en el
+        servidor, funcionando aquí dentro sin conexión: escribes una pregunta y responde con
+        la información que el negocio tiene configurada.
+      </p>
+      <p>
+        Bajo cada respuesta verás <strong>qué intención detectó</strong> y con cuánta
+        confianza. Pregúntale también algo que no sepa, para ver cómo reacciona cuando falla.
+      </p>
+    </div>
+  </section>
+
+  <div class="suggestions" id="suggestions"></div>
+
+  <form class="composer" id="composer" autocomplete="off">
+    <input
+      class="field"
+      id="field"
+      type="text"
+      placeholder="Escribe tu pregunta…"
+      maxlength="1000"
+      aria-label="Tu mensaje"
+    />
+    <button class="send" type="submit">Enviar</button>
+  </form>
+
+  <div class="statusbar">
+    <span id="tally">Sin mensajes todavía</span>
+    <div class="controls">
+      <button class="ghost" id="toggle-readout" type="button">Ocultar diagnóstico</button>
+      <button class="ghost" id="restart" type="button">Reiniciar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ==========================================================================
+     Motor de PymeBot — generado desde src/bot/ por scripts/build-sandbox.js.
+     No editar aquí: los cambios se hacen en el código fuente y se regenera.
+     ========================================================================== */
+
+  /*__ENGINE__*/
+
+  const BUSINESS = /*__BUSINESS__*/;
+
+  /* ==========================================================================
+     Sandbox
+     ========================================================================== */
+
+  const transcriptEl = document.getElementById("transcript");
+  const suggestionsEl = document.getElementById("suggestions");
+  const composerEl = document.getElementById("composer");
+  const fieldEl = document.getElementById("field");
+  const sendEl = composerEl.querySelector(".send");
+  const tallyEl = document.getElementById("tally");
+  const toggleEl = document.getElementById("toggle-readout");
+  const restartEl = document.getElementById("restart");
+
+  /** La sesión del navegador cumple el mismo papel que la del servidor. */
+  let session = { greeted: false, turns: 0 };
+
+  document.getElementById("negocio-nombre").textContent = BUSINESS.name;
+  document.getElementById("negocio-rubro").textContent = BUSINESS.tagline || "";
+
+  function addTurn(text, who) {
+    const turn = document.createElement("div");
+    turn.className = "turn from-" + who;
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+    bubble.textContent = text;
+    turn.appendChild(bubble);
+
+    transcriptEl.appendChild(turn);
+    transcriptEl.scrollTop = transcriptEl.scrollHeight;
+    return turn;
+  }
+
+  /** La línea de diagnóstico: qué intención ganó y con cuánta confianza. */
+  function addReadout(turn, result) {
+    const readout = document.createElement("div");
+    readout.className = "readout" + (result.matched ? "" : " no-match");
+
+    const dot = document.createElement("span");
+    dot.className = "dot";
+    readout.appendChild(dot);
+
+    const label = document.createElement("span");
+    label.textContent = result.matched
+      ? result.intent + " · confianza " + result.score.toFixed(1)
+      : "sin coincidencia · respuesta de respaldo";
+    readout.appendChild(label);
+
+    turn.appendChild(readout);
+    transcriptEl.scrollTop = transcriptEl.scrollHeight;
+  }
+
+  function addThinking() {
+    const turn = document.createElement("div");
+    turn.className = "turn from-bot";
+    turn.innerHTML = '<div class="bubble thinking"><i></i><i></i><i></i></div>';
+    transcriptEl.appendChild(turn);
+    transcriptEl.scrollTop = transcriptEl.scrollHeight;
+    return turn;
+  }
+
+  function send(text) {
+    const message = String(text || "").trim();
+    if (!message) return;
+
+    addTurn(message, "person");
+    fieldEl.value = "";
+    sendEl.disabled = true;
+
+    const thinking = addThinking();
+
+    // Una pausa breve para que la conversación se lea como tal.
+    setTimeout(function () {
+      const result = respond(message, BUSINESS, session);
+      thinking.remove();
+
+      const turn = addTurn(result.reply, "bot");
+      addReadout(turn, result);
+
+      if (result.intent === "saludo") session.greeted = true;
+      session.turns += 1;
+      updateTally();
+
+      sendEl.disabled = false;
+      fieldEl.focus();
+    }, 260);
+  }
+
+  function updateTally() {
+    tallyEl.textContent =
+      session.turns === 0
+        ? "Sin mensajes todavía"
+        : session.turns + (session.turns === 1 ? " pregunta" : " preguntas") + " en esta conversación";
+  }
+
+  function buildSuggestions() {
+    suggestionsEl.innerHTML = "";
+
+    (BUSINESS.topics || []).forEach(function (topic) {
+      const chip = document.createElement("button");
+      chip.className = "chip";
+      chip.type = "button";
+      chip.textContent = topic;
+      chip.addEventListener("click", function () {
+        send(topic);
+      });
+      suggestionsEl.appendChild(chip);
+    });
+
+    // Una pregunta que el negocio no tiene configurada, para probar el respaldo.
+    const probe = document.createElement("button");
+    probe.className = "chip probe";
+    probe.type = "button";
+    probe.textContent = "¿tienen wifi?";
+    probe.title = "Algo que el negocio no configuró";
+    probe.addEventListener("click", function () {
+      send("¿tienen wifi?");
+    });
+    suggestionsEl.appendChild(probe);
+  }
+
+  function start() {
+    session = { greeted: false, turns: 0 };
+    addTurn(BUSINESS.greeting, "bot");
+    updateTally();
+  }
+
+  composerEl.addEventListener("submit", function (event) {
+    event.preventDefault();
+    send(fieldEl.value);
+  });
+
+  toggleEl.addEventListener("click", function () {
+    const hidden = document.body.classList.toggle("hide-readout");
+    toggleEl.textContent = hidden ? "Ver diagnóstico" : "Ocultar diagnóstico";
+  });
+
+  restartEl.addEventListener("click", function () {
+    // Se conserva el texto explicativo de arriba; se borra solo la conversación.
+    document.querySelectorAll(".turn").forEach(function (el) {
+      el.remove();
+    });
+    start();
+    fieldEl.focus();
+  });
+
+  buildSuggestions();
+  start();
+</script>

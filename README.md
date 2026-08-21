@@ -10,14 +10,37 @@ configura.
 
 ---
 
-## Probarlo en 30 segundos
+## Probarlo
+
+Hay dos formas, y ambas usan **exactamente el mismo motor**.
+
+### 1. Sin instalar nada
+
+Abre `dist/sandbox.html` con doble clic. Es un único archivo autocontenido: el motor y la
+información del negocio van dentro, no necesita servidor ni conexión. Sirve para probar el
+bot y para mostrárselo a alguien sin pedirle que instale nada.
+
+Se regenera desde el código fuente con:
+
+```bash
+npm run build:sandbox
+```
+
+Nunca se edita a mano: `scripts/build-sandbox.js` toma `src/bot/` y `src/config/business.json`
+tal cual están y los inyecta en la plantilla, así que el archivo publicado y el servidor
+local no se pueden desincronizar. Hay tests que lo verifican.
+
+### 2. Con el servidor local
 
 ```bash
 npm install
 npm start
 ```
 
-Abre **http://localhost:3000** y escribe, por ejemplo:
+Abre **http://localhost:3000**. Esta es la vía real del producto: es la que expone
+`POST /api/chat`, el punto de entrada que reutilizarán WhatsApp y el resto de los canales.
+
+### Qué preguntarle
 
 - `¿A qué hora abren?`
 - `cuanto cuesta un corte`
@@ -34,7 +57,8 @@ Solo el chat, para validar que el bot responde bien.
 npm test
 ```
 
-54 tests sobre el motor de intenciones, el manejo de sesiones y la API HTTP.
+56 tests sobre el motor de intenciones, el manejo de sesiones, la API HTTP y la
+integridad del sandbox autocontenido.
 
 ---
 
@@ -115,7 +139,9 @@ src/
   config/
     business.json      La información del negocio
 public/                Sandbox web (HTML/CSS/JS plano)
-tests/                 54 tests con el runner nativo de Node
+tests/                 56 tests con el runner nativo de Node
+scripts/               Generador del sandbox autocontenido
+dist/sandbox.html      Sandbox en un solo archivo (generado)
 docs/ROADMAP.md        Plan modular completo
 ```
 
