@@ -34,7 +34,7 @@ test('GET /health responde ok', async () => {
     const { status, body } = await srv.get('/health');
     assert.strictEqual(status, 200);
     assert.strictEqual(body.status, 'ok');
-    assert.ok(body.business);
+    assert.ok(body.businesses >= 1, 'debería reportar los negocios cargados');
   } finally {
     await srv.close();
   }

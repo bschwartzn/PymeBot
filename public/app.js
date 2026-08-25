@@ -6,8 +6,11 @@ const formEl = document.getElementById('form');
 const inputEl = document.getElementById('input');
 const sendEl = formEl.querySelector('.send');
 const resetEl = document.getElementById('reset');
+const negocioEl = document.getElementById('negocio');
 
 let sessionId = null;
+/** Qué negocio estamos probando. Lo fija el editor con ?negocio=… o el selector. */
+let negocio = new URLSearchParams(location.search).get('negocio') || null;
 
 function addBubble(text, who) {
   const bubble = document.createElement('div');
@@ -27,10 +30,37 @@ function showTyping() {
   return bubble;
 }
 
+/** Llena el selector con los negocios configurados. */
+async function loadNegocios() {
+  try {
+    const { businesses } = await (await fetch('/api/businesses')).json();
+    negocioEl.innerHTML = '';
+    for (const item of businesses) {
+      const option = document.createElement('option');
+      option.value = item.slug;
+      option.textContent = item.name;
+      negocioEl.appendChild(option);
+    }
+    // El selector solo aparece si de verdad hay entre qué elegir.
+    negocioEl.parentElement.hidden = businesses.length < 2;
+  } catch (err) {
+    negocioEl.parentElement.hidden = true;
+  }
+}
+
 async function loadBusiness() {
   try {
-    const res = await fetch('/api/business');
+    const url = negocio ? `/api/business?slug=${encodeURIComponent(negocio)}` : '/api/business';
+    const res = await fetch(url);
     const business = await res.json();
+
+    if (!res.ok) {
+      addBubble(business.error || 'No se pudo cargar el negocio.', 'error');
+      return;
+    }
+
+    negocio = business.slug;
+    negocioEl.value = business.slug;
 
     document.getElementById('business-name').textContent = business.name;
     document.getElementById('business-tagline').textContent = business.tagline;
@@ -66,7 +96,7 @@ async function sendMessage(text) {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sessionId, message }),
+      body: JSON.stringify({ sessionId, message, business: negocio }),
     });
     const data = await res.json();
     typing.remove();
@@ -87,6 +117,15 @@ async function sendMessage(text) {
   }
 }
 
+// Cambiar de negocio empieza una conversación nueva: la memoria era de otro bot.
+negocioEl.addEventListener('change', () => {
+  negocio = negocioEl.value;
+  sessionId = null;
+  messagesEl.innerHTML = '';
+  loadBusiness();
+  inputEl.focus();
+});
+
 formEl.addEventListener('submit', (event) => {
   event.preventDefault();
   sendMessage(inputEl.value);
@@ -106,5 +145,8 @@ resetEl.addEventListener('click', async () => {
   inputEl.focus();
 });
 
-loadBusiness();
-inputEl.focus();
+(async () => {
+  await loadNegocios();
+  await loadBusiness();
+  inputEl.focus();
+})();

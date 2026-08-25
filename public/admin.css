@@ -1,0 +1,213 @@
+:root {
+  --bg: #eef1f6;
+  --panel: #ffffff;
+  --ink: #1c2430;
+  --muted: #6b7789;
+  --brand: #2f6bff;
+  --soft: #f1f4f9;
+  --border: #dfe4ec;
+  --error: #b02a2a;
+  --error-bg: #fdecec;
+  --warn: #8a5a12;
+  --warn-bg: #fdf4e3;
+  --ok: #1a6f4b;
+  --ok-bg: #e8f5ee;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 24px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo {
+  width: 40px; height: 40px; border-radius: 11px;
+  background: var(--soft); display: grid; place-items: center; font-size: 20px;
+}
+.brand h1 { margin: 0; font-size: 16px; }
+.brand p { margin: 1px 0 0; font-size: 13px; color: var(--muted); }
+.link { color: var(--brand); text-decoration: none; font-size: 14px; }
+.link:hover { text-decoration: underline; }
+
+.layout {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 20px;
+  padding: 20px 24px 40px;
+  align-items: start;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ---------- Lista ---------- */
+
+.sidebar {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  position: sticky;
+  top: 20px;
+}
+.sidebar-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.sidebar-head h2 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+
+.lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.lista button {
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 11px;
+  cursor: pointer;
+}
+.lista button:hover { background: var(--soft); }
+.lista button[aria-current="true"] { background: var(--brand); color: #fff; }
+.lista .cuenta { display: block; font-size: 12px; opacity: .7; margin-top: 1px; }
+
+/* ---------- Editor ---------- */
+
+.editor { min-width: 0; }
+
+.banner {
+  background: var(--warn-bg);
+  color: var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 25%, transparent);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  margin-bottom: 16px;
+}
+
+.form, .vacio {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+.vacio { color: var(--muted); text-align: center; padding: 50px 20px; }
+.vacio p { margin: 0; }
+
+.form-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap; margin-bottom: 4px;
+}
+.form-head h2 { margin: 0; font-size: 19px; }
+.slug { font-size: 12.5px; color: var(--muted); }
+.form-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.bloque {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 18px 0 0;
+  padding: 18px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.bloque legend {
+  font-size: 13px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--muted); padding: 0; margin-bottom: 4px; float: left; width: 100%;
+}
+
+label { display: flex; flex-direction: column; gap: 5px; font-size: 13.5px; color: var(--muted); }
+.ayuda { font-weight: 400; font-size: 12.5px; color: var(--muted); opacity: .85; }
+
+input[type="text"], textarea {
+  font-family: inherit;
+  font-size: 14.5px;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 12px;
+  width: 100%;
+  resize: vertical;
+}
+input:focus, textarea:focus { outline: none; border-color: var(--brand); }
+
+/* ---------- Preguntas ---------- */
+
+.intents { display: flex; flex-direction: column; gap: 12px; }
+
+.intent {
+  background: var(--soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.intent-head { display: flex; gap: 8px; align-items: center; }
+.intent-id { font-weight: 600; }
+
+/* ---------- Botones ---------- */
+
+.btn, .btn-ghost, .btn-small {
+  font-family: inherit;
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+.btn {
+  font-size: 14.5px; font-weight: 600;
+  background: var(--brand); color: #fff; border: 0; padding: 9px 20px;
+}
+.btn:disabled { opacity: .5; cursor: default; }
+.btn-ghost {
+  font-size: 13.5px; color: var(--muted);
+  background: transparent; border: 1px solid var(--border); padding: 8px 14px;
+}
+.btn-ghost:hover { color: var(--brand); border-color: var(--brand); }
+.btn-ghost.danger:hover { color: var(--error); border-color: var(--error); }
+.btn-small {
+  font-size: 13px; color: var(--brand);
+  background: transparent; border: 1px dashed var(--border); padding: 6px 13px;
+  align-self: flex-start;
+}
+.btn-small:hover { border-color: var(--brand); border-style: solid; }
+.btn-icon {
+  font-family: inherit; font-size: 14px; color: var(--muted);
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 8px; width: 32px; height: 32px; flex: none; cursor: pointer;
+}
+.btn-icon:hover { color: var(--error); border-color: var(--error); }
+
+/* ---------- Mensajes ---------- */
+
+.mensajes { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.mensajes:empty { display: none; }
+
+.msg { border-radius: 9px; padding: 10px 13px; font-size: 13.5px; }
+.msg.error { background: var(--error-bg); color: var(--error); }
+.msg.warn { background: var(--warn-bg); color: var(--warn); }
+.msg.ok { background: var(--ok-bg); color: var(--ok); }
+.msg ul { margin: 6px 0 0; padding-left: 18px; }
+.msg li + li { margin-top: 3px; }
+
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+@media (max-width: 760px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; }
+}

@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { respond, matchIntent } = require('../src/bot/engine');
-const business = require('../src/config/business.json');
+const business = require('../data/businesses/bella-vista.json');
 
 /** Cada par es: lo que escribe un cliente real → la intención que esperamos. */
 const CASOS = [

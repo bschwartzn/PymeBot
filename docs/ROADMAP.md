@@ -28,15 +28,15 @@ responde nada). La división real es por **capa técnica**, no por tema:
 
 | # | Módulo | Problema que resuelve | Estado |
 |---|--------|----------------------|--------|
-| **1** | **Núcleo conversacional + sandbox** | No existe un lugar donde probar el bot ni un ciclo pregunta→respuesta funcionando | ✅ **En desarrollo (actual)** |
-| **2** | **Base de conocimiento configurable** | Cada negocio tiene información distinta y hoy está escrita en el código | ⬜ Pendiente |
-| **3** | **Comprensión y gestión de conversación** | El bot falla con preguntas mal escritas, ambiguas o encadenadas | ⬜ Pendiente |
+| **1** | **Núcleo conversacional + sandbox** | No existe un lugar donde probar el bot ni un ciclo pregunta→respuesta funcionando | ✅ Completado |
+| **2** | **Base de conocimiento configurable** | Cada negocio tiene información distinta y hoy está escrita en el código | ✅ Completado |
+| **3** | **Comprensión y gestión de conversación** | El bot falla con preguntas mal escritas, ambiguas o encadenadas | ⬅️ **Siguiente** |
 | **4** | **Captura de clientes (leads)** | Las conversaciones no generan valor comercial medible | ⬜ Pendiente |
 | **5** | **Canales / integraciones (WhatsApp)** | El cliente final no está en nuestra web, está en WhatsApp | ⬜ Pendiente |
 | **6** | **Agendamiento** | Muchas consultas terminan en "quiero una cita" y hoy no se puede cerrar | ⬜ Pendiente |
 | **7** | **Panel, métricas y automatizaciones** | El dueño del negocio no puede administrar ni medir el bot | ⬜ Pendiente |
 
-### Módulo 1 — Núcleo conversacional + sandbox ⬅️ **empezamos aquí**
+### Módulo 1 — Núcleo conversacional + sandbox
 
 - **Problema:** no hay forma de probar nada. Sin un ciclo cerrado
   *usuario escribe → el bot entiende → el bot responde → se recuerda el contexto*
@@ -53,13 +53,16 @@ responde nada). La división real es por **capa técnica**, no por tema:
 
 ### Módulo 2 — Base de conocimiento configurable
 
-- **Problema:** hoy la información vive en un JSON escrito a mano por un desarrollador.
-- **Funcionalidad mínima:** esquema de negocio validado, carga de varios negocios,
-  formulario web simple para editar la información, recarga en caliente.
-- **Se evalúa aquí (no antes):** añadir un LLM (Claude) como capa de redacción sobre la
-  información recuperada — *retrieval primero, generación después*. El LLM se activa por
-  variable de entorno y el motor de palabras clave queda como respaldo si falla la API.
-- **Fuera:** vectores/embeddings, RAG sobre PDFs, multi-idioma.
+- **Problema:** la información vivía en un JSON escrito a mano por un desarrollador, y solo
+  cabía un negocio por instancia.
+- **Entregado:** esquema validado con mensajes en castellano, varios negocios en
+  `data/businesses/`, editor web en `/admin.html`, y recarga en caliente.
+- **Fuera:** vectores/embeddings, RAG sobre PDFs, multi-idioma, autenticación.
+- **Sobre el LLM:** aquí tocaba decidir si añadir Claude como capa de redacción. **Se
+  pospuso.** El problema que resuelve M2 es que nadie podía *cargar* su información, no
+  cómo se redacta la respuesta; meter un LLM habría tapado eso en vez de resolverlo. Se
+  reevalúa en el Módulo 3, cuando ya haya contenido real cargado y se vea qué preguntas
+  falla de verdad.
 
 ### Módulo 3 — Comprensión y gestión de conversación
 
@@ -234,3 +237,53 @@ y máximo de 1.000 caracteres).
 - Las conversaciones se pierden al reiniciar el servidor → **Módulo 7**.
 
 **Siguiente paso:** Módulo 2 — Base de conocimiento configurable.
+
+---
+
+### Módulo 2 — Base de conocimiento configurable — ✅ COMPLETADO
+
+**Entregado**
+
+- Validador de negocios (`src/knowledge/schema.js`): distingue **errores** (impiden guardar,
+  explicados en castellano y sin jerga) de **advertencias** (dejan guardar, pero avisan de
+  lo que hará que el bot responda mal).
+- Repositorio en disco (`src/knowledge/repository.js`): un JSON por negocio, escritura
+  atómica y validación del identificador para que una ruta no pueda escaparse del
+  directorio de datos.
+- API de administración: `GET/POST /api/businesses`, `GET/PUT/DELETE /api/businesses/:slug`.
+- Editor web en `/admin.html`: identidad, mensajes del bot, temas sugeridos y las preguntas
+  con sus palabras clave. Crear, editar, eliminar y saltar al chat a probar.
+- Selector de negocio en el sandbox, tanto en el servidor como en el archivo autocontenido.
+- Dos negocios de ejemplo de rubros distintos (peluquería y taller mecánico).
+- 96 tests (40 nuevos) + validación manual del editor completo en Chromium.
+
+**Recarga en caliente sin mecanismo de recarga en caliente**
+
+El repositorio no tiene caché: cada pregunta lee el archivo del negocio. Para el volumen de
+un MVP el costo es irrelevante, y a cambio un cambio guardado en el editor aplica en la
+siguiente pregunta sin invalidar nada ni reiniciar el servidor. Es la solución simple, y hay
+un test que la verifica de punta a punta.
+
+**Errores detectados durante la validación y corregidos**
+
+| # | Problema | Cómo apareció | Corrección |
+|---|----------|---------------|------------|
+| 1 | El validador advertía que `"no"` y `"ok"` eran demasiado cortas para coincidir, pero en el Módulo 1 se verificó que **sí** coinciden | Al validar el negocio de ejemplo | El criterio era equivocado: el riesgo no es la longitud sino que una palabra vacía (`de`, `la`, `que`) coincida con todo. Se cambió la advertencia por una lista de palabras vacías que excluye señales útiles como `no` u `ok` |
+| 2 | Una palabra clave vacía y además repetida generaba la misma advertencia dos veces | Al probar el validador | Se avisa una sola vez por palabra y por intención |
+| 3 | Un test de recorrido de rutas era un placeholder que no probaba nada | Al releer la suite | Reemplazado por una prueba real vía HTTP con rutas codificadas, que además verifica que no se creó ningún archivo fuera del directorio de datos |
+| 4 | `GET /health` seguía devolviendo un solo negocio | Al pasar a multi-negocio | Ahora informa cuántos negocios hay cargados |
+
+**Falsos hallazgos** (fallaron mis pruebas, no el producto): edité la intención `saludo`
+creyendo que era `horarios` y concluí que la recarga en caliente no funcionaba; y leí el
+estado del editor a mitad de un flujo asíncrono. Ambos se volvieron a medir bien y el
+comportamiento era correcto.
+
+**Limitaciones conocidas**
+
+- **El editor no pide contraseña.** Es para uso local. No lo expongas en internet tal cual;
+  la autenticación llega con el panel del Módulo 7. El propio editor lo advierte en pantalla.
+- Los negocios se guardan como archivos: sirve para un MVP, no para cientos de clientes.
+- No hay historial de cambios ni forma de deshacer una edición.
+- Sigue sin tolerar errores de tipeo ni preguntas encadenadas → **Módulo 3**.
+
+**Siguiente paso:** Módulo 3 — Comprensión y gestión de conversación.

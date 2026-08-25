@@ -1,50 +1,73 @@
 /**
- * PymeBot — Módulo 1: núcleo conversacional + sandbox.
+ * PymeBot — servidor.
  *
- * Dos contratos que el resto del sistema reutilizará sin cambios:
+ * Módulo 1: el núcleo conversacional y el sandbox.
+ * Módulo 2: varios negocios, editables desde el navegador.
+ *
+ * Contratos que el resto del sistema reutiliza sin cambios:
  *   - POST /api/chat  → el punto de entrada de cualquier canal (web hoy, WhatsApp en M5)
- *   - business.json   → la información del negocio
+ *   - un JSON por negocio en data/businesses/
  */
 
 const path = require('path');
-const fs = require('fs');
 const express = require('express');
 
 const { respond } = require('./bot/engine');
 const { SessionStore } = require('./bot/sessions');
+const { BusinessRepository, ValidationError } = require('./knowledge/repository');
 
 /** Largo máximo de un mensaje. Un cliente real no escribe 2.000 caracteres. */
 const MAX_MESSAGE_LENGTH = 1000;
 
-const DEFAULT_BUSINESS_PATH = path.join(__dirname, 'config', 'business.json');
+/** Negocio que se usa cuando nadie pide uno en particular. */
+const DEFAULT_SLUG = process.env.PYMEBOT_BUSINESS || 'bella-vista';
 
-function loadBusiness(filePath = DEFAULT_BUSINESS_PATH) {
-  const raw = fs.readFileSync(filePath, 'utf8');
-  const business = JSON.parse(raw);
-
-  if (!business.name) throw new Error(`El negocio en ${filePath} no tiene "name"`);
-  if (!Array.isArray(business.intents) || business.intents.length === 0) {
-    throw new Error(`El negocio en ${filePath} no tiene intenciones definidas`);
-  }
-  return business;
-}
-
-function createApp({ business = loadBusiness(), sessions = new SessionStore() } = {}) {
+function createApp({ repository = new BusinessRepository(), sessions = new SessionStore() } = {}) {
   const app = express();
-  app.use(express.json({ limit: '32kb' }));
+  app.use(express.json({ limit: '256kb' }));
   app.use(express.static(path.join(__dirname, '..', 'public')));
 
+  /** Resuelve el negocio pedido, cayendo al primero disponible si el slug no existe. */
+  function resolveBusiness(slug) {
+    const pedido = slug && repository.get(slug);
+    if (pedido) return { slug, business: pedido };
+
+    const porDefecto = repository.get(DEFAULT_SLUG);
+    if (porDefecto) return { slug: DEFAULT_SLUG, business: porDefecto };
+
+    const primero = repository.list()[0];
+    if (primero) return { slug: primero.slug, business: repository.get(primero.slug) };
+
+    return { slug: null, business: null };
+  }
+
+  function sinNegocios(res) {
+    return res.status(503).json({
+      error: 'Todavía no hay ningún negocio configurado. Crea uno en /admin.',
+    });
+  }
+
   app.get('/health', (req, res) => {
-    res.json({ status: 'ok', business: business.name, sessions: sessions.size });
+    res.json({
+      status: 'ok',
+      businesses: repository.list().length,
+      sessions: sessions.size,
+    });
   });
 
-  // Lo que el sandbox necesita para pintarse: nombre, saludo inicial y temas sugeridos.
+  // ---------------------------------------------------------------- conversación
+
+  // Lo que el sandbox necesita para pintarse.
   app.get('/api/business', (req, res) => {
+    const { slug, business } = resolveBusiness(req.query.slug);
+    if (!business) return sinNegocios(res);
+
     res.json({
+      slug,
       name: business.name,
-      tagline: business.tagline || '',
-      greeting: business.greeting || '¡Hola! ¿En qué te puedo ayudar?',
-      topics: business.topics || [],
+      tagline: business.tagline,
+      greeting: business.greeting,
+      topics: business.topics,
     });
   });
 
@@ -60,6 +83,10 @@ function createApp({ business = loadBusiness(), sessions = new SessionStore() } 
       });
     }
 
+    // Cada lectura va al disco, así que un cambio guardado en el editor aplica ya.
+    const { slug, business } = resolveBusiness(req.body.business);
+    if (!business) return sinNegocios(res);
+
     const session = sessions.get(sessionId);
     sessions.addMessage(session, 'user', message);
 
@@ -70,6 +97,7 @@ function createApp({ business = loadBusiness(), sessions = new SessionStore() } 
 
     res.json({
       sessionId: session.id,
+      business: slug,
       reply: result.reply,
       intent: result.intent,
       matched: result.matched,
@@ -83,16 +111,67 @@ function createApp({ business = loadBusiness(), sessions = new SessionStore() } 
     res.json({ ok: true, sessionId: session ? session.id : null });
   });
 
+  // ---------------------------------------------------- base de conocimiento (M2)
+
+  app.get('/api/businesses', (req, res) => {
+    res.json({ businesses: repository.list() });
+  });
+
+  app.get('/api/businesses/:slug', (req, res) => {
+    const business = repository.get(req.params.slug);
+    if (!business) return res.status(404).json({ error: 'Ese negocio no existe.' });
+    res.json({ slug: req.params.slug, business });
+  });
+
+  app.post('/api/businesses', (req, res) => {
+    try {
+      const { slug, business, warnings } = repository.create(req.body);
+      res.status(201).json({ slug, business, warnings });
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        return res.status(422).json({ error: err.message, errors: err.errors, warnings: err.warnings });
+      }
+      throw err;
+    }
+  });
+
+  app.put('/api/businesses/:slug', (req, res) => {
+    if (!repository.exists(req.params.slug)) {
+      return res.status(404).json({ error: 'Ese negocio no existe.' });
+    }
+    try {
+      const { slug, business, warnings } = repository.save(req.params.slug, req.body);
+      res.json({ slug, business, warnings });
+    } catch (err) {
+      if (err instanceof ValidationError) {
+        return res.status(422).json({ error: err.message, errors: err.errors, warnings: err.warnings });
+      }
+      throw err;
+    }
+  });
+
+  app.delete('/api/businesses/:slug', (req, res) => {
+    if (!repository.remove(req.params.slug)) {
+      return res.status(404).json({ error: 'Ese negocio no existe.' });
+    }
+    res.json({ ok: true });
+  });
+
   return app;
 }
 
 // Solo levanta el servidor cuando se ejecuta directamente (los tests importan createApp).
 if (require.main === module) {
   const port = Number(process.env.PORT) || 3000;
-  const app = createApp();
+  const repository = new BusinessRepository();
+  const app = createApp({ repository });
+
   app.listen(port, () => {
-    console.log(`\n  🤖 PymeBot (Módulo 1) escuchando en http://localhost:${port}\n`);
+    const negocios = repository.list();
+    console.log(`\n  🤖 PymeBot escuchando en http://localhost:${port}`);
+    console.log(`     Editor de negocios:   http://localhost:${port}/admin.html`);
+    console.log(`     Negocios cargados:    ${negocios.map((n) => n.slug).join(', ') || 'ninguno'}\n`);
   });
 }
 
-module.exports = { createApp, loadBusiness, MAX_MESSAGE_LENGTH };
+module.exports = { createApp, MAX_MESSAGE_LENGTH, DEFAULT_SLUG };

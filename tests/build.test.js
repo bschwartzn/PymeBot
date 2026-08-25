@@ -15,16 +15,21 @@ test('la build genera un sandbox autocontenido y al día', () => {
   execFileSync('node', ['scripts/build-sandbox.js'], { cwd: ROOT });
 
   const html = fs.readFileSync(SALIDA, 'utf8');
-  const business = JSON.parse(fs.readFileSync(path.join(ROOT, 'src', 'config', 'business.json'), 'utf8'));
+  const dir = path.join(ROOT, 'data', 'businesses');
+  const negocios = fs.readdirSync(dir).filter((f) => f.endsWith('.json'));
 
   // Trae el motor real, no una copia escrita a mano.
   assert.ok(html.includes('function respond('), 'falta la función respond del motor');
   assert.ok(html.includes('function normalize('), 'falta la normalización de texto');
 
-  // Trae la información del negocio vigente.
-  assert.ok(html.includes(business.name), 'falta el nombre del negocio');
-  for (const intent of business.intents) {
-    assert.ok(html.includes(`"${intent.id}"`), `falta la intención ${intent.id}`);
+  // Trae todos los negocios configurados, no solo uno.
+  assert.ok(negocios.length >= 2, 'el repo debería traer más de un negocio de ejemplo');
+  for (const archivo of negocios) {
+    const business = JSON.parse(fs.readFileSync(path.join(dir, archivo), 'utf8'));
+    assert.ok(html.includes(business.name), `falta el negocio ${business.name}`);
+    for (const intent of business.intents) {
+      assert.ok(html.includes(`"${intent.id}"`), `falta la intención ${intent.id} de ${business.name}`);
+    }
   }
 
   // Nada de CommonJS ni marcadores sin rellenar: el navegador no los entiende.
@@ -41,11 +46,13 @@ test('la build genera un sandbox autocontenido y al día', () => {
 test('el sandbox generado responde igual que el motor del servidor', () => {
   const html = fs.readFileSync(SALIDA, 'utf8');
   const { respond } = require('../src/bot/engine');
-  const business = require('../src/config/business.json');
 
   // Si el HTML contiene la respuesta exacta que da el motor, están sincronizados.
-  for (const pregunta of ['a que hora abren', 'cuanto cuesta', 'donde estan']) {
-    const esperado = respond(pregunta, business).reply;
-    assert.ok(html.includes(esperado.slice(0, 40)), `el sandbox no contiene la respuesta a "${pregunta}"`);
+  for (const slug of ['bella-vista', 'taller-don-pepe']) {
+    const business = require(`../data/businesses/${slug}.json`);
+    for (const pregunta of ['a que hora abren', 'cuanto cuesta', 'donde estan']) {
+      const esperado = respond(pregunta, business).reply;
+      assert.ok(html.includes(esperado.slice(0, 40)), `${slug}: falta la respuesta a "${pregunta}"`);
+    }
   }
 });

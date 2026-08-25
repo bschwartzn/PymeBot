@@ -4,7 +4,8 @@ Chatbot para pequeñas empresas. Responde las preguntas frecuentes de los client
 (horarios, precios, servicios, ubicación) con la información que el propio negocio
 configura.
 
-> **Estado: Módulo 1 — núcleo conversacional + sandbox.**
+> **Estado: Módulos 1 y 2 completados** — núcleo conversacional, sandbox y base de
+> conocimiento editable desde el navegador.
 > El desarrollo es modular y progresivo: cada módulo se construye, se prueba y se corrige
 > antes de pasar al siguiente. El plan completo está en [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
@@ -16,9 +17,9 @@ Hay dos formas, y ambas usan **exactamente el mismo motor**.
 
 ### 1. Sin instalar nada
 
-Abre `dist/sandbox.html` con doble clic. Es un único archivo autocontenido: el motor y la
-información del negocio van dentro, no necesita servidor ni conexión. Sirve para probar el
-bot y para mostrárselo a alguien sin pedirle que instale nada.
+Abre `dist/sandbox.html` con doble clic. Es un único archivo autocontenido: el motor y
+todos los negocios configurados van dentro, no necesita servidor ni conexión. Sirve para
+probar el bot y para mostrárselo a alguien sin pedirle que instale nada.
 
 Se regenera desde el código fuente con:
 
@@ -37,8 +38,10 @@ npm install
 npm start
 ```
 
-Abre **http://localhost:3000**. Esta es la vía real del producto: es la que expone
-`POST /api/chat`, el punto de entrada que reutilizarán WhatsApp y el resto de los canales.
+Abre **http://localhost:3000** para el chat y **http://localhost:3000/admin.html** para el
+editor. Esta es la vía real del producto: es la única que permite *editar* la información
+del negocio, y la que expone `POST /api/chat`, el punto de entrada que reutilizarán
+WhatsApp y el resto de los canales.
 
 ### Qué preguntarle
 
@@ -57,21 +60,52 @@ Solo el chat, para validar que el bot responde bien.
 npm test
 ```
 
-56 tests sobre el motor de intenciones, el manejo de sesiones, la API HTTP y la
-integridad del sandbox autocontenido.
+96 tests sobre el motor de intenciones, las sesiones, la API HTTP, la validación de
+negocios, el repositorio en disco y la integridad del sandbox autocontenido.
 
 ---
 
-## Cómo cambiar el negocio
+## Cómo cargar la información de un negocio
 
-Toda la información vive en un solo archivo: [`src/config/business.json`](src/config/business.json).
-No hay que tocar el código.
+Con el servidor corriendo, abre **http://localhost:3000/admin.html**. Ahí puedes crear un
+negocio, editar sus mensajes y cargar las preguntas que sabe responder. **Lo que guardas
+aplica en la siguiente pregunta del chat, sin reiniciar nada.**
+
+Cada pregunta tiene dos partes:
+
+- **Palabras clave**: lo que el bot busca en lo que escribe el cliente.
+- **Respuesta**: lo que contesta.
+
+Al guardar, el editor distingue dos cosas:
+
+- **Errores** — impiden guardar y dicen exactamente qué falta (*"La pregunta «horarios» no
+  tiene respuesta."*).
+- **Advertencias** — dejan guardar, pero avisan de lo que suele hacer que el bot responda
+  mal: dos preguntas peleando por la misma palabra clave, o una palabra vacía como `de`,
+  que haría que esa pregunta gane en casi cualquier frase.
+
+> ⚠️ **El editor no pide contraseña.** Está pensado para uso local. No lo publiques en
+> internet tal como está; la autenticación llega en el Módulo 7.
+
+**Consejos para escribir buenas palabras clave:**
+
+- Escríbelas en minúsculas y sin acentos; el bot normaliza lo que escribe el cliente.
+- No hace falta poner singular y plural: `horario` ya encuentra `horarios`.
+- Las frases de varias palabras (`cuanto cuesta`) valen más que las sueltas, porque son
+  más específicas. Úsalas para desempatar entre preguntas parecidas.
+- Evita palabras genéricas (`hacer`, `tener`, `de`): disparan respuestas equivocadas. El
+  editor te avisa de las peores.
+
+### Si prefieres editar los archivos a mano
+
+Cada negocio es un JSON en [`data/businesses/`](data/businesses/). El nombre del archivo es
+su identificador. Se validan igual al leerlos: si uno queda mal, se ignora y el resto sigue
+funcionando.
 
 ```json
 {
   "name": "Taller Don Pepe",
   "greeting": "¡Hola! ¿En qué te ayudo?",
-  "fallback": "No estoy seguro de haber entendido. Puedo ayudarte con:",
   "topics": ["Horarios", "Precios"],
   "intents": [
     {
@@ -82,16 +116,6 @@ No hay que tocar el código.
   ]
 }
 ```
-
-Cada intención declara **palabras clave** y **una respuesta**. Reinicia el servidor y listo.
-
-**Consejos para escribir buenas palabras clave:**
-
-- Escríbelas en minúsculas y sin acentos; el bot normaliza lo que escribe el cliente.
-- No hace falta poner singular y plural: `horario` ya encuentra `horarios`.
-- Las frases de varias palabras (`cuanto cuesta`) valen más que las sueltas, porque son
-  más específicas. Úsalas para desempatar entre intenciones parecidas.
-- Evita palabras muy genéricas (`hacer`, `tener`): disparan respuestas equivocadas.
 
 ---
 
@@ -117,31 +141,46 @@ base de conocimiento esté bien estructurada.
 
 ## API
 
+**Conversación** — el núcleo. `POST /api/chat` es el único punto de entrada: cuando llegue
+WhatsApp (Módulo 5) será un adaptador que traduce el webhook a esta misma llamada.
+
 | Método | Ruta | Qué hace |
 |---|---|---|
-| `POST` | `/api/chat` | `{ sessionId?, message }` → `{ sessionId, reply, intent, matched, score }` |
+| `POST` | `/api/chat` | `{ sessionId?, business?, message }` → `{ sessionId, business, reply, intent, matched, score }` |
 | `POST` | `/api/reset` | `{ sessionId }` → vacía el historial de esa conversación |
-| `GET` | `/api/business` | Nombre, saludo y temas sugeridos (lo que pinta el sandbox) |
-| `GET` | `/health` | Estado del servidor y sesiones activas |
+| `GET` | `/api/business?slug=` | Nombre, saludo y temas sugeridos (lo que pinta el sandbox) |
 
-`POST /api/chat` es el **único punto de entrada del núcleo**. Cuando llegue WhatsApp
-(Módulo 5) será un adaptador que traduce el webhook a esta misma llamada; el motor no cambia.
+**Base de conocimiento** — lo que usa el editor.
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/api/businesses` | Lista los negocios configurados |
+| `GET` | `/api/businesses/:slug` | Devuelve un negocio completo |
+| `POST` | `/api/businesses` | Crea uno; el identificador se deriva del nombre |
+| `PUT` | `/api/businesses/:slug` | Guarda los cambios |
+| `DELETE` | `/api/businesses/:slug` | Lo elimina |
+| `GET` | `/health` | Estado del servidor, negocios cargados y sesiones activas |
+
+Guardar información inválida devuelve **422** con la lista de errores explicados. Guardar
+algo dudoso devuelve **200** con `warnings`.
 
 ## Estructura
 
 ```
 src/
   server.js            API HTTP + sandbox estático
-  bot/
+  bot/                 ── Módulo 1: el núcleo conversacional
     text.js            Normalización de español
     engine.js          Motor de intenciones
     sessions.js        Memoria de conversación
-  config/
-    business.json      La información del negocio
-public/                Sandbox web (HTML/CSS/JS plano)
-tests/                 56 tests con el runner nativo de Node
+  knowledge/           ── Módulo 2: la base de conocimiento
+    schema.js          Validación: errores y advertencias
+    repository.js      Un JSON por negocio, en disco
+data/businesses/       La información de cada negocio
+public/                Sandbox (index) y editor (admin)
 scripts/               Generador del sandbox autocontenido
 dist/sandbox.html      Sandbox en un solo archivo (generado)
+tests/                 96 tests con el runner nativo de Node
 docs/ROADMAP.md        Plan modular completo
 ```
 

@@ -139,6 +139,34 @@
     flex: none;
   }
 
+  .picker select {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--muted);
+    background: var(--raised);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 6px 11px;
+    max-width: 150px;
+    cursor: pointer;
+  }
+  .picker select:hover {
+    color: var(--ink);
+    border-color: var(--accent);
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
   /* ---------- Transcripción ---------- */
 
   .transcript {
@@ -390,6 +418,10 @@
       <h1 id="negocio-nombre">PymeBot</h1>
       <p id="negocio-rubro"></p>
     </div>
+    <label class="picker" id="picker" hidden>
+      <span class="sr-only">Negocio</span>
+      <select id="negocio"></select>
+    </label>
     <span class="badge">Sandbox</span>
   </header>
 
@@ -438,7 +470,8 @@
 
   /*__ENGINE__*/
 
-  const BUSINESS = /*__BUSINESS__*/;
+  /** Todos los negocios configurados, empaquetados por la build. */
+  const NEGOCIOS = /*__BUSINESS__*/;
 
   /* ==========================================================================
      Sandbox
@@ -455,9 +488,38 @@
 
   /** La sesión del navegador cumple el mismo papel que la del servidor. */
   let session = { greeted: false, turns: 0 };
+  /** El negocio que se está probando ahora. */
+  let BUSINESS = NEGOCIOS[0];
 
-  document.getElementById("negocio-nombre").textContent = BUSINESS.name;
-  document.getElementById("negocio-rubro").textContent = BUSINESS.tagline || "";
+  const pickerEl = document.getElementById("picker");
+  const negocioEl = document.getElementById("negocio");
+
+  function pintarIdentidad() {
+    document.getElementById("negocio-nombre").textContent = BUSINESS.name;
+    document.getElementById("negocio-rubro").textContent = BUSINESS.tagline || "";
+    document.title = BUSINESS.name + " — PymeBot Sandbox";
+  }
+
+  function construirSelector() {
+    // El selector solo aparece si de verdad hay entre qué elegir.
+    pickerEl.hidden = NEGOCIOS.length < 2;
+    if (pickerEl.hidden) return;
+
+    NEGOCIOS.forEach(function (negocio, i) {
+      const option = document.createElement("option");
+      option.value = String(i);
+      option.textContent = negocio.name;
+      negocioEl.appendChild(option);
+    });
+
+    // Cambiar de negocio empieza de cero: la conversación era con otro bot.
+    negocioEl.addEventListener("change", function () {
+      BUSINESS = NEGOCIOS[Number(negocioEl.value)];
+      pintarIdentidad();
+      construirSuggestions();
+      reiniciar();
+    });
+  }
 
   function addTurn(text, who) {
     const turn = document.createElement("div");
@@ -535,7 +597,7 @@
         : session.turns + (session.turns === 1 ? " pregunta" : " preguntas") + " en esta conversación";
   }
 
-  function buildSuggestions() {
+  function construirSuggestions() {
     suggestionsEl.innerHTML = "";
 
     (BUSINESS.topics || []).forEach(function (topic) {
@@ -567,6 +629,14 @@
     updateTally();
   }
 
+  /** Borra la conversación conservando el texto explicativo de arriba. */
+  function reiniciar() {
+    document.querySelectorAll(".turn").forEach(function (el) {
+      el.remove();
+    });
+    start();
+  }
+
   composerEl.addEventListener("submit", function (event) {
     event.preventDefault();
     send(fieldEl.value);
@@ -578,14 +648,12 @@
   });
 
   restartEl.addEventListener("click", function () {
-    // Se conserva el texto explicativo de arriba; se borra solo la conversación.
-    document.querySelectorAll(".turn").forEach(function (el) {
-      el.remove();
-    });
-    start();
+    reiniciar();
     fieldEl.focus();
   });
 
-  buildSuggestions();
+  construirSelector();
+  pintarIdentidad();
+  construirSuggestions();
   start();
 </script>
