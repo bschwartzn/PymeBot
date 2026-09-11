@@ -16,6 +16,7 @@
 
 const path = require('path');
 const express = require('express');
+const QRCode = require('qrcode');
 
 const { respond } = require('./bot/engine');
 const { SessionStore } = require('./bot/sessions');
@@ -130,9 +131,20 @@ function createApp({
 
   // ============================================================ PÚBLICO: el chat
 
+  /**
+   * Resuelve qué negocio atiende esta petición.
+   *
+   * Distingue dos casos que parecen iguales pero no lo son:
+   *   - No se pidió ninguno  → se usa el por defecto. Es el caso del sandbox.
+   *   - Se pidió uno y no existe → NO se cae a otro. Un link público mal escrito o de un
+   *     negocio dado de baja haría que el cliente reciba las respuestas de otra empresa,
+   *     sin enterarse. Mejor decir que el chat no existe.
+   */
   function resolveBusiness(slug) {
-    const pedido = slug && repository.get(slug);
-    if (pedido) return { slug, business: pedido };
+    if (slug) {
+      const pedido = repository.get(slug);
+      return pedido ? { slug, business: pedido } : { slug, business: null, noEncontrado: true };
+    }
 
     const porDefecto = repository.get(DEFAULT_SLUG);
     if (porDefecto) return { slug: DEFAULT_SLUG, business: porDefecto };
@@ -141,6 +153,25 @@ function createApp({
     if (primero) return { slug: primero.slug, business: repository.get(primero.slug) };
 
     return { slug: null, business: null };
+  }
+
+  function chatNoDisponible(res) {
+    return res.status(404).json({
+      error: 'Este chat no está disponible. Puede que el enlace haya cambiado.',
+    });
+  }
+
+  /**
+   * La dirección pública del chat de un negocio.
+   *
+   * Detrás de un proxy o de un túnel, el host real viene en las cabeceras X-Forwarded-*:
+   * sin mirarlas, el link compartido y el QR apuntarían a "localhost".
+   */
+  function publicUrl(req, slug) {
+    const base =
+      process.env.PYMEBOT_PUBLIC_URL ||
+      `${req.headers['x-forwarded-proto'] || req.protocol}://${req.headers['x-forwarded-host'] || req.get('host')}`;
+    return `${base.replace(/\/+$/, '')}/c/${encodeURIComponent(slug)}`;
   }
 
   function sinNegocios(res) {
@@ -162,7 +193,8 @@ function createApp({
   });
 
   app.get('/api/business', (req, res) => {
-    const { slug, business } = resolveBusiness(req.query.slug);
+    const { slug, business, noEncontrado } = resolveBusiness(req.query.slug);
+    if (noEncontrado) return chatNoDisponible(res);
     if (!business) return sinNegocios(res);
 
     res.json({
@@ -188,7 +220,8 @@ function createApp({
     }
 
     // Cada lectura va al disco, así que un cambio guardado en el panel aplica ya.
-    const { slug, business } = resolveBusiness(req.body.business);
+    const { slug, business, noEncontrado } = resolveBusiness(req.body.business);
+    if (noEncontrado) return chatNoDisponible(res);
     if (!business) return sinNegocios(res);
 
     const session = sessions.get(sessionId);
@@ -207,6 +240,35 @@ function createApp({
       matched: result.matched,
       score: Number(result.score.toFixed(2)),
     });
+  });
+
+  /**
+   * La página que el negocio le comparte a sus clientes: /c/mi-negocio
+   *
+   * Es una sola página para todos los negocios; el slug se lee de la URL en el navegador.
+   * Así no hay que generar ni desplegar nada al dar de alta un negocio nuevo.
+   */
+  app.get('/c/:slug', (req, res) => {
+    res.sendFile(path.join(__dirname, '..', 'public', 'chat.html'));
+  });
+
+  /**
+   * El QR del chat, para imprimir y dejarlo en el mesón o en la mesa.
+   * Va en SVG porque se imprime: no pierde nitidez a ningún tamaño.
+   */
+  app.get('/api/businesses/:slug/qr.svg', async (req, res) => {
+    if (!repository.exists(req.params.slug)) {
+      return res.status(404).json({ error: 'Ese negocio no existe.' });
+    }
+
+    const svg = await QRCode.toString(publicUrl(req, req.params.slug), {
+      type: 'svg',
+      margin: 1,
+      // Nivel Q: sigue leyéndose aunque el papel se manche o se raye.
+      errorCorrectionLevel: 'Q',
+    });
+
+    res.type('image/svg+xml').send(svg);
   });
 
   app.post('/api/reset', (req, res) => {
@@ -300,6 +362,20 @@ function createApp({
     res.json({ slug: req.params.slug, business: req.business });
   });
 
+  /** Todo lo que el dueño necesita para llevar clientes a su bot. */
+  app.get('/api/businesses/:slug/share', requireAuth, requireOwnedBusiness, (req, res) => {
+    const url = publicUrl(req, req.params.slug);
+    const origen = url.slice(0, url.indexOf('/c/'));
+
+    res.json({
+      url,
+      qr: `/api/businesses/${req.params.slug}/qr.svg`,
+      embed:
+        `<script src="${origen}/widget.js" data-negocio="${req.params.slug}" defer></script>`,
+      whatsapp: `https://wa.me/?text=${encodeURIComponent(`Resuelve tus dudas por aquí: ${url}`)}`,
+    });
+  });
+
   app.post('/api/businesses', requireAuth, (req, res) => {
     const nombre = req.body && typeof req.body.name === 'string' ? req.body.name.trim() : '';
     if (!nombre) return res.status(422).json({ error: 'El negocio necesita un nombre.' });
@@ -365,7 +441,10 @@ if (require.main === module) {
   app.listen(port, () => {
     console.log(`\n  🤖 PymeBot escuchando en http://localhost:${port}`);
     console.log(`     Panel del dueño:    http://localhost:${port}/panel.html`);
-    console.log(`     Negocios cargados:  ${repository.list().length}\n`);
+    for (const negocio of repository.list()) {
+      console.log(`     Chat de ${negocio.name}: http://localhost:${port}/c/${negocio.slug}`);
+    }
+    console.log('');
   });
 }
 

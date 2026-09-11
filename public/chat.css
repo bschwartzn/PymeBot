@@ -1,0 +1,226 @@
+/*
+ * La página que ve el cliente final.
+ *
+ * Se diseña para el teléfono primero: casi todo el tráfico llega desde un link
+ * compartido por WhatsApp o desde un QR, y se abre en el navegador del móvil.
+ */
+
+:root {
+  --fondo: #f2f4f7;
+  --panel: #ffffff;
+  --texto: #18202b;
+  --suave: #667085;
+  --linea: #e3e8ef;
+  --burbuja: #f2f4f7;
+  --marca: #1f6feb;
+  --marca-texto: #ffffff;
+  --error-bg: #fdecec;
+  --error: #a12a2a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #0e1116;
+    --panel: #161b22;
+    --texto: #e6edf3;
+    --suave: #8d97a5;
+    --linea: #262c36;
+    --burbuja: #21262d;
+    --marca: #4d8ef7;
+    --marca-texto: #06142b;
+    --error-bg: #3a1d1d;
+    --error: #f3a7a7;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  justify-content: center;
+}
+
+.chat {
+  width: min(640px, 100%);
+  /* dvh en vez de vh: en el móvil la barra del navegador cambia de alto al hacer scroll. */
+  height: 100dvh;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Cabecera ---------- */
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  padding-top: max(14px, env(safe-area-inset-top));
+  border-bottom: 1px solid var(--linea);
+  flex: none;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--burbuja);
+  color: var(--marca);
+  display: grid;
+  place-items: center;
+}
+.avatar svg { width: 23px; height: 23px; }
+
+.identidad { min-width: 0; }
+.identidad h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.identidad p {
+  margin: 1px 0 0;
+  font-size: 13px;
+  color: var(--suave);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Conversación ---------- */
+
+.hilo {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.burbuja {
+  max-width: 85%;
+  padding: 11px 15px;
+  border-radius: 18px;
+  font-size: 15.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.burbuja.bot {
+  align-self: flex-start;
+  background: var(--burbuja);
+  border-bottom-left-radius: 5px;
+}
+
+.burbuja.cliente {
+  align-self: flex-end;
+  background: var(--marca);
+  color: var(--marca-texto);
+  border-bottom-right-radius: 5px;
+}
+
+.burbuja.aviso {
+  align-self: center;
+  background: var(--error-bg);
+  color: var(--error);
+  font-size: 14px;
+  text-align: center;
+  max-width: 100%;
+}
+
+.escribiendo { display: flex; gap: 4px; align-items: center; padding: 15px; }
+.escribiendo i {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--suave); animation: latir 1.2s infinite;
+}
+.escribiendo i:nth-child(2) { animation-delay: .18s; }
+.escribiendo i:nth-child(3) { animation-delay: .36s; }
+@keyframes latir { 0%,60%,100% { opacity:.25 } 30% { opacity:.9 } }
+
+/* ---------- Atajos ---------- */
+
+.atajos {
+  display: flex;
+  gap: 7px;
+  padding: 0 18px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: none;
+}
+.atajos::-webkit-scrollbar { display: none; }
+.atajos:empty { display: none; }
+
+.atajo {
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--marca);
+  background: transparent;
+  border: 1px solid var(--linea);
+  border-radius: 999px;
+  padding: 7px 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  flex: none;
+}
+.atajo:hover { border-color: var(--marca); }
+
+/* ---------- Escribir ---------- */
+
+.escribir {
+  display: flex;
+  gap: 9px;
+  padding: 12px 18px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--linea);
+  flex: none;
+}
+
+.campo {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  /* 16px exactos: menos que eso hace que Safari en iPhone haga zoom al enfocar. */
+  font-size: 16px;
+  color: var(--texto);
+  background: var(--burbuja);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 12px 18px;
+}
+.campo::placeholder { color: var(--suave); }
+.campo:focus { outline: none; border-color: var(--marca); }
+
+.enviar {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: var(--marca);
+  color: var(--marca-texto);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.enviar svg { width: 21px; height: 21px; }
+.enviar:disabled { opacity: .45; cursor: default; }
+
+:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

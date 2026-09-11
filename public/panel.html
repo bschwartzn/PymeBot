@@ -116,6 +116,7 @@
               <button class="seccion-tab" type="button" data-seccion="preguntas">Preguntas</button>
               <button class="seccion-tab" type="button" data-seccion="mensajes">Mensajes</button>
               <button class="seccion-tab" type="button" data-seccion="comportamiento">Comportamiento</button>
+              <button class="seccion-tab" type="button" data-seccion="compartir">Compartir</button>
             </nav>
 
             <fieldset class="bloque" data-seccion="identidad">
@@ -187,6 +188,56 @@
                 se equivoca menos; menos exigente responde casi siempre, arriesgando contestar un tema
                 por otro. Si ves que confunde preguntas, súbelo.
               </p>
+            </fieldset>
+
+            <fieldset class="bloque" data-seccion="compartir" hidden>
+              <p class="ayuda bloque-intro">
+                Esta es la dirección del chat de tu negocio. Compártela con tus clientes: no
+                necesitan instalar nada ni tener cuenta.
+              </p>
+
+              <div class="compartir-link">
+                <input id="url-publica" type="text" readonly aria-label="Dirección del chat" />
+                <button id="copiar-url" class="btn-ghost" type="button">Copiar</button>
+                <a id="abrir-url" class="btn-ghost" href="#" target="_blank" rel="noopener">Abrir ↗</a>
+              </div>
+
+              <div class="compartir-grid">
+                <div class="compartir-tarjeta">
+                  <h3>Código QR</h3>
+                  <p class="ayuda">
+                    Imprímelo y déjalo en el mesón, la vitrina o la mesa. Quien lo escanee con la
+                    cámara del teléfono abre el chat.
+                  </p>
+                  <div class="qr" id="qr"></div>
+                  <a id="descargar-qr" class="btn-ghost" href="#" download>Descargar QR</a>
+                </div>
+
+                <div class="compartir-tarjeta">
+                  <h3>Dónde ponerlo</h3>
+                  <ul class="lista-consejos">
+                    <li>En tu estado de WhatsApp y en la bio de Instagram.</li>
+                    <li>En tu ficha de Google, como enlace del negocio.</li>
+                    <li>Como respuesta automática cuando te escriben fuera de horario.</li>
+                    <li>Impreso en el QR, en el mesón o la mesa.</li>
+                  </ul>
+                  <a id="compartir-whatsapp" class="btn-ghost" href="#" target="_blank" rel="noopener">
+                    Compartir por WhatsApp
+                  </a>
+                </div>
+              </div>
+
+              <div class="compartir-tarjeta">
+                <h3>¿Tienes página web?</h3>
+                <p class="ayuda">
+                  Pega esta línea antes de <code>&lt;/body&gt;</code> y aparecerá una burbuja de chat
+                  en la esquina de tu sitio.
+                </p>
+                <div class="compartir-link">
+                  <input id="codigo-embed" type="text" readonly aria-label="Código para tu web" />
+                  <button id="copiar-embed" class="btn-ghost" type="button">Copiar</button>
+                </div>
+              </div>
             </fieldset>
           </form>
         </section>

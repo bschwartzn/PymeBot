@@ -32,7 +32,7 @@ responde nada). La división real es por **capa técnica**, no por tema:
 | **2** | **Base de conocimiento configurable** | Cada negocio tiene información distinta y hoy está escrita en el código | ✅ Completado |
 | **3** | **Comprensión y gestión de conversación** | El bot falla con preguntas mal escritas, ambiguas o encadenadas | ⬅️ **Siguiente** |
 | **4** | **Captura de clientes (leads)** | Las conversaciones no generan valor comercial medible | ⬜ Pendiente |
-| **5** | **Canales / integraciones (WhatsApp)** | El cliente final no está en nuestra web, está en WhatsApp | ⬜ Pendiente |
+| **5** | **Canales / integraciones** | El cliente final necesita una forma de llegar al bot | 🟡 Link público, QR y widget ✅ · WhatsApp pendiente |
 | **6** | **Agendamiento** | Muchas consultas terminan en "quiero una cita" y hoy no se puede cerrar | ⬜ Pendiente |
 | **7** | **Panel, métricas y automatizaciones** | El dueño del negocio no puede administrar ni medir el bot | 🟡 Cuentas y panel ✅ · métricas y automatizaciones pendientes |
 
@@ -420,5 +420,59 @@ Ambos se volvieron a medir aislando el caso.
 - Usuarios y sesiones en archivos JSON: sirve para un MVP, no para miles de cuentas.
 - No hay roles ni equipos: un negocio, un dueño.
 - Sin registro de cambios ni forma de deshacer una edición.
+
+---
+
+### Canal del cliente: link público, QR y widget — ✅ COMPLETADO
+
+**La pregunta era cómo llega el cliente final al bot.** La respuesta corta: un link por
+negocio. La larga está abajo.
+
+**Por qué el link y no WhatsApp (todavía)**
+
+WhatsApp es donde están los clientes, pero no es donde se puede probar esta semana. La API
+de WhatsApp Business exige verificar la empresa con Meta, un número dedicado, un proveedor
+(Twilio, 360dialog o la Cloud API), aprobación de plantillas y costo por conversación. Son
+días o semanas de trámite **antes de que un solo cliente escriba**. Para validar la idea eso
+es un bloqueo, no un canal.
+
+El link se distribuye igual **por** WhatsApp: el dueño lo pega en su estado, su bio de
+Instagram, su ficha de Google o un QR en el mesón. Cero trámites, funciona hoy.
+
+Cuando haya evidencia de que los clientes usan el bot, WhatsApp deja de ser una apuesta y
+pasa a ser una inversión justificada. Y el trabajo ya está acotado: `POST /api/chat` sigue
+siendo el único punto de entrada, así que WhatsApp será un adaptador que traduce el webhook
+a esa misma llamada. El núcleo no cambia.
+
+**Entregado**
+
+- **Página del cliente en `/c/<negocio>`**: una sola página para todos los negocios; el slug
+  se lee de la URL. Dar de alta un negocio nuevo no requiere generar ni desplegar nada.
+- Diseñada para el teléfono: `100dvh` en vez de `vh` (la barra del navegador móvil cambia de
+  alto), campo de texto de 16px exactos (menos que eso hace que Safari en iPhone haga zoom al
+  enfocar), y `env(safe-area-inset-*)` para el notch.
+- La conversación sobrevive a recargar la página (`sessionStorage`).
+- **Código QR** en SVG, para imprimir y dejar en el mesón o la mesa.
+- **Widget** para el sitio web del negocio: una línea de `<script>`. Va en un iframe a
+  propósito, para que los estilos del sitio y los del chat no se pisen en ninguna dirección,
+  y el iframe se carga recién al abrir la burbuja, no al entrar al sitio.
+- **Sección "Compartir"** en el panel: el link, el QR descargable, el código para la web, un
+  enlace de WhatsApp listo y consejos de dónde ponerlo.
+- 12 tests nuevos (138 en total).
+
+**Errores detectados durante la validación y corregidos**
+
+| # | Problema | Cómo apareció | Corrección |
+|---|----------|---------------|------------|
+| 1 | **Un link roto mostraba el bot de otra empresa.** `/c/no-existe` caía silenciosamente al negocio por defecto | Probando la página del cliente en el navegador | Se separó «no se pidió ninguno» (sandbox: usa el por defecto) de «se pidió uno y no existe» (404). Un QR mal impreso o un negocio dado de baja no puede terminar dando las respuestas de otro negocio |
+| 2 | `npm audit` reportaba un DoS por *query string* en `qs`, dependencia de Express — justo la superficie que se iba a exponer | Antes de abrir el servidor al público | Express 4 → 5, más un `override` de `qs` a 6.16.0, que Express todavía no fija. Cero vulnerabilidades |
+
+**Limitaciones conocidas**
+
+- **La página del cliente es pública y no tiene límite de peticiones.** Antes de exponerla a
+  internet de verdad conviene poner un límite por IP en `POST /api/chat`.
+- El widget no recuerda la conversación entre visitas al sitio.
+- El archivo autocontenido (`npm run build:chat`) no permite editar desde el panel: hay que
+  regenerarlo. Y no guarda ninguna conversación.
 
 **Siguiente paso:** Módulo 3 — Comprensión y gestión de conversación.

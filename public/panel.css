@@ -327,3 +327,58 @@ input:focus-visible, textarea:focus-visible { outline: 2px solid var(--brand); o
 
 input[type="range"] { width: 100%; accent-color: var(--brand); cursor: pointer; }
 .umbral { font-size: 13.5px; color: var(--brand); font-weight: 600; }
+
+/* ==================== Compartir ==================== */
+
+.compartir-link { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.compartir-link input {
+  flex: 1;
+  min-width: 200px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: var(--soft);
+}
+
+.compartir-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.compartir-tarjeta {
+  background: var(--soft);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  align-items: flex-start;
+}
+.compartir-tarjeta h3 { margin: 0; font-size: 14.5px; }
+.compartir-tarjeta .ayuda { margin: 0; }
+.compartir-tarjeta code {
+  font-size: 12.5px;
+  background: var(--panel);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.qr {
+  background: #fff;
+  border-radius: 9px;
+  padding: 10px;
+  align-self: center;
+  line-height: 0;
+}
+.qr svg { width: 150px; height: 150px; display: block; }
+
+.lista-consejos {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13.5px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}

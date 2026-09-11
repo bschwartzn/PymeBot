@@ -8,14 +8,19 @@
     "dev": "node --watch src/server.js",
     "test": "node --test tests/*.test.js",
     "build:sandbox": "node scripts/build-sandbox.js",
-    "eval": "node scripts/eval.js"
+    "eval": "node scripts/eval.js",
+    "build:chat": "node scripts/build-chat.js"
   },
   "engines": {
     "node": ">=18"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^5.2.1",
+    "qrcode": "^1.5.4"
   },
   "license": "MIT",
-  "private": true
+  "private": true,
+  "overrides": {
+    "qs": "^6.16.0"
+  }
 }

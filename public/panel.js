@@ -270,6 +270,44 @@ function leerFormulario() {
   };
 }
 
+/* ------------------------------------------------------------ compartir */
+
+/** Copia al portapapeles y confirma en el propio botón. */
+async function copiar(texto, boton) {
+  const original = boton.textContent;
+  try {
+    await navigator.clipboard.writeText(texto);
+    boton.textContent = '¡Copiado!';
+  } catch (err) {
+    // Sin permiso de portapapeles (o sin HTTPS): al menos dejamos el texto seleccionado.
+    const campo = boton.previousElementSibling;
+    if (campo && campo.select) campo.select();
+    boton.textContent = 'Copia con Ctrl+C';
+  }
+  setTimeout(() => {
+    boton.textContent = original;
+  }, 2000);
+}
+
+async function cargarCompartir(slug) {
+  const { ok, datos } = await api('GET', `/api/businesses/${slug}/share`);
+  if (!ok) return;
+
+  $('url-publica').value = datos.url;
+  $('abrir-url').href = datos.url;
+  $('codigo-embed').value = datos.embed;
+  $('compartir-whatsapp').href = datos.whatsapp;
+  $('descargar-qr').href = datos.qr;
+  $('descargar-qr').setAttribute('download', `qr-${slug}.svg`);
+
+  // El QR se pide como texto y se inserta: así se ve en pantalla y se imprime nítido.
+  const res = await fetch(datos.qr);
+  $('qr').innerHTML = res.ok ? await res.text() : '';
+}
+
+$('copiar-url').addEventListener('click', (e) => copiar($('url-publica').value, e.target));
+$('copiar-embed').addEventListener('click', (e) => copiar($('codigo-embed').value, e.target));
+
 async function abrir(slug) {
   const { ok, datos } = await api('GET', `/api/businesses/${slug}`);
   if (!ok) {
@@ -277,7 +315,7 @@ async function abrir(slug) {
     return;
   }
   pintar(slug, datos.business);
-  await cargarLista();
+  await Promise.all([cargarLista(), cargarCompartir(slug)]);
 }
 
 /* -------------------------------------------------------------- guardar */

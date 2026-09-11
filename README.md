@@ -4,8 +4,8 @@ Chatbot para pequeñas empresas. Responde las preguntas frecuentes de los client
 (horarios, precios, servicios, ubicación) con la información que el propio negocio
 configura.
 
-> **Estado:** núcleo conversacional, base de conocimiento editable y **panel del dueño con
-> cuentas**. El chat es público; editar exige iniciar sesión.
+> **Estado:** núcleo conversacional, base de conocimiento editable, panel del dueño con
+> cuentas y **canal público para el cliente final** (link, QR y widget).
 > El desarrollo es modular y progresivo: cada módulo se construye, se prueba y se corrige
 > antes de pasar al siguiente. El plan completo está en [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
@@ -75,10 +75,57 @@ comprensión; no se baja para que pase.
 npm test
 ```
 
-126 tests sobre el motor, las sesiones, la API HTTP, la validación de negocios, el
-repositorio, la autenticación y autorización, la precisión mínima y el sandbox.
+138 tests sobre el motor, las sesiones, la API HTTP, la validación de negocios, el
+repositorio, la autenticación y autorización, el canal público, la precisión y el sandbox.
 
 ---
+
+## Cómo llega un cliente al bot
+
+Cada negocio tiene una dirección propia:
+
+```
+https://tu-servidor/c/mi-negocio
+```
+
+El cliente la abre y conversa. **No instala nada ni necesita cuenta.** Está pensada para el
+teléfono, que es de donde va a llegar casi todo el tráfico.
+
+Desde la pestaña **Compartir** del panel tienes las cuatro formas de distribuirla:
+
+| Forma | Para quién |
+|---|---|
+| **El link** | Estado de WhatsApp, bio de Instagram, ficha de Google, respuesta automática fuera de horario |
+| **Código QR** | Negocios con local: impreso en el mesón, la vitrina o la mesa |
+| **Widget** | Negocios que ya tienen página web: una línea y aparece una burbuja de chat |
+| **Enlace de WhatsApp** | Para reenviar el link a un cliente en un toque |
+
+El widget se instala así:
+
+```html
+<script src="https://tu-servidor/widget.js" data-negocio="mi-negocio" defer></script>
+```
+
+### ¿Y WhatsApp?
+
+Es donde están los clientes, pero **no es donde puedes probar esta semana**. La API de
+WhatsApp Business exige verificar la empresa con Meta, un número dedicado, un proveedor y
+aprobación de plantillas: días o semanas antes de que un solo cliente escriba.
+
+El link se distribuye igual *por* WhatsApp y funciona hoy. Cuando haya evidencia de que los
+clientes usan el bot, WhatsApp pasa a ser una inversión justificada — y será un adaptador
+sobre el mismo `POST /api/chat`, no una reescritura.
+
+### Probar sin contratar hosting
+
+```bash
+npm run build:chat -- mi-negocio
+```
+
+Genera `dist/chat-mi-negocio.html`: la página del cliente en un solo archivo, sin servidor.
+Se abre con doble clic o se sube a cualquier alojamiento estático. Sirve para una primera
+prueba con gente real. Lo que pierdes: no se puede editar desde el panel (hay que regenerar
+el archivo) y no queda registro de las conversaciones.
 
 ## El panel del dueño
 
@@ -179,6 +226,9 @@ WhatsApp (Módulo 5) será un adaptador que traduce el webhook a esta misma llam
 | `POST` | `/api/reset` | `{ sessionId }` → vacía el historial de esa conversación |
 | `GET` | `/api/business?slug=` | Nombre, saludo y temas sugeridos (lo que pinta el sandbox) |
 | `GET` | `/api/directory` | Los negocios con los que se puede conversar |
+| `GET` | `/c/:slug` | La página de chat del cliente final |
+| `GET` | `/widget.js` | La burbuja de chat para el sitio web del negocio |
+| `GET` | `/api/businesses/:slug/qr.svg` | El QR del chat, para imprimir |
 
 **Cuentas** — el acceso al panel.
 
@@ -200,6 +250,7 @@ WhatsApp (Módulo 5) será un adaptador que traduce el webhook a esta misma llam
 | `DELETE` | `/api/businesses/:slug` | Lo elimina |
 | `GET` | `/api/examples` | Los ejemplos que trae PymeBot |
 | `POST` | `/api/examples/:slug/copy` | Copia un ejemplo a mi cuenta |
+| `GET` | `/api/businesses/:slug/share` | Link, QR, código del widget y enlace de WhatsApp |
 
 Guardar información inválida devuelve **422** con la lista de errores explicados. Guardar
 algo dudoso devuelve **200** con `warnings`.
@@ -222,12 +273,38 @@ src/
     sessions.js        Sesiones y cookie
 data/businesses/       La información de cada negocio
 data/evals/            Preguntas de prueba para medir la precisión
-public/                Chat público (index) y panel del dueño (panel)
-scripts/               Generador del sandbox y medidor de precisión
-dist/sandbox.html      Sandbox en un solo archivo (generado)
-tests/                 126 tests con el runner nativo de Node
+public/
+  chat.*               La página que ve el cliente (/c/<negocio>)
+  widget.js            Burbuja para el sitio web del negocio
+  panel.*              Panel del dueño
+  index.*              Sandbox interno de pruebas
+scripts/               Generadores de páginas sin servidor y medidor de precisión
+dist/                  Páginas en un solo archivo, sin servidor (generadas)
+tests/                 138 tests con el runner nativo de Node
 docs/ROADMAP.md        Plan modular completo
 ```
+
+## Ponerlo en internet
+
+Es una aplicación Node normal, pero hay cuatro cosas que importan:
+
+1. **Disco persistente.** Todo vive en `data/`: negocios, cuentas y sesiones. Si el host
+   borra el disco en cada despliegue, se pierde todo. Render, Railway y Fly.io ofrecen discos
+   persistentes; Vercel y Netlify **no sirven** para esto.
+2. **HTTPS obligatorio.** Sin él la cookie de sesión viaja en claro y `NODE_ENV=production`
+   la marca como `secure`, así que dejaría de funcionar.
+3. **`PYMEBOT_PUBLIC_URL`.** Sin esta variable, el link y el QR se generan desde las
+   cabeceras de la petición. Detrás de un proxy raro eso puede apuntar a `localhost` y el QR
+   impreso quedaría inservible. Defínela y te ahorras el problema:
+
+   ```bash
+   PYMEBOT_PUBLIC_URL=https://chat.tupyme.cl
+   NODE_ENV=production
+   PORT=3000
+   ```
+
+4. **Un límite de peticiones por IP en `POST /api/chat`.** La página del cliente es pública
+   y hoy no lo tiene. Ponlo antes de difundir el link ampliamente.
 
 ## Requisitos
 

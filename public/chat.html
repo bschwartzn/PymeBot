@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Chat</title>
+    <meta name="description" content="Resolvemos tus dudas al instante." />
+    <meta name="robots" content="index, follow" />
+    <link rel="stylesheet" href="/chat.css" />
+  </head>
+  <body>
+    <main class="chat" id="chat">
+      <header class="cabecera" id="cabecera">
+        <div class="avatar" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="7" width="18" height="13" rx="4" />
+            <path d="M12 7V3.5" />
+            <circle cx="12" cy="2.6" r="1.2" fill="currentColor" stroke="none" />
+            <path d="M8.6 12.4v1.6M15.4 12.4v1.6" />
+            <path d="M9.6 16.6h4.8" />
+          </svg>
+        </div>
+        <div class="identidad">
+          <h1 id="negocio">…</h1>
+          <p id="rubro"></p>
+        </div>
+      </header>
+
+      <section class="hilo" id="hilo" aria-live="polite" aria-label="Conversación"></section>
+
+      <div class="atajos" id="atajos"></div>
+
+      <form class="escribir" id="escribir" autocomplete="off">
+        <input
+          class="campo"
+          id="campo"
+          type="text"
+          placeholder="Escribe tu pregunta…"
+          maxlength="1000"
+          aria-label="Tu mensaje"
+          enterkeyhint="send"
+        />
+        <button class="enviar" id="enviar" type="submit" aria-label="Enviar">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M4 12h15M13 6l6 6-6 6" />
+          </svg>
+        </button>
+      </form>
+    </main>
+
+    <script src="/chat.js"></script>
+  </body>
+</html>
