@@ -123,6 +123,30 @@ El link se distribuye igual *por* WhatsApp y funciona hoy. Cuando haya evidencia
 clientes usan el bot, WhatsApp pasa a ser una inversión justificada — y será un adaptador
 sobre el mismo `POST /api/chat`, no una reescritura.
 
+### Enseñarle el producto a un posible cliente
+
+```bash
+npm run build:landing
+```
+
+Genera `dist/pymebot.html`: la página para mostrarle PymeBot a un dueño de pyme. Lleva **el
+bot funcionando dentro** —motor real, negocio real del repositorio— porque a un dueño de
+local no lo convence una captura: lo convence escribir «¿a qué hora abren?» y ver la
+respuesta.
+
+Antes de compartirla hay que cambiar dos cosas:
+
+1. **El correo de contacto.** Busca `CAMBIA-ESTO@tucorreo.cl` en `scripts/landing-template.html`.
+2. **Los links a los demos**, si los publicas en otra parte:
+
+   ```bash
+   npm run build:landing -- dona-elba https://url-del-panel https://url-del-chat
+   ```
+
+La página incluye una sección de **lo que todavía no hace**. Está ahí a propósito: promete
+menos de lo que el producto entrega y evita que el primer cliente se decepcione en la semana
+dos.
+
 ### Enseñar el panel sin contratar hosting
 
 ```bash

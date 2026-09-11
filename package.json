@@ -10,7 +10,8 @@
     "build:sandbox": "node scripts/build-sandbox.js",
     "eval": "node scripts/eval.js",
     "build:chat": "node scripts/build-chat.js",
-    "build:demo": "node scripts/build-demo.js"
+    "build:demo": "node scripts/build-demo.js",
+    "build:landing": "node scripts/build-landing.js"
   },
   "engines": {
     "node": ">=18"

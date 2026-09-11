@@ -555,4 +555,33 @@ lector, como lo haría la cámara de un teléfono. Los tres devuelven la direcci
 Para la suite quedó un test más barato que compara el SVG generado con el de la URL esperada:
 al ser determinista, coincidir prueba que codifica esa dirección y no otra.
 
+---
+
+### Página para posibles clientes — ✅ COMPLETADO
+
+`dist/pymebot.html`. Lo que faltaba no era otra herramienta, sino una página que **explique**
+el producto a un dueño de pyme, que no es el mismo público que el cliente final ni el mismo
+que el dueño ya convencido.
+
+**La decisión de diseño que carga la página:** el héroe no es una captura ni un vídeo, es
+**el bot funcionando**, con el motor real y la Cocinería Doña Elba cargada. Un dueño de local
+escribe «¿puedo ir con mi perro?» y ve la respuesta antes de leer una línea de venta. Se
+generó desde `src/`, como todo lo demás, así que la página no puede prometer un bot distinto
+del que existe.
+
+**Lo que deliberadamente NO lleva**
+
+Ni testimonios, ni logos de clientes, ni métricas inventadas, ni «+300 pymes confían en
+nosotros». Nada de eso existe y ponerlo sería mentir. En su lugar, la barra dice «en
+desarrollo, buscando negocios para probarlo» y el pie dice que **todavía no hay clientes**.
+Para vender a un dueño de local, ser el primero es una oferta legítima; fingir que hay
+trescientos es un riesgo innecesario.
+
+Lleva además una sección entera de **«lo que todavía no hace»**: que no contesta dentro de
+WhatsApp, que no agenda horas, que se equivoca con frases enredadas. Prometer menos de lo que
+el producto entrega es lo que evita que el primer cliente se decepcione en la semana dos.
+
+**Pendiente antes de compartirla:** el correo de contacto es un marcador
+(`CAMBIA-ESTO@tucorreo.cl`) que hay que reemplazar.
+
 **Siguiente paso:** Módulo 3 — Comprensión y gestión de conversación.
