@@ -29,8 +29,15 @@ const engine = [toBrowserScript(read('src', 'bot', 'text.js')), toBrowserScript(
 const { validateBusiness } = require(path.join(ROOT, 'src', 'knowledge', 'schema'));
 const DIR = path.join(ROOT, 'data', 'businesses');
 
-const pedido = process.argv[2] || process.env.PYMEBOT_BUSINESS || null;
-const slugs = (pedido ? [pedido] : fs.readdirSync(DIR).filter((f) => f.endsWith('.json')).map((f) => f.replace(/\.json$/, ''))).sort();
+const { DEFAULT_SLUG } = require(path.join(ROOT, 'src', 'server'));
+
+const pedido = process.argv[2] || null;
+const slugs = (
+  pedido ? [pedido] : fs.readdirSync(DIR).filter((f) => f.endsWith('.json')).map((f) => f.replace(/\.json$/, ''))
+).sort(
+  // El negocio por defecto va primero: es el que se ve al abrir el sandbox.
+  (a, b) => (a === DEFAULT_SLUG ? -1 : b === DEFAULT_SLUG ? 1 : a.localeCompare(b)),
+);
 
 if (slugs.length === 0) throw new Error('No hay ningún negocio en data/businesses/.');
 

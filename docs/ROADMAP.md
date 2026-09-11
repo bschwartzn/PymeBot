@@ -286,4 +286,73 @@ comportamiento era correcto.
 - No hay historial de cambios ni forma de deshacer una edición.
 - Sigue sin tolerar errores de tipeo ni preguntas encadenadas → **Módulo 3**.
 
+---
+
+### Negocio de referencia y evaluación — ✅ COMPLETADO
+
+Antes de empezar el Módulo 3 hacía falta algo contra qué medirlo. Se construyó un negocio
+configurado a fondo y una forma de medir los errores en vez de buscarlos a ojo.
+
+**Negocio de referencia:** `data/businesses/dona-elba.json` — una cocinería chilena con **27
+intenciones**, elegida porque un restaurante recibe las preguntas más variadas y coloquiales
+de cualquier rubro: alergias, celiaquía, mascotas, accesibilidad, delivery, terraza, eventos,
+espera los fines de semana. Es el rubro que más presiona al motor.
+
+**Evaluación:** `data/evals/` + `npm run eval`. Un conjunto de preguntas escritas como las
+escribiría un cliente real, con la intención que se espera de cada una. El informe agrupa los
+fallos por tipo, porque no todos duelen igual:
+
+| Tipo de fallo | Qué significa | Gravedad |
+|---|---|---|
+| **no entiende** | Cae en el respaldo teniendo la respuesta configurada | Media: el cliente ve los temas y reintenta |
+| **confunde de tema** | Responde con seguridad algo que no se preguntó | Alta: el cliente se lleva información equivocada |
+| **responde algo que no sabe** | Inventa cobertura que el negocio no tiene | Alta |
+
+**Resultado**
+
+| | Precisión |
+|---|---|
+| Medición inicial | 85.3 % (64/75) |
+| Tras corregir lo encontrado | **98.7 % (74/75)** |
+| Conjunto de regresión (peluquería) | 100 % (19/19) |
+
+El piso de precisión está enganchado a `npm test`: un cambio que lo baje rompe la suite. **El
+piso se sube cuando un módulo mejora la comprensión; no se baja para que pase.**
+
+**Errores detectados y corregidos**
+
+| # | Problema | Corrección |
+|---|----------|------------|
+| 1 | `"hacen cumpleaños?"` no encontraba la palabra clave `"cumpleanos"` — consecuencia directa de preservar la ñ en el Módulo 1 | Se separó **normalizar** de **comparar**: `normalize` conserva la ñ (para mostrar y depurar), y `fold` la pliega solo al comparar. Confundir `año` con `ano` es un riesgo teórico; que no coincidan las palabras clave escritas sin ñ pasa todos los días |
+| 2 | La app de delivery estaba escrita `pedidoya` en vez de `pedidosya` | Corregida. La clase de error que un dueño de negocio comete constantemente, y que sin medición no se detecta |
+| 3 | Los nombres de los platos no eran palabras clave: `"tienen pastel de choclo?"` caía en el respaldo | Agregados a la carta |
+| 4 | Faltaban palabras clave en 5 intenciones más (`trabajan`, `bebe`, `dividir la cuenta`, `caben`, `carne`) | Agregadas |
+| 5 | `"tienen carta de vinos"` respondía la carta de comida | La frase `carta de vinos` pasa a bebidas, donde puntúa más alto que la palabra suelta |
+| 6 | Los tests de la API del Módulo 1 dependían de cuál fuera el negocio por defecto en `data/` | Ahora traen su propio negocio en un directorio temporal |
+| 7 | El sandbox autocontenido tenía un botón `"¿tienen wifi?"` escrito a mano para demostrar el respaldo, pero la cocinería **sí** tiene wifi configurado | Retirado: dependía del negocio y había dejado de demostrar nada |
+
+**Caso de prueba retirado, y por qué.** Uno de los casos esperaba que
+`"cual es el wifi del hotel de al lado"` cayera en el respaldo. Entender *"del hotel de al
+lado"* exige resolver una referencia, y responder «sí, tenemos wifi» tampoco es absurdo: la
+expectativa era injusta. Se reemplazó por una pregunta fuera de tema honesta
+(`"hacen clases de cocina?"`). Queda anotado para que no parezca que se borró un caso
+incómodo.
+
+**El fallo que queda, y por qué no se arregla aquí**
+
+`"cuanto sale la colacion"` responde **precios** en vez de **menú del día**. Las dos
+intenciones coinciden legítimamente: `cuanto sale` es el tipo de pregunta y `colación` es el
+tema. Distinguirlas exige entender cuál de las dos manda, y eso es precisamente lo que un
+motor de palabras clave no puede hacer. **Es la evidencia concreta que justifica el Módulo 3**,
+y el número contra el que ese módulo tendrá que demostrar que mejora algo.
+
+(El cliente no queda mal atendido: la respuesta de precios menciona el menú del día y su
+valor. Pero la intención es la equivocada.)
+
+**Qué dice la medición sobre el LLM.** Con el contenido bien cargado, el motor determinista
+llega a 98.7 % y el único fallo que queda es de desambiguación. Eso acota el trabajo del
+Módulo 3: el problema no es entender el español, es elegir entre dos temas que compiten. Antes
+de meter un modelo conviene probar si una regla de desempate lo resuelve — y ahora hay con qué
+medirlo.
+
 **Siguiente paso:** Módulo 3 — Comprensión y gestión de conversación.

@@ -1,10 +1,33 @@
 const test = require('node:test');
 const assert = require('node:assert');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+
 const { createApp, MAX_MESSAGE_LENGTH } = require('../src/server');
+const { BusinessRepository } = require('../src/knowledge/repository');
+
+/** Negocio fijo, para que estos tests no dependan de cuál esté por defecto en data/. */
+const NEGOCIO = {
+  name: 'Negocio de Prueba',
+  tagline: 'Para los tests',
+  greeting: '¡Hola! Soy el asistente de prueba.',
+  greetingRepeat: '¡Aquí sigo!',
+  topics: ['Horarios', 'Precios'],
+  intents: [
+    { id: 'saludo', keywords: ['hola', 'buenas'], answer: '¡Hola! ¿En qué te ayudo?' },
+    { id: 'horarios', keywords: ['horario', 'abren', 'a que hora'], answer: 'Abrimos de 10:00 a 20:00.' },
+    { id: 'precios', keywords: ['precio', 'cuanto cuesta'], answer: 'El corte sale $12.000.' },
+  ],
+};
 
 /** Levanta la app en un puerto libre y devuelve helpers para hablarle. */
 async function startServer() {
-  const app = createApp();
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'pymebot-m1-'));
+  const repository = new BusinessRepository({ dir });
+  repository.save('negocio-de-prueba', NEGOCIO);
+
+  const app = createApp({ repository });
   const server = await new Promise((resolve) => {
     const s = app.listen(0, () => resolve(s));
   });

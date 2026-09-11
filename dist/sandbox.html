@@ -124,6 +124,9 @@
     margin: 1px 0 0;
     font-size: 13.5px;
     color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .badge {
@@ -147,7 +150,7 @@
     border: 1px solid var(--line);
     border-radius: 999px;
     padding: 6px 11px;
-    max-width: 150px;
+    max-width: 170px;
     cursor: pointer;
   }
   .picker select:hover {
@@ -305,11 +308,6 @@
   .chip:hover {
     color: var(--accent);
     border-color: var(--accent);
-  }
-  .chip.probe {
-    border-style: dashed;
-    color: var(--signal);
-    border-color: color-mix(in srgb, var(--signal) 45%, var(--line));
   }
 
   .composer {
@@ -492,6 +490,19 @@ function normalize(text) {
     .trim();
 }
 
+/**
+ * Forma usada solo para COMPARAR, no para mostrar.
+ *
+ * Añade a la normalización el plegado de la ñ. La ñ se conserva en `normalize` porque es
+ * una letra propia del español, pero al comparar tiene que dar igual cómo se escribió:
+ * el dueño del negocio escribe la palabra clave "cumpleanos" y el cliente pregunta por
+ * "cumpleaños". Confundir "año" con "ano" es un riesgo teórico; que no coincidan las
+ * palabras clave escritas sin ñ es un fallo que ocurre todos los días.
+ */
+function fold(text) {
+  return normalize(text).replace(/ñ/g, 'n');
+}
+
 /** Divide un texto normalizado en palabras. */
 function tokenize(text) {
   const normalized = normalize(text);
@@ -502,7 +513,9 @@ function tokenize(text) {
  * Compara dos palabras tolerando el plural del español.
  * "horarios" debe encontrar la palabra clave "horario", y "precio" la clave "precios".
  */
-function wordsMatch(a, b) {
+function wordsMatch(rawA, rawB) {
+  const a = rawA.replace(/ñ/g, 'n');
+  const b = rawB.replace(/ñ/g, 'n');
   if (a === b) return true;
   const [short, long] = a.length <= b.length ? [a, b] : [b, a];
   if (short.length < 3) return false; // evita que "la"/"las" cuenten como coincidencia
@@ -529,7 +542,8 @@ const CONFIDENCE_THRESHOLD = 1;
  * porque son mucho más específicas.
  */
 function scoreKeyword(keyword, messageTokens, paddedMessage) {
-  const normalizedKeyword = normalize(keyword);
+  // `fold` en vez de `normalize`: comparar tiene que ser indiferente a cómo se escribió la ñ.
+  const normalizedKeyword = fold(keyword);
   if (!normalizedKeyword) return 0;
 
   const keywordWords = normalizedKeyword.split(' ');
@@ -562,7 +576,7 @@ function matchIntent(message, business) {
   const messageTokens = tokenize(message);
   if (messageTokens.length === 0) return { intent: null, score: 0 };
 
-  const paddedMessage = ` ${normalize(message)} `;
+  const paddedMessage = ` ${fold(message)} `;
 
   let best = null;
   let bestScore = 0;
@@ -634,6 +648,437 @@ function respond(message, business, session = null) {
 
   /** Todos los negocios configurados, empaquetados por la build. */
   const NEGOCIOS = [
+  {
+    "slug": "dona-elba",
+    "name": "Cocinería Doña Elba",
+    "tagline": "Cocina chilena casera en el Barrio Puerto, Valparaíso",
+    "greeting": "¡Hola! 👋 Soy el asistente de la Cocinería Doña Elba. Puedo ayudarte con la carta, el menú del día, reservas, delivery, horarios y cómo llegar. ¿Qué necesitas saber?",
+    "greetingRepeat": "¡Aquí sigo! ¿En qué más te ayudo?",
+    "fallback": "Perdona, no estoy seguro de haber entendido eso. Estos son los temas que manejo:",
+    "handoff": "Si prefieres hablar con alguien del local, llámanos al +56 32 234 5678 o escríbenos por WhatsApp al +56 9 6543 2100.",
+    "topics": [
+      "Horarios",
+      "Menú del día",
+      "La carta",
+      "Reservar una mesa",
+      "Delivery y retiro",
+      "Cómo llegar",
+      "Opciones sin gluten o veganas"
+    ],
+    "intents": [
+      {
+        "id": "saludo",
+        "keywords": [
+          "hola",
+          "buenas",
+          "buenos dias",
+          "buenas tardes",
+          "buenas noches",
+          "hey",
+          "que tal",
+          "alo"
+        ],
+        "answer": "¡Hola! 👋 Cuéntame, ¿qué necesitas saber?"
+      },
+      {
+        "id": "horarios",
+        "keywords": [
+          "horario",
+          "abren",
+          "cierran",
+          "abierto",
+          "cerrado",
+          "atienden",
+          "a que hora",
+          "hasta que hora",
+          "siguen abiertos",
+          "estan abiertos",
+          "feriado",
+          "lunes",
+          "domingo",
+          "trabajan",
+          "fiestas patrias",
+          "18 de septiembre",
+          "festivo"
+        ],
+        "answer": "Atendemos de martes a sábado de 12:30 a 16:00 y de 19:30 a 23:00, y los domingos solo almuerzo, de 12:30 a 17:00. Los lunes cerramos. 🕒"
+      },
+      {
+        "id": "menu_del_dia",
+        "keywords": [
+          "menu del dia",
+          "menu",
+          "almuerzo del dia",
+          "ejecutivo",
+          "colacion",
+          "que hay hoy",
+          "plato del dia",
+          "hoy"
+        ],
+        "answer": "El menú del día cuesta $9.900 e incluye entrada, plato de fondo, postre y bebida o jugo natural. Se sirve de martes a viernes al almuerzo. Hoy: crema de zapallo, cazuela de vacuno y leche asada. 🍲"
+      },
+      {
+        "id": "carta",
+        "keywords": [
+          "carta",
+          "platos",
+          "que tienen",
+          "que venden",
+          "que sirven",
+          "comida",
+          "especialidad",
+          "recomiendan",
+          "rico",
+          "pastel de choclo",
+          "cazuela",
+          "charquican",
+          "plateada",
+          "empanada",
+          "humitas",
+          "postre",
+          "leche asada",
+          "mote con huesillo"
+        ],
+        "answer": "Nuestra carta es cocina chilena casera: pastel de choclo, cazuela de vacuno o de ave, charquicán, plateada al jugo, congrio frito, chupe de jaibas y empanadas de pino. De postre, leche asada y mote con huesillo. 🍽️"
+      },
+      {
+        "id": "pescados_mariscos",
+        "keywords": [
+          "pescado",
+          "mariscos",
+          "congrio",
+          "reineta",
+          "machas",
+          "jaiba",
+          "ceviche",
+          "caldillo",
+          "fresco"
+        ],
+        "answer": "Trabajamos con pescado fresco de la caleta Portales, así que la disponibilidad cambia cada día. Casi siempre tenemos congrio, reineta, chupe de jaibas y machas a la parmesana. 🐟"
+      },
+      {
+        "id": "precios",
+        "keywords": [
+          "precio",
+          "precios",
+          "cuanto cuesta",
+          "cuanto vale",
+          "cuanto sale",
+          "valor",
+          "caro",
+          "barato",
+          "cuanto cobran"
+        ],
+        "answer": "Los platos de fondo van de $8.500 a $14.900, las entradas de $4.500 a $7.900 y los postres $3.500. El menú del día cuesta $9.900. 💵"
+      },
+      {
+        "id": "reservas",
+        "keywords": [
+          "reservar",
+          "reserva",
+          "reservacion",
+          "apartar",
+          "mesa",
+          "tomar hora",
+          "tienen lugar",
+          "hay espacio",
+          "cupo"
+        ],
+        "answer": "Tomamos reservas para grupos de 4 personas o más, por WhatsApp al +56 9 6543 2100. Para grupos menores no hace falta: llega y te acomodamos. 📅"
+      },
+      {
+        "id": "espera",
+        "keywords": [
+          "fila",
+          "cola",
+          "esperar",
+          "cuanto se demoran",
+          "lleno",
+          "muy lleno",
+          "demora"
+        ],
+        "answer": "Los sábados y domingos entre las 13:30 y las 15:00 suele haber espera de 15 a 30 minutos. Si vienes antes de las 13:00 casi siempre hay mesa al tiro. ⏱️"
+      },
+      {
+        "id": "delivery",
+        "keywords": [
+          "delivery",
+          "despacho",
+          "domicilio",
+          "reparto",
+          "envian",
+          "llevan a",
+          "pedidosya",
+          "uber eats",
+          "rappi",
+          "pedidos ya",
+          "despachan"
+        ],
+        "answer": "Hacemos delivery propio en Valparaíso plano y cerros cercanos, con un costo de $2.500. Pedidos por WhatsApp al +56 9 6543 2100. También estamos en PedidosYa. 🛵"
+      },
+      {
+        "id": "para_llevar",
+        "keywords": [
+          "para llevar",
+          "retirar",
+          "retiro",
+          "takeaway",
+          "pasar a buscar",
+          "llevar"
+        ],
+        "answer": "Sí, puedes pedir para llevar. Encárgalo por WhatsApp y lo dejamos listo para que lo pases a buscar, normalmente en 20 minutos. 🥡"
+      },
+      {
+        "id": "vegetariano",
+        "keywords": [
+          "vegetariano",
+          "vegetariana",
+          "vegano",
+          "vegana",
+          "sin carne",
+          "verduras",
+          "no come carne",
+          "come carne",
+          "carne",
+          "sin gluten ni carne"
+        ],
+        "answer": "Tenemos charquicán vegetariano, porotos granados, ensalada chilena y humitas. La versión vegana del charquicán y de los porotos se prepara sin problema, solo avísale al mesero. 🥬"
+      },
+      {
+        "id": "sin_gluten",
+        "keywords": [
+          "sin gluten",
+          "celiaco",
+          "celiaca",
+          "gluten",
+          "tacc"
+        ],
+        "answer": "Varios platos son naturalmente sin gluten: cazuela, charquicán, porotos granados y los pescados a la plancha. No tenemos cocina separada, así que si tu celiaquía es estricta conviene que lo converses con el mesero. 🌾"
+      },
+      {
+        "id": "alergias",
+        "keywords": [
+          "alergia",
+          "alergico",
+          "alergica",
+          "frutos secos",
+          "mani",
+          "lactosa",
+          "intolerante"
+        ],
+        "answer": "Cuéntanos tu alergia al llegar y la cocina adapta el plato o te recomienda uno seguro. Trabajamos con maní, frutos secos y lácteos en la misma cocina, así que preferimos avisarte. ⚠️"
+      },
+      {
+        "id": "bebidas",
+        "keywords": [
+          "bebida",
+          "bebidas",
+          "vino",
+          "cerveza",
+          "pisco",
+          "trago",
+          "jugo",
+          "borgona",
+          "terremoto",
+          "alcohol",
+          "carta de vinos",
+          "carta de vino",
+          "vinos",
+          "tomar"
+        ],
+        "answer": "Tenemos carta de vinos chilenos por copa y botella, cervezas artesanales de Valparaíso, borgoña, terremoto y jugos naturales. 🍷"
+      },
+      {
+        "id": "ubicacion",
+        "keywords": [
+          "donde estan",
+          "direccion",
+          "ubicacion",
+          "como llegar",
+          "queda",
+          "ubicados",
+          "cerca de",
+          "micro",
+          "metro"
+        ],
+        "answer": "Estamos en Calle Serrano 512, Barrio Puerto, Valparaíso, a dos cuadras de la Plaza Sotomayor. El metro más cercano es Puerto, a 5 minutos caminando. 📍"
+      },
+      {
+        "id": "estacionamiento",
+        "keywords": [
+          "estacionamiento",
+          "estacionar",
+          "aparcar",
+          "auto",
+          "parking",
+          "donde dejo el auto"
+        ],
+        "answer": "No tenemos estacionamiento propio, pero hay uno pagado en Blanco 720, a una cuadra, que cobra $1.500 la hora. 🅿️"
+      },
+      {
+        "id": "terraza",
+        "keywords": [
+          "terraza",
+          "afuera",
+          "aire libre",
+          "patio",
+          "adentro",
+          "vista"
+        ],
+        "answer": "Tenemos una terraza techada de 6 mesas con vista al puerto. No se puede reservar, se ocupa por orden de llegada. 🌤️"
+      },
+      {
+        "id": "mascotas",
+        "keywords": [
+          "mascota",
+          "mascotas",
+          "perro",
+          "perrito",
+          "gato",
+          "petfriendly",
+          "pet friendly"
+        ],
+        "answer": "¡Sí! Somos pet friendly en la terraza. Tenemos bebederos y tu perro entra sin problema. 🐕"
+      },
+      {
+        "id": "ninos",
+        "keywords": [
+          "niños",
+          "nino",
+          "guagua",
+          "familia",
+          "silla de bebe",
+          "coche",
+          "infantil",
+          "porcion chica",
+          "bebe",
+          "silla para bebe",
+          "cabritos"
+        ],
+        "answer": "Somos un local familiar: tenemos sillas para bebé, espacio para coche y medias porciones a mitad de precio para los niños. 👧"
+      },
+      {
+        "id": "accesibilidad",
+        "keywords": [
+          "silla de ruedas",
+          "accesible",
+          "accesibilidad",
+          "rampa",
+          "movilidad reducida",
+          "escalera"
+        ],
+        "answer": "El salón principal y el baño están a nivel de calle, sin escalones, y hay una mesa adaptada para silla de ruedas. La terraza sí tiene dos peldaños. ♿"
+      },
+      {
+        "id": "pagos",
+        "keywords": [
+          "pagar",
+          "pagos",
+          "efectivo",
+          "tarjeta",
+          "debito",
+          "credito",
+          "transferencia",
+          "aceptan",
+          "redcompra",
+          "cuotas",
+          "dividir la cuenta",
+          "dividir",
+          "cuenta",
+          "boleta",
+          "propina"
+        ],
+        "answer": "Aceptamos efectivo, débito, crédito y transferencia. No dividimos la cuenta en más de tres pagos, para no hacer esperar a la mesa siguiente. 💳"
+      },
+      {
+        "id": "eventos",
+        "keywords": [
+          "evento",
+          "eventos",
+          "cumpleanos",
+          "celebracion",
+          "grupo grande",
+          "grupos",
+          "empresa",
+          "matrimonio",
+          "arriendan",
+          "privado",
+          "cumpleaños",
+          "caben",
+          "cabemos",
+          "cuantas personas",
+          "capacidad",
+          "reunion"
+        ],
+        "answer": "Recibimos grupos de hasta 30 personas y arrendamos el salón completo para eventos privados fuera del horario normal. Escríbenos al +56 9 6543 2100 y te enviamos las alternativas. 🎉"
+      },
+      {
+        "id": "wifi",
+        "keywords": [
+          "wifi",
+          "wifi gratis",
+          "internet",
+          "clave",
+          "señal"
+        ],
+        "answer": "Sí, tenemos wifi gratis para clientes. La clave está en la pizarra de la entrada. 📶"
+      },
+      {
+        "id": "contacto",
+        "keywords": [
+          "telefono",
+          "contacto",
+          "whatsapp",
+          "correo",
+          "instagram",
+          "redes",
+          "llamar",
+          "numero"
+        ],
+        "answer": "Teléfono +56 32 234 5678, WhatsApp +56 9 6543 2100 y en Instagram nos encuentras como @cocineriadonaelba. 📞"
+      },
+      {
+        "id": "agradecimiento",
+        "keywords": [
+          "gracias",
+          "muchas gracias",
+          "genial",
+          "perfecto",
+          "buenisimo",
+          "excelente",
+          "bacan"
+        ],
+        "answer": "¡De nada! 😊 ¿Necesitas algo más?"
+      },
+      {
+        "id": "cierre",
+        "keywords": [
+          "no",
+          "nada",
+          "nada mas",
+          "no gracias",
+          "ok",
+          "listo",
+          "vale",
+          "eso es todo",
+          "asi esta bien"
+        ],
+        "answer": "¡Perfecto! Te esperamos por acá. 😊"
+      },
+      {
+        "id": "despedida",
+        "keywords": [
+          "chao",
+          "adios",
+          "hasta luego",
+          "nos vemos",
+          "bye",
+          "me voy"
+        ],
+        "answer": "¡Hasta pronto! Que tengas un buen día. 👋"
+      }
+    ]
+  },
   {
     "slug": "bella-vista",
     "name": "Peluquería Bella Vista",
@@ -1113,17 +1558,6 @@ function respond(message, business, session = null) {
       });
       suggestionsEl.appendChild(chip);
     });
-
-    // Una pregunta que el negocio no tiene configurada, para probar el respaldo.
-    const probe = document.createElement("button");
-    probe.className = "chip probe";
-    probe.type = "button";
-    probe.textContent = "¿tienen wifi?";
-    probe.title = "Algo que el negocio no configuró";
-    probe.addEventListener("click", function () {
-      send("¿tienen wifi?");
-    });
-    suggestionsEl.appendChild(probe);
   }
 
   function start() {

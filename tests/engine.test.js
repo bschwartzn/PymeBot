@@ -120,3 +120,22 @@ test('"no, gracias" cierra la conversación en vez de volver a preguntar', () =>
   assert.strictEqual(result.intent, 'cierre');
   assert.ok(!result.reply.includes('¿Necesitas algo más?'));
 });
+
+test('el motor encuentra la intención escriba el cliente la ñ o no', () => {
+  const negocio = {
+    name: 'X',
+    topics: ['Uno'],
+    intents: [{ id: 'eventos', keywords: ['cumpleanos', 'celebracion'], answer: 'Hacemos cumpleaños.' }],
+  };
+  assert.strictEqual(respond('hacen cumpleaños?', negocio).intent, 'eventos');
+  assert.strictEqual(respond('hacen cumpleanos?', negocio).intent, 'eventos');
+});
+
+test('el plegado de la ñ también funciona en palabras clave de varias palabras', () => {
+  const negocio = {
+    name: 'X',
+    topics: ['Uno'],
+    intents: [{ id: 'ninos', keywords: ['para ninos'], answer: 'Sí, es apto.' }],
+  };
+  assert.strictEqual(respond('esto es para niños?', negocio).intent, 'ninos');
+});

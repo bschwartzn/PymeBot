@@ -33,3 +33,19 @@ test('wordsMatch tolera el plural del español', () => {
 test('wordsMatch no marca coincidencia entre palabras muy cortas', () => {
   assert.ok(!wordsMatch('la', 'las'));
 });
+
+/* --- Plegado de la ñ al comparar (hallazgo de la evaluación con el negocio de referencia) --- */
+
+const { fold } = require('../src/bot/text');
+
+test('normalize conserva la ñ, fold la pliega para comparar', () => {
+  assert.strictEqual(normalize('Cumpleaños'), 'cumpleaños');
+  assert.strictEqual(fold('Cumpleaños'), 'cumpleanos');
+  assert.strictEqual(fold('AÑO'), 'ano');
+});
+
+test('una palabra clave escrita sin ñ encuentra la palabra con ñ, y al revés', () => {
+  assert.ok(wordsMatch('cumpleanos', 'cumpleaños'));
+  assert.ok(wordsMatch('cumpleaños', 'cumpleanos'));
+  assert.ok(wordsMatch('niños', 'ninos'));
+});

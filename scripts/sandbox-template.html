@@ -124,6 +124,9 @@
     margin: 1px 0 0;
     font-size: 13.5px;
     color: var(--muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .badge {
@@ -147,7 +150,7 @@
     border: 1px solid var(--line);
     border-radius: 999px;
     padding: 6px 11px;
-    max-width: 150px;
+    max-width: 170px;
     cursor: pointer;
   }
   .picker select:hover {
@@ -305,11 +308,6 @@
   .chip:hover {
     color: var(--accent);
     border-color: var(--accent);
-  }
-  .chip.probe {
-    border-style: dashed;
-    color: var(--signal);
-    border-color: color-mix(in srgb, var(--signal) 45%, var(--line));
   }
 
   .composer {
@@ -610,17 +608,6 @@
       });
       suggestionsEl.appendChild(chip);
     });
-
-    // Una pregunta que el negocio no tiene configurada, para probar el respaldo.
-    const probe = document.createElement("button");
-    probe.className = "chip probe";
-    probe.type = "button";
-    probe.textContent = "¿tienen wifi?";
-    probe.title = "Algo que el negocio no configuró";
-    probe.addEventListener("click", function () {
-      send("¿tienen wifi?");
-    });
-    suggestionsEl.appendChild(probe);
   }
 
   function start() {

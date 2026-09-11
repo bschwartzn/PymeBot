@@ -1,0 +1,306 @@
+{
+  "negocio": "dona-elba",
+  "descripcion": "Preguntas como las escribiría un cliente real. Sirve para medir qué tan seguido el bot acierta, y para que cada módulo nuevo se compare contra el anterior en vez de adivinar. Los casos que esperan \"fallback\" son preguntas realmente fuera de lo que el negocio configuró: el bot debe reconocer que no sabe, no inventar.",
+  "casos": [
+    {
+      "mensaje": "hola buenas",
+      "espera": "saludo"
+    },
+    {
+      "mensaje": "buenas tardes!",
+      "espera": "saludo"
+    },
+    {
+      "mensaje": "a que hora abren?",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "cual es el horario",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "estan abiertos ahora?",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "abren los lunes",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "hasta que hora atienden el domingo",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "trabajan el 18 de septiembre?",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "que hay de menu hoy",
+      "espera": "menu_del_dia"
+    },
+    {
+      "mensaje": "tienen almuerzo ejecutivo",
+      "espera": "menu_del_dia"
+    },
+    {
+      "mensaje": "cuanto sale la colacion",
+      "espera": "menu_del_dia"
+    },
+    {
+      "mensaje": "cual es el plato del dia",
+      "espera": "menu_del_dia"
+    },
+    {
+      "mensaje": "que platos tienen",
+      "espera": "carta"
+    },
+    {
+      "mensaje": "me pasas la carta",
+      "espera": "carta"
+    },
+    {
+      "mensaje": "que me recomiendan",
+      "espera": "carta"
+    },
+    {
+      "mensaje": "cual es la especialidad de la casa",
+      "espera": "carta"
+    },
+    {
+      "mensaje": "tienen pastel de choclo?",
+      "espera": "carta"
+    },
+    {
+      "mensaje": "tienen pescado fresco",
+      "espera": "pescados_mariscos"
+    },
+    {
+      "mensaje": "hay machas a la parmesana?",
+      "espera": "pescados_mariscos"
+    },
+    {
+      "mensaje": "venden ceviche",
+      "espera": "pescados_mariscos"
+    },
+    {
+      "mensaje": "cuanto cuesta un plato de fondo",
+      "espera": "precios"
+    },
+    {
+      "mensaje": "son caros?",
+      "espera": "precios"
+    },
+    {
+      "mensaje": "cuanto sale comer ahi",
+      "espera": "precios"
+    },
+    {
+      "mensaje": "quiero reservar una mesa",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "se puede reservar para 6 personas",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "hay mesa para esta noche?",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "necesito apartar mesa para el sabado",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "hay mucha fila los sabados?",
+      "espera": "espera"
+    },
+    {
+      "mensaje": "cuanto se demoran en atender",
+      "espera": "espera"
+    },
+    {
+      "mensaje": "hacen delivery?",
+      "espera": "delivery"
+    },
+    {
+      "mensaje": "llevan a domicilio a playa ancha",
+      "espera": "delivery"
+    },
+    {
+      "mensaje": "estan en pedidosya",
+      "espera": "delivery"
+    },
+    {
+      "mensaje": "puedo pedir para llevar",
+      "espera": "para_llevar"
+    },
+    {
+      "mensaje": "se puede retirar en el local",
+      "espera": "para_llevar"
+    },
+    {
+      "mensaje": "tienen algo vegetariano?",
+      "espera": "vegetariano"
+    },
+    {
+      "mensaje": "hay opciones veganas",
+      "espera": "vegetariano"
+    },
+    {
+      "mensaje": "mi polola no come carne, que le sirven",
+      "espera": "vegetariano"
+    },
+    {
+      "mensaje": "tienen platos sin gluten",
+      "espera": "sin_gluten"
+    },
+    {
+      "mensaje": "soy celiaca, puedo comer ahi?",
+      "espera": "sin_gluten"
+    },
+    {
+      "mensaje": "soy alergico al mani",
+      "espera": "alergias"
+    },
+    {
+      "mensaje": "tengo intolerancia a la lactosa",
+      "espera": "alergias"
+    },
+    {
+      "mensaje": "tienen carta de vinos",
+      "espera": "bebidas"
+    },
+    {
+      "mensaje": "venden cerveza artesanal?",
+      "espera": "bebidas"
+    },
+    {
+      "mensaje": "hacen terremoto",
+      "espera": "bebidas"
+    },
+    {
+      "mensaje": "donde estan ubicados",
+      "espera": "ubicacion"
+    },
+    {
+      "mensaje": "cual es la direccion",
+      "espera": "ubicacion"
+    },
+    {
+      "mensaje": "como llego en micro",
+      "espera": "ubicacion"
+    },
+    {
+      "mensaje": "quedan cerca de la plaza sotomayor?",
+      "espera": "ubicacion"
+    },
+    {
+      "mensaje": "hay estacionamiento",
+      "espera": "estacionamiento"
+    },
+    {
+      "mensaje": "donde dejo el auto",
+      "espera": "estacionamiento"
+    },
+    {
+      "mensaje": "tienen terraza?",
+      "espera": "terraza"
+    },
+    {
+      "mensaje": "se puede comer al aire libre",
+      "espera": "terraza"
+    },
+    {
+      "mensaje": "puedo ir con mi perro",
+      "espera": "mascotas"
+    },
+    {
+      "mensaje": "son pet friendly?",
+      "espera": "mascotas"
+    },
+    {
+      "mensaje": "tienen silla para bebe",
+      "espera": "ninos"
+    },
+    {
+      "mensaje": "es apto para ir con niños?",
+      "espera": "ninos"
+    },
+    {
+      "mensaje": "es accesible en silla de ruedas",
+      "espera": "accesibilidad"
+    },
+    {
+      "mensaje": "hay escaleras para entrar?",
+      "espera": "accesibilidad"
+    },
+    {
+      "mensaje": "aceptan tarjeta",
+      "espera": "pagos"
+    },
+    {
+      "mensaje": "puedo pagar con transferencia",
+      "espera": "pagos"
+    },
+    {
+      "mensaje": "se puede dividir la cuenta",
+      "espera": "pagos"
+    },
+    {
+      "mensaje": "hacen cumpleaños?",
+      "espera": "eventos"
+    },
+    {
+      "mensaje": "arriendan el local para un evento de empresa",
+      "espera": "eventos"
+    },
+    {
+      "mensaje": "cabemos 20 personas?",
+      "espera": "eventos"
+    },
+    {
+      "mensaje": "tienen wifi",
+      "espera": "wifi"
+    },
+    {
+      "mensaje": "cual es el telefono",
+      "espera": "contacto"
+    },
+    {
+      "mensaje": "tienen instagram?",
+      "espera": "contacto"
+    },
+    {
+      "mensaje": "muchas gracias",
+      "espera": "agradecimiento"
+    },
+    {
+      "mensaje": "no, gracias",
+      "espera": "cierre"
+    },
+    {
+      "mensaje": "eso es todo",
+      "espera": "cierre"
+    },
+    {
+      "mensaje": "chao",
+      "espera": "despedida"
+    },
+    {
+      "mensaje": "venden cigarros?",
+      "espera": "fallback"
+    },
+    {
+      "mensaje": "tienen pileta?",
+      "espera": "fallback"
+    },
+    {
+      "mensaje": "hacen clases de cocina?",
+      "espera": "fallback"
+    },
+    {
+      "mensaje": "asdkjhasd",
+      "espera": "fallback"
+    }
+  ]
+}

@@ -20,7 +20,7 @@ const { BusinessRepository, ValidationError } = require('./knowledge/repository'
 const MAX_MESSAGE_LENGTH = 1000;
 
 /** Negocio que se usa cuando nadie pide uno en particular. */
-const DEFAULT_SLUG = process.env.PYMEBOT_BUSINESS || 'bella-vista';
+const DEFAULT_SLUG = process.env.PYMEBOT_BUSINESS || 'dona-elba';
 
 function createApp({ repository = new BusinessRepository(), sessions = new SessionStore() } = {}) {
   const app = express();

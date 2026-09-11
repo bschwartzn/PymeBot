@@ -54,14 +54,29 @@ WhatsApp y el resto de los canales.
 Es un **ambiente sandbox**: no hay WhatsApp, ni base de datos, ni cuentas de usuario.
 Solo el chat, para validar que el bot responde bien.
 
+## Medir qué tan bien responde
+
+```bash
+npm run eval
+```
+
+Corre un conjunto de preguntas escritas como las escribiría un cliente real
+([`data/evals/`](data/evals/)) y compara la intención detectada contra la esperada. Agrupa
+los fallos por tipo: **no entiende** (cae en el respaldo teniendo la respuesta), **confunde
+de tema** (responde con seguridad algo que no se preguntó) y **responde algo que no sabe**.
+
+Hoy el negocio de referencia acierta **98.7 %** (74/75). El piso está enganchado a `npm test`,
+así que un cambio que lo baje rompe la suite. El piso se sube cuando un módulo mejora la
+comprensión; no se baja para que pase.
+
 ## Tests
 
 ```bash
 npm test
 ```
 
-96 tests sobre el motor de intenciones, las sesiones, la API HTTP, la validación de
-negocios, el repositorio en disco y la integridad del sandbox autocontenido.
+103 tests sobre el motor de intenciones, las sesiones, la API HTTP, la validación de
+negocios, el repositorio en disco, la precisión mínima y la integridad del sandbox.
 
 ---
 
@@ -177,10 +192,11 @@ src/
     schema.js          Validación: errores y advertencias
     repository.js      Un JSON por negocio, en disco
 data/businesses/       La información de cada negocio
+data/evals/            Preguntas de prueba para medir la precisión
 public/                Sandbox (index) y editor (admin)
-scripts/               Generador del sandbox autocontenido
+scripts/               Generador del sandbox y medidor de precisión
 dist/sandbox.html      Sandbox en un solo archivo (generado)
-tests/                 96 tests con el runner nativo de Node
+tests/                 103 tests con el runner nativo de Node
 docs/ROADMAP.md        Plan modular completo
 ```
 

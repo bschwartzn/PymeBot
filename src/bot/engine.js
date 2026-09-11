@@ -8,7 +8,7 @@
  * Es determinista, se testea con facilidad y no depende de ningún servicio externo.
  */
 
-const { normalize, tokenize, wordsMatch } = require('./text');
+const { normalize, fold, tokenize, wordsMatch } = require('./text');
 
 /** Puntaje mínimo para aceptar una intención. Debajo de esto, respondemos el fallback. */
 const CONFIDENCE_THRESHOLD = 1;
@@ -19,7 +19,8 @@ const CONFIDENCE_THRESHOLD = 1;
  * porque son mucho más específicas.
  */
 function scoreKeyword(keyword, messageTokens, paddedMessage) {
-  const normalizedKeyword = normalize(keyword);
+  // `fold` en vez de `normalize`: comparar tiene que ser indiferente a cómo se escribió la ñ.
+  const normalizedKeyword = fold(keyword);
   if (!normalizedKeyword) return 0;
 
   const keywordWords = normalizedKeyword.split(' ');
@@ -52,7 +53,7 @@ function matchIntent(message, business) {
   const messageTokens = tokenize(message);
   if (messageTokens.length === 0) return { intent: null, score: 0 };
 
-  const paddedMessage = ` ${normalize(message)} `;
+  const paddedMessage = ` ${fold(message)} `;
 
   let best = null;
   let bestScore = 0;

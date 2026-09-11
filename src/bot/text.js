@@ -22,6 +22,19 @@ function normalize(text) {
     .trim();
 }
 
+/**
+ * Forma usada solo para COMPARAR, no para mostrar.
+ *
+ * Añade a la normalización el plegado de la ñ. La ñ se conserva en `normalize` porque es
+ * una letra propia del español, pero al comparar tiene que dar igual cómo se escribió:
+ * el dueño del negocio escribe la palabra clave "cumpleanos" y el cliente pregunta por
+ * "cumpleaños". Confundir "año" con "ano" es un riesgo teórico; que no coincidan las
+ * palabras clave escritas sin ñ es un fallo que ocurre todos los días.
+ */
+function fold(text) {
+  return normalize(text).replace(/ñ/g, 'n');
+}
+
 /** Divide un texto normalizado en palabras. */
 function tokenize(text) {
   const normalized = normalize(text);
@@ -32,11 +45,13 @@ function tokenize(text) {
  * Compara dos palabras tolerando el plural del español.
  * "horarios" debe encontrar la palabra clave "horario", y "precio" la clave "precios".
  */
-function wordsMatch(a, b) {
+function wordsMatch(rawA, rawB) {
+  const a = rawA.replace(/ñ/g, 'n');
+  const b = rawB.replace(/ñ/g, 'n');
   if (a === b) return true;
   const [short, long] = a.length <= b.length ? [a, b] : [b, a];
   if (short.length < 3) return false; // evita que "la"/"las" cuenten como coincidencia
   return long === short + 's' || long === short + 'es';
 }
 
-module.exports = { normalize, tokenize, wordsMatch };
+module.exports = { normalize, fold, tokenize, wordsMatch };

@@ -1,0 +1,25 @@
+{
+  "negocio": "bella-vista",
+  "descripcion": "Conjunto corto de regresión. No busca cobertura exhaustiva: sirve para que un cambio en el motor no arregle un negocio rompiendo otro.",
+  "casos": [
+    { "mensaje": "hola", "espera": "saludo" },
+    { "mensaje": "a que hora abren", "espera": "horarios" },
+    { "mensaje": "abren los domingos?", "espera": "horarios" },
+    { "mensaje": "cuanto cuesta un corte", "espera": "precios" },
+    { "mensaje": "cuanto vale el color", "espera": "precios" },
+    { "mensaje": "que servicios ofrecen", "espera": "servicios" },
+    { "mensaje": "quiero cortarme el pelo", "espera": "servicios" },
+    { "mensaje": "hacen barba?", "espera": "servicios" },
+    { "mensaje": "donde estan ubicados", "espera": "ubicacion" },
+    { "mensaje": "como llegar al local", "espera": "ubicacion" },
+    { "mensaje": "quiero pedir hora", "espera": "reservas" },
+    { "mensaje": "puedo agendar una cita", "espera": "reservas" },
+    { "mensaje": "aceptan tarjeta?", "espera": "pagos" },
+    { "mensaje": "cual es su telefono", "espera": "contacto" },
+    { "mensaje": "muchas gracias", "espera": "agradecimiento" },
+    { "mensaje": "no, gracias", "espera": "cierre" },
+    { "mensaje": "chao", "espera": "despedida" },
+    { "mensaje": "venden repuestos de automovil?", "espera": "fallback" },
+    { "mensaje": "tienen estacionamiento?", "espera": "fallback" }
+  ]
+}
