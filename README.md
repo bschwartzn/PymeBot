@@ -4,8 +4,8 @@ Chatbot para pequeñas empresas. Responde las preguntas frecuentes de los client
 (horarios, precios, servicios, ubicación) con la información que el propio negocio
 configura.
 
-> **Estado: Módulos 1 y 2 completados** — núcleo conversacional, sandbox y base de
-> conocimiento editable desde el navegador.
+> **Estado:** núcleo conversacional, base de conocimiento editable y **panel del dueño con
+> cuentas**. El chat es público; editar exige iniciar sesión.
 > El desarrollo es modular y progresivo: cada módulo se construye, se prueba y se corrige
 > antes de pasar al siguiente. El plan completo está en [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
@@ -38,10 +38,10 @@ npm install
 npm start
 ```
 
-Abre **http://localhost:3000** para el chat y **http://localhost:3000/admin.html** para el
-editor. Esta es la vía real del producto: es la única que permite *editar* la información
-del negocio, y la que expone `POST /api/chat`, el punto de entrada que reutilizarán
-WhatsApp y el resto de los canales.
+Abre **http://localhost:3000** para el chat y **http://localhost:3000/panel.html** para el
+panel del dueño. Esta es la vía real del producto: es la única que permite *editar* la
+información del negocio, y la que expone `POST /api/chat`, el punto de entrada que
+reutilizarán WhatsApp y el resto de los canales.
 
 ### Qué preguntarle
 
@@ -75,41 +75,55 @@ comprensión; no se baja para que pase.
 npm test
 ```
 
-103 tests sobre el motor de intenciones, las sesiones, la API HTTP, la validación de
-negocios, el repositorio en disco, la precisión mínima y la integridad del sandbox.
+126 tests sobre el motor, las sesiones, la API HTTP, la validación de negocios, el
+repositorio, la autenticación y autorización, la precisión mínima y el sandbox.
 
 ---
 
-## Cómo cargar la información de un negocio
+## El panel del dueño
 
-Con el servidor corriendo, abre **http://localhost:3000/admin.html**. Ahí puedes crear un
-negocio, editar sus mensajes y cargar las preguntas que sabe responder. **Lo que guardas
-aplica en la siguiente pregunta del chat, sin reiniciar nada.**
+Con el servidor corriendo, abre **http://localhost:3000/panel.html**. Crea una cuenta con tu
+correo y una contraseña, y desde ahí configuras tu bot. **Lo que guardas aplica en la
+siguiente pregunta del chat, sin reiniciar nada.**
 
-Cada pregunta tiene dos partes:
+Si no quieres empezar en blanco, copia uno de los ejemplos que vienen con PymeBot a tu cuenta
+y edítalo.
 
-- **Palabras clave**: lo que el bot busca en lo que escribe el cliente.
-- **Respuesta**: lo que contesta.
+El panel tiene cuatro secciones:
 
-Al guardar, el editor distingue dos cosas:
+| Sección | Qué configuras |
+|---|---|
+| **Identidad** | Nombre, descripción y los temas sugeridos que aparecen como botones en el chat |
+| **Preguntas** | Cada pregunta de tus clientes: sus **palabras clave** y la **respuesta** |
+| **Mensajes** | Saludo, qué dice cuando no entiende, y cómo derivar a una persona |
+| **Comportamiento** | Encender o pausar el bot, y qué tan exigente es antes de responder |
+
+### Comportamiento: los dos ajustes que importan
+
+- **Bot activo.** Si lo apagas, el bot deja de intentar entender y responde solo el mensaje
+  que tú escribas. Útil en vacaciones o mientras cargas la información.
+- **Nivel de exigencia.** Cuánta seguridad necesita el bot antes de responder. Más exigente
+  responde menos, pero se equivoca menos; menos exigente responde casi siempre, arriesgando
+  contestar un tema por otro. **Si ves que confunde preguntas, súbelo.**
+
+### Errores y advertencias al guardar
 
 - **Errores** — impiden guardar y dicen exactamente qué falta (*"La pregunta «horarios» no
   tiene respuesta."*).
 - **Advertencias** — dejan guardar, pero avisan de lo que suele hacer que el bot responda
-  mal: dos preguntas peleando por la misma palabra clave, o una palabra vacía como `de`,
-  que haría que esa pregunta gane en casi cualquier frase.
+  mal: dos preguntas peleando por la misma palabra clave, o una palabra vacía como `de`, que
+  haría que esa pregunta gane en casi cualquier frase.
 
-> ⚠️ **El editor no pide contraseña.** Está pensado para uso local. No lo publiques en
-> internet tal como está; la autenticación llega en el Módulo 7.
+### Quién puede ver qué
 
-**Consejos para escribir buenas palabras clave:**
+- **El chat es público.** Tus clientes conversan con tu bot sin cuenta ni contraseña.
+- **El panel es privado.** Cada dueño ve y edita solo sus propios negocios.
+- Los ejemplos que trae PymeBot no tienen dueño: se pueden copiar, no editar.
 
-- Escríbelas en minúsculas y sin acentos; el bot normaliza lo que escribe el cliente.
-- No hace falta poner singular y plural: `horario` ya encuentra `horarios`.
-- Las frases de varias palabras (`cuanto cuesta`) valen más que las sueltas, porque son
-  más específicas. Úsalas para desempatar entre preguntas parecidas.
-- Evita palabras genéricas (`hacer`, `tener`, `de`): disparan respuestas equivocadas. El
-  editor te avisa de las peores.
+> ⚠️ **Antes de publicarlo en internet**, ten presente que todavía no hay verificación de
+> correo ni recuperación de contraseña, y que usuarios y sesiones se guardan en archivos
+> JSON. Está pensado para uso local y pruebas. El detalle está en
+> [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ### Si prefieres editar los archivos a mano
 
@@ -164,17 +178,28 @@ WhatsApp (Módulo 5) será un adaptador que traduce el webhook a esta misma llam
 | `POST` | `/api/chat` | `{ sessionId?, business?, message }` → `{ sessionId, business, reply, intent, matched, score }` |
 | `POST` | `/api/reset` | `{ sessionId }` → vacía el historial de esa conversación |
 | `GET` | `/api/business?slug=` | Nombre, saludo y temas sugeridos (lo que pinta el sandbox) |
+| `GET` | `/api/directory` | Los negocios con los que se puede conversar |
 
-**Base de conocimiento** — lo que usa el editor.
+**Cuentas** — el acceso al panel.
 
 | Método | Ruta | Qué hace |
 |---|---|---|
-| `GET` | `/api/businesses` | Lista los negocios configurados |
-| `GET` | `/api/businesses/:slug` | Devuelve un negocio completo |
-| `POST` | `/api/businesses` | Crea uno; el identificador se deriva del nombre |
+| `POST` | `/api/auth/signup` | Crea la cuenta, abre sesión y opcionalmente el primer negocio |
+| `POST` | `/api/auth/login` | Inicia sesión |
+| `POST` | `/api/auth/logout` | Cierra la sesión e invalida el token en el servidor |
+| `GET` | `/api/auth/me` | Quién está conectado |
+
+**Base de conocimiento** — privado: exige sesión, y solo alcanza a los negocios propios.
+
+| Método | Ruta | Qué hace |
+|---|---|---|
+| `GET` | `/api/businesses` | Mis negocios |
+| `GET` | `/api/businesses/:slug` | Uno de mis negocios |
+| `POST` | `/api/businesses` | Crea uno nuevo |
 | `PUT` | `/api/businesses/:slug` | Guarda los cambios |
 | `DELETE` | `/api/businesses/:slug` | Lo elimina |
-| `GET` | `/health` | Estado del servidor, negocios cargados y sesiones activas |
+| `GET` | `/api/examples` | Los ejemplos que trae PymeBot |
+| `POST` | `/api/examples/:slug/copy` | Copia un ejemplo a mi cuenta |
 
 Guardar información inválida devuelve **422** con la lista de errores explicados. Guardar
 algo dudoso devuelve **200** con `warnings`.
@@ -191,12 +216,16 @@ src/
   knowledge/           ── Módulo 2: la base de conocimiento
     schema.js          Validación: errores y advertencias
     repository.js      Un JSON por negocio, en disco
+  auth/                ── Panel: cuentas de dueño
+    passwords.js       Hash con scrypt
+    users.js           Cuentas
+    sessions.js        Sesiones y cookie
 data/businesses/       La información de cada negocio
 data/evals/            Preguntas de prueba para medir la precisión
-public/                Sandbox (index) y editor (admin)
+public/                Chat público (index) y panel del dueño (panel)
 scripts/               Generador del sandbox y medidor de precisión
 dist/sandbox.html      Sandbox en un solo archivo (generado)
-tests/                 103 tests con el runner nativo de Node
+tests/                 126 tests con el runner nativo de Node
 docs/ROADMAP.md        Plan modular completo
 ```
 

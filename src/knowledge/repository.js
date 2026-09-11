@@ -62,9 +62,21 @@ class BusinessRepository {
           name: business.name,
           tagline: business.tagline,
           intents: business.intents.length,
+          ownerId: business.ownerId,
+          active: business.active,
         };
       })
       .filter(Boolean);
+  }
+
+  /** Solo los negocios de un dueño. */
+  listByOwner(ownerId) {
+    return this.list().filter((n) => n.ownerId === ownerId);
+  }
+
+  /** Los negocios sin dueño: los ejemplos que vienen con PymeBot. */
+  listExamples() {
+    return this.list().filter((n) => n.ownerId === null);
   }
 
   /** Devuelve el negocio ya normalizado, o null si no existe o está corrupto. */

@@ -2,3 +2,8 @@ node_modules/
 *.log
 .env
 .DS_Store
+
+# Datos de cuentas: NUNCA al repositorio.
+data/users.json
+data/sessions.json
+data/*.tmp

@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PymeBot — Panel del negocio</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛠%3C/text%3E%3C/svg%3E"
+    />
+    <link rel="stylesheet" href="panel.css" />
+  </head>
+  <body>
+    <!-- ============================ Acceso ============================ -->
+    <section id="acceso" class="acceso" hidden>
+      <div class="acceso-caja">
+        <div class="acceso-marca">
+          <span class="logo" aria-hidden="true">🤖</span>
+          <h1>PymeBot</h1>
+          <p>El asistente que responde a tus clientes</p>
+        </div>
+
+        <div class="tabs" role="tablist">
+          <button id="tab-entrar" class="tab" type="button" role="tab" aria-selected="true">Entrar</button>
+          <button id="tab-crear" class="tab" type="button" role="tab" aria-selected="false">Crear cuenta</button>
+        </div>
+
+        <form id="form-entrar" class="acceso-form">
+          <label>
+            Correo
+            <input name="email" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Contraseña
+            <input name="password" type="password" autocomplete="current-password" required />
+          </label>
+          <div id="error-entrar" class="msg error" hidden></div>
+          <button class="btn ancho" type="submit">Entrar</button>
+        </form>
+
+        <form id="form-crear" class="acceso-form" hidden>
+          <label>
+            Tu nombre
+            <input name="name" type="text" autocomplete="name" maxlength="80" />
+          </label>
+          <label>
+            Correo
+            <input name="email" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Contraseña <span class="ayuda">mínimo 8 caracteres</span>
+            <input name="password" type="password" autocomplete="new-password" required minlength="8" />
+          </label>
+          <label>
+            Nombre de tu negocio <span class="ayuda">opcional, lo creamos por ti</span>
+            <input name="businessName" type="text" maxlength="80" placeholder="Panadería La Espiga" />
+          </label>
+          <div id="error-crear" class="msg error" hidden></div>
+          <button class="btn ancho" type="submit">Crear cuenta</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============================ Panel ============================ -->
+    <div id="panel" hidden>
+      <header class="topbar">
+        <div class="brand">
+          <span class="logo" aria-hidden="true">🤖</span>
+          <div>
+            <h1>Mi bot</h1>
+            <p id="quien"></p>
+          </div>
+        </div>
+        <button id="salir" class="btn-ghost" type="button">Cerrar sesión</button>
+      </header>
+
+      <main class="layout">
+        <aside class="sidebar">
+          <div class="sidebar-head">
+            <h2>Mis negocios</h2>
+            <button id="nuevo" class="btn-small" type="button">+ Nuevo</button>
+          </div>
+          <ul id="lista" class="lista"></ul>
+
+          <div class="ejemplos">
+            <h3>Partir de un ejemplo</h3>
+            <p class="ayuda">Copia uno a tu cuenta y edítalo.</p>
+            <ul id="ejemplos" class="lista"></ul>
+          </div>
+        </aside>
+
+        <section class="editor">
+          <div id="sin-negocios" class="vacio" hidden>
+            <p>Todavía no tienes ningún negocio.</p>
+            <p class="ayuda">Crea uno con <strong>+ Nuevo</strong> o copia un ejemplo para partir.</p>
+          </div>
+
+          <form id="form" class="form" hidden>
+            <div class="form-head">
+              <div class="form-titulo">
+                <h2 id="titulo">Negocio</h2>
+                <span id="estado" class="pill"></span>
+                <code id="slug-actual" class="slug"></code>
+              </div>
+              <div class="form-actions">
+                <a id="probar" class="btn-ghost" href="#" target="_blank" rel="noopener">Probar el bot ↗</a>
+                <button id="eliminar" class="btn-ghost danger" type="button">Eliminar</button>
+                <button class="btn" type="submit">Guardar</button>
+              </div>
+            </div>
+
+            <div id="mensajes" class="mensajes" aria-live="polite"></div>
+
+            <nav class="secciones" role="tablist">
+              <button class="seccion-tab activo" type="button" data-seccion="identidad">Identidad</button>
+              <button class="seccion-tab" type="button" data-seccion="preguntas">Preguntas</button>
+              <button class="seccion-tab" type="button" data-seccion="mensajes">Mensajes</button>
+              <button class="seccion-tab" type="button" data-seccion="comportamiento">Comportamiento</button>
+            </nav>
+
+            <fieldset class="bloque" data-seccion="identidad">
+              <label>
+                Nombre del negocio
+                <input name="name" type="text" maxlength="80" required />
+              </label>
+              <label>
+                Descripción corta
+                <input name="tagline" type="text" maxlength="140" placeholder="Qué haces y dónde estás" />
+              </label>
+              <label>
+                Temas sugeridos <span class="ayuda">uno por línea; aparecen como botones en el chat</span>
+                <textarea name="topics" rows="6"></textarea>
+              </label>
+            </fieldset>
+
+            <fieldset class="bloque" data-seccion="preguntas" hidden>
+              <p class="ayuda bloque-intro">
+                Cada bloque es una pregunta de tus clientes. Las <strong>palabras clave</strong> son las
+                que el bot busca en lo que escriben; la <strong>respuesta</strong> es lo que contesta.
+              </p>
+              <div id="intents" class="intents"></div>
+              <button id="agregar-intent" class="btn-small" type="button">+ Agregar pregunta</button>
+            </fieldset>
+
+            <fieldset class="bloque" data-seccion="mensajes" hidden>
+              <label>
+                Saludo inicial
+                <textarea name="greeting" rows="2" maxlength="1000"></textarea>
+              </label>
+              <label>
+                Saludo cuando ya conversaron
+                <textarea name="greetingRepeat" rows="2" maxlength="1000"></textarea>
+              </label>
+              <label>
+                Qué dice cuando no entiende
+                <textarea name="fallback" rows="2" maxlength="1000"></textarea>
+              </label>
+              <label>
+                Cómo derivar a una persona <span class="ayuda">se muestra junto al mensaje anterior</span>
+                <textarea name="handoff" rows="2" maxlength="1000" placeholder="Opcional"></textarea>
+              </label>
+            </fieldset>
+
+            <fieldset class="bloque" data-seccion="comportamiento" hidden>
+              <div class="switch">
+                <label class="switch-label">
+                  <input name="active" type="checkbox" />
+                  <span>Bot activo</span>
+                </label>
+                <p class="ayuda">
+                  Si lo apagas, el bot deja de responder preguntas y contesta solo el mensaje de abajo.
+                </p>
+              </div>
+
+              <label>
+                Mensaje con el bot apagado
+                <textarea name="pausedMessage" rows="2" maxlength="1000"></textarea>
+              </label>
+
+              <label>
+                Nivel de exigencia
+                <input name="confidenceThreshold" type="range" min="0.5" max="4" step="0.5" />
+                <output id="umbral-valor" class="umbral"></output>
+              </label>
+              <p class="ayuda">
+                Qué tan seguro debe estar el bot antes de responder. Más exigente responde menos, pero
+                se equivoca menos; menos exigente responde casi siempre, arriesgando contestar un tema
+                por otro. Si ves que confunde preguntas, súbelo.
+              </p>
+            </fieldset>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <template id="plantilla-intent">
+      <div class="intent">
+        <div class="intent-head">
+          <input class="intent-id" type="text" placeholder="identificador (ej: horarios)" />
+          <button class="btn-icon" type="button" title="Quitar esta pregunta">✕</button>
+        </div>
+        <label>
+          Palabras clave <span class="ayuda">separadas por coma</span>
+          <input class="intent-keywords" type="text" placeholder="horario, abren, a que hora" />
+        </label>
+        <label>
+          Respuesta
+          <textarea class="intent-answer" rows="3" maxlength="1000"></textarea>
+        </label>
+      </div>
+    </template>
+
+    <script src="panel.js"></script>
+  </body>
+</html>

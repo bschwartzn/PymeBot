@@ -10,8 +10,18 @@
 
 const { normalize, fold, tokenize, wordsMatch } = require('./text');
 
-/** Puntaje mínimo para aceptar una intención. Debajo de esto, respondemos el fallback. */
+/**
+ * Puntaje mínimo por defecto para aceptar una intención. Debajo de esto, respondemos el
+ * respaldo. Cada negocio puede subirlo o bajarlo desde su panel: subirlo hace que el bot
+ * responda menos pero se equivoque menos, bajarlo al revés.
+ */
 const CONFIDENCE_THRESHOLD = 1;
+
+/** El umbral que corresponde a este negocio. */
+function thresholdFor(business) {
+  const propio = business && Number(business.confidenceThreshold);
+  return Number.isFinite(propio) && propio > 0 ? propio : CONFIDENCE_THRESHOLD;
+}
 
 /**
  * Puntúa una palabra clave contra el mensaje del usuario.
@@ -66,7 +76,7 @@ function matchIntent(message, business) {
     }
   }
 
-  if (bestScore < CONFIDENCE_THRESHOLD) return { intent: null, score: bestScore };
+  if (bestScore < thresholdFor(business)) return { intent: null, score: bestScore };
   return { intent: best, score: bestScore };
 }
 
@@ -88,6 +98,16 @@ function buildFallback(business) {
  * @returns {{reply: string, intent: string, score: number, matched: boolean}}
  */
 function respond(message, business, session = null) {
+  // Bot pausado: no se intenta entender nada, se responde lo que el dueño dejó escrito.
+  if (business && business.active === false) {
+    return {
+      reply: business.pausedMessage || 'En este momento no estamos atendiendo por aquí.',
+      intent: 'pausado',
+      score: 0,
+      matched: false,
+    };
+  }
+
   const normalized = normalize(message);
 
   if (!normalized) {
@@ -123,4 +143,4 @@ function respond(message, business, session = null) {
   return { reply, intent: intent.id, score, matched: true };
 }
 
-module.exports = { respond, matchIntent, buildFallback, CONFIDENCE_THRESHOLD };
+module.exports = { respond, matchIntent, buildFallback, thresholdFor, CONFIDENCE_THRESHOLD };

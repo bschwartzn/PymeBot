@@ -139,3 +139,61 @@ test('el plegado de la ñ también funciona en palabras clave de varias palabras
   };
   assert.strictEqual(respond('esto es para niños?', negocio).intent, 'ninos');
 });
+
+/* --- Configuración del bot que el dueño controla desde el panel --- */
+
+const NEGOCIO_CONFIG = {
+  name: 'X',
+  topics: ['Uno'],
+  fallback: 'No entendí.',
+  intents: [
+    { id: 'horarios', keywords: ['horario', 'abren'], answer: 'De 9 a 18.' },
+    { id: 'precios', keywords: ['precio'], answer: 'Sale $10.000.' },
+  ],
+};
+
+test('subir la exigencia hace que el bot responda menos, y bajarla que responda más', () => {
+  // "abren" puntúa 1: alcanza justo con el umbral por defecto.
+  assert.strictEqual(respond('abren hoy?', NEGOCIO_CONFIG).intent, 'horarios');
+
+  // Con la exigencia al máximo, el mismo mensaje ya no alcanza.
+  const exigente = { ...NEGOCIO_CONFIG, confidenceThreshold: 4 };
+  const resultado = respond('abren hoy?', exigente);
+  assert.strictEqual(resultado.intent, 'fallback');
+  assert.strictEqual(resultado.score, 1, 'el puntaje no cambia: lo que cambia es cuánto se exige');
+
+  // Y con la exigencia mínima vuelve a responder.
+  assert.strictEqual(respond('abren hoy?', { ...NEGOCIO_CONFIG, confidenceThreshold: 0.5 }).intent, 'horarios');
+});
+
+test('un umbral ausente o inválido no rompe nada: se usa el de siempre', () => {
+  for (const valor of [undefined, null, 0, -1, 'alto', NaN]) {
+    const negocio = { ...NEGOCIO_CONFIG, confidenceThreshold: valor };
+    assert.strictEqual(respond('abren hoy?', negocio).intent, 'horarios', `falló con ${valor}`);
+  }
+});
+
+test('con el bot pausado se responde el mensaje de pausa y no se intenta entender', () => {
+  const pausado = {
+    ...NEGOCIO_CONFIG,
+    active: false,
+    pausedMessage: 'Estamos de vacaciones hasta marzo.',
+  };
+
+  for (const mensaje of ['a que hora abren', 'hola', 'cuanto cuesta']) {
+    const resultado = respond(mensaje, pausado);
+    assert.strictEqual(resultado.reply, 'Estamos de vacaciones hasta marzo.');
+    assert.strictEqual(resultado.intent, 'pausado');
+    assert.strictEqual(resultado.matched, false);
+  }
+});
+
+test('un bot pausado sin mensaje propio igual dice algo', () => {
+  const resultado = respond('hola', { ...NEGOCIO_CONFIG, active: false });
+  assert.ok(resultado.reply.length > 0);
+  assert.strictEqual(resultado.intent, 'pausado');
+});
+
+test('el bot activo se comporta igual que siempre', () => {
+  assert.strictEqual(respond('a que hora abren', { ...NEGOCIO_CONFIG, active: true }).intent, 'horarios');
+});

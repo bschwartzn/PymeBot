@@ -17,7 +17,19 @@ const DEFAULTS = {
   fallback: 'Perdona, no estoy seguro de haber entendido eso. Puedo ayudarte con estos temas:',
   handoff: '',
   topics: [],
+  /** Con el bot pausado, el chat responde el mensaje de pausa en vez de intentar entender. */
+  active: true,
+  /**
+   * Qué tan seguro tiene que estar el motor para responder, en vez de caer en el respaldo.
+   * Más alto = responde menos, pero se equivoca menos. Más bajo = responde más, arriesgando
+   * contestar un tema por otro.
+   */
+  confidenceThreshold: 1,
+  pausedMessage: 'En este momento no estamos atendiendo por aquí. Escríbenos directamente y te respondemos a la brevedad.',
 };
+
+/** Rango aceptado para el umbral de confianza. Fuera de esto el bot se vuelve inútil. */
+const THRESHOLD = { min: 0.5, max: 6 };
 
 const MAX = { name: 80, tagline: 140, texto: 1000, keyword: 60, intents: 100, keywords: 40 };
 
@@ -187,6 +199,30 @@ function validateBusiness(raw) {
     }
   }
 
+  if (raw.active !== undefined && typeof raw.active !== 'boolean') {
+    errors.push({ campo: 'active', mensaje: 'El estado del bot debe ser activo o pausado.' });
+  }
+
+  if (raw.confidenceThreshold !== undefined) {
+    const valor = Number(raw.confidenceThreshold);
+    if (!Number.isFinite(valor) || valor < THRESHOLD.min || valor > THRESHOLD.max) {
+      errors.push({
+        campo: 'confidenceThreshold',
+        mensaje: `El nivel de exigencia debe estar entre ${THRESHOLD.min} y ${THRESHOLD.max}.`,
+      });
+    }
+  }
+
+  if (raw.pausedMessage !== undefined && raw.pausedMessage !== null && raw.pausedMessage !== '') {
+    if (typeof raw.pausedMessage !== 'string' || raw.pausedMessage.length > MAX.texto) {
+      errors.push({ campo: 'pausedMessage', mensaje: 'El mensaje de pausa no es válido.' });
+    }
+  }
+
+  if (raw.ownerId !== undefined && raw.ownerId !== null && typeof raw.ownerId !== 'string') {
+    errors.push({ campo: 'ownerId', mensaje: 'El dueño del negocio no es válido.' });
+  }
+
   if (raw.topics !== undefined) {
     if (!Array.isArray(raw.topics)) {
       errors.push({ campo: 'topics', mensaje: 'Los temas sugeridos deben ser una lista.' });
@@ -210,10 +246,15 @@ function validateBusiness(raw) {
     name: raw.name.trim(),
     ...DEFAULTS,
     ...Object.fromEntries(
-      ['tagline', 'greeting', 'greetingRepeat', 'fallback', 'handoff']
+      ['tagline', 'greeting', 'greetingRepeat', 'fallback', 'handoff', 'pausedMessage']
         .filter((c) => esTexto(raw[c]))
         .map((c) => [c, raw[c].trim()]),
     ),
+    // Un negocio sin dueño es una demo: se puede leer, no editar.
+    ownerId: typeof raw.ownerId === 'string' && raw.ownerId ? raw.ownerId : null,
+    active: raw.active === undefined ? DEFAULTS.active : Boolean(raw.active),
+    confidenceThreshold:
+      raw.confidenceThreshold === undefined ? DEFAULTS.confidenceThreshold : Number(raw.confidenceThreshold),
     topics: Array.isArray(raw.topics) ? raw.topics.map((t) => t.trim()) : [],
     intents: raw.intents.map((intent) => ({
       id: intent.id.trim(),
@@ -225,4 +266,4 @@ function validateBusiness(raw) {
   return { ok: true, errors, warnings, business };
 }
 
-module.exports = { validateBusiness, slugify, isValidSlug, DEFAULTS, MAX };
+module.exports = { validateBusiness, slugify, isValidSlug, DEFAULTS, MAX, THRESHOLD };

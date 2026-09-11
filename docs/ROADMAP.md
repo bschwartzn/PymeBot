@@ -34,7 +34,7 @@ responde nada). La división real es por **capa técnica**, no por tema:
 | **4** | **Captura de clientes (leads)** | Las conversaciones no generan valor comercial medible | ⬜ Pendiente |
 | **5** | **Canales / integraciones (WhatsApp)** | El cliente final no está en nuestra web, está en WhatsApp | ⬜ Pendiente |
 | **6** | **Agendamiento** | Muchas consultas terminan en "quiero una cita" y hoy no se puede cerrar | ⬜ Pendiente |
-| **7** | **Panel, métricas y automatizaciones** | El dueño del negocio no puede administrar ni medir el bot | ⬜ Pendiente |
+| **7** | **Panel, métricas y automatizaciones** | El dueño del negocio no puede administrar ni medir el bot | 🟡 Cuentas y panel ✅ · métricas y automatizaciones pendientes |
 
 ### Módulo 1 — Núcleo conversacional + sandbox
 
@@ -354,5 +354,71 @@ llega a 98.7 % y el único fallo que queda es de desambiguación. Eso acota el t
 Módulo 3: el problema no es entender el español, es elegir entre dos temas que compiten. Antes
 de meter un modelo conviene probar si una regla de desempate lo resuelve — y ahora hay con qué
 medirlo.
+
+---
+
+### Panel del dueño y cuentas — ✅ COMPLETADO
+
+Se adelantó del Módulo 7 a petición del usuario, y estaba bien traerlo: **el editor no pedía
+contraseña y cualquiera podía editar cualquier negocio.** Era la limitación más seria que
+arrastraba el proyecto.
+
+**Entregado**
+
+- Registro e inicio de sesión con correo y contraseña (`src/auth/`).
+- Cada negocio tiene dueño. Un dueño solo ve y edita los suyos.
+- Panel en `/panel.html` con cuatro secciones: Identidad, Preguntas, Mensajes y
+  Comportamiento.
+- Copiar un ejemplo a la cuenta propia, para no empezar en blanco.
+- 22 tests nuevos (126 en total), la mayoría sobre seguridad.
+
+**Decisiones de seguridad**
+
+| Decisión | Por qué |
+|---|---|
+| `scrypt` de Node, con sal por usuario y costo guardado dentro del hash | Sin dependencias nativas; el costo se puede subir después sin invalidar las contraseñas viejas |
+| Comparación en tiempo constante (`timingSafeEqual`) | Comparar con `===` filtra información por lo que tarda en fallar |
+| Token de sesión opaco de 32 bytes, guardado en el servidor | Se puede **revocar de verdad**: cerrar sesión invalida el token, no solo borra la cookie del navegador |
+| Cookie `httpOnly`, `sameSite=lax`, `secure` en producción | `httpOnly` impide que un XSS robe la sesión; `sameSite` es la base contra CSRF |
+| Un negocio ajeno responde **404**, no 403 | Decir «existe pero no es tuyo» ya le confirma a un desconocido qué negocios hay dados de alta |
+| Correo inexistente y contraseña errónea dan el **mismo** mensaje | Mensajes distintos permiten enumerar qué correos están registrados |
+| El `ownerId` se toma de la sesión, nunca del cuerpo de la petición | Si no, cualquiera se apropiaría de un negocio ajeno mandando otro `ownerId`. Hay un test que lo intenta |
+| Bloqueo tras 10 intentos fallidos en 15 minutos | Freno a la fuerza bruta |
+| `data/users.json` y `data/sessions.json` en `.gitignore` | Las cuentas no pueden acabar en el repositorio |
+
+**Configuración del bot: solo lo que cambia el comportamiento**
+
+Se descartó llenar el panel de interruptores decorativos. Cada ajuste hace algo real:
+
+| Ajuste | Qué cambia de verdad |
+|---|---|
+| **Bot activo / pausado** | Pausado, el motor ni siquiera intenta entender: responde el mensaje que dejó el dueño, con intención `pausado` |
+| **Nivel de exigencia** | Es el umbral de confianza, que hasta ahora era una constante del código. Subirlo hace que el bot responda menos pero se equivoque menos |
+| **Mensaje con el bot apagado** | Lo que contesta mientras está pausado |
+| **Derivar a una persona** | Se muestra junto al mensaje de «no entendí» |
+
+**Errores detectados durante la validación y corregidos**
+
+| # | Problema | Cómo apareció | Corrección |
+|---|----------|---------------|------------|
+| 1 | **La pantalla de acceso no se ocultaba al entrar**: quedaba encima del panel, y un clic en «Guardar» caía en realidad en el botón «Entrar» | Manejando el panel en Chromium | `.acceso { display: grid }` le ganaba al `[hidden]` del navegador, que viene de su hoja de estilos. Se agregó `[hidden] { display: none !important }` |
+| 2 | Los campos de correo y contraseña salían sin ningún estilo | En la captura de la pantalla de acceso | El selector era `input[type="text"]`, que no cubre `email` ni `password`. Se cambió por uno que cubre todos los campos de escritura |
+| 3 | El test de recorrido de rutas contaba archivos del directorio antes de registrar al dueño, y el registro crea `users.json` y `sessions.json` ahí mismo | Al pasar los tests del Módulo 2 a usar sesión | La foto se toma después, y compara los nombres, no la cantidad |
+
+**Falsos hallazgos** (fallaron mis pruebas, no el producto): esperé que apareciera un bloque
+de preguntas que estaba correctamente oculto porque no era la sección abierta; y afirmé que
+el umbral no funcionaba con un mensaje que puntuaba 5.5, por encima de cualquier exigencia.
+Ambos se volvieron a medir aislando el caso.
+
+**Limitaciones conocidas**
+
+- **No hay verificación de correo ni recuperación de contraseña.** Quien se registra queda
+  dentro de inmediato. Para producción hacen falta ambas.
+- **Sin protección CSRF explícita.** Hoy se apoya en `sameSite=lax` y en que la API solo
+  acepta JSON, lo que cubre el caso normal. Si en el futuro se aceptan formularios
+  tradicionales, hará falta un token.
+- Usuarios y sesiones en archivos JSON: sirve para un MVP, no para miles de cuentas.
+- No hay roles ni equipos: un negocio, un dueño.
+- Sin registro de cambios ni forma de deshacer una edición.
 
 **Siguiente paso:** Módulo 3 — Comprensión y gestión de conversación.

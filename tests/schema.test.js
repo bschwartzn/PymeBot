@@ -140,3 +140,40 @@ test('no revienta con entradas que no son un objeto', () => {
     assert.ok(errors.length > 0);
   }
 });
+
+/* --- Configuración del bot (panel del dueño) --- */
+
+test('un negocio sin configuración explícita queda activo y con la exigencia normal', () => {
+  const { business } = validateBusiness(NEGOCIO_MINIMO);
+  assert.strictEqual(business.active, true);
+  assert.strictEqual(business.confidenceThreshold, 1);
+  assert.strictEqual(business.ownerId, null, 'sin dueño es un ejemplo');
+  assert.ok(business.pausedMessage.length > 0);
+});
+
+test('la configuración del bot sobrevive al guardado', () => {
+  const { business } = validateBusiness({
+    ...NEGOCIO_MINIMO,
+    active: false,
+    confidenceThreshold: 2.5,
+    pausedMessage: 'Volvemos en marzo.',
+    ownerId: 'usuario-1',
+  });
+  assert.strictEqual(business.active, false);
+  assert.strictEqual(business.confidenceThreshold, 2.5);
+  assert.strictEqual(business.pausedMessage, 'Volvemos en marzo.');
+  assert.strictEqual(business.ownerId, 'usuario-1');
+});
+
+test('rechaza una exigencia fuera de rango', () => {
+  for (const valor of [0, -3, 99, 'mucho']) {
+    const { ok, errors } = validateBusiness({ ...NEGOCIO_MINIMO, confidenceThreshold: valor });
+    assert.ok(!ok, `debería rechazar ${valor}`);
+    assert.ok(errors.some((e) => e.campo === 'confidenceThreshold'));
+  }
+});
+
+test('rechaza un estado que no sea activo o pausado, y un dueño que no sea texto', () => {
+  assert.ok(!validateBusiness({ ...NEGOCIO_MINIMO, active: 'si' }).ok);
+  assert.ok(!validateBusiness({ ...NEGOCIO_MINIMO, ownerId: 42 }).ok);
+});

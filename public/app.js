@@ -33,7 +33,7 @@ function showTyping() {
 /** Llena el selector con los negocios configurados. */
 async function loadNegocios() {
   try {
-    const { businesses } = await (await fetch('/api/businesses')).json();
+    const { businesses } = await (await fetch('/api/directory')).json();
     negocioEl.innerHTML = '';
     for (const item of businesses) {
       const option = document.createElement('option');

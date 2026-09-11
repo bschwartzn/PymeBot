@@ -44,6 +44,8 @@ test('list devuelve un resumen de cada negocio', () => {
     name: 'Panadería La Espiga',
     tagline: '',
     intents: 1,
+    ownerId: null,
+    active: true,
   });
 });
 
