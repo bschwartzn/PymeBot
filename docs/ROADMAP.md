@@ -475,4 +475,41 @@ a esa misma llamada. El núcleo no cambia.
 - El archivo autocontenido (`npm run build:chat`) no permite editar desde el panel: hay que
   regenerarlo. Y no guarda ninguna conversación.
 
+---
+
+### Demo del panel sin servidor — ✅ COMPLETADO
+
+**Para qué.** Para probar con conocidos hacía falta enseñar también **lo que ve el dueño**, no
+solo el chat del cliente. Saber si un dueño de pyme entiende el concepto de «palabras clave»
+es la reacción más valiosa que se puede recoger en esta etapa, y no se obtiene mostrando el
+chat.
+
+**Cómo está hecho.** `dist/demo.html` no es una maqueta: se toman el HTML, el CSS y el
+JavaScript **reales** del panel, sin tocarlos, y se sustituye únicamente `fetch` por una
+implementación sobre `localStorage`. El panel no se entera de que no hay servidor. La
+validación es la de `src/knowledge/schema.js` y el bot de la vista previa es el de
+`src/bot/`. **El demo no puede desviarse del producto, porque es el producto.**
+
+Añade una vista previa lateral que renderiza el chat del cliente con los cambios **sin
+guardar**, para ver el efecto de editar una respuesta al momento.
+
+**Lo que se simula, y por qué se dice en pantalla**
+
+| Simulado | Por qué |
+|---|---|
+| La persistencia (queda en el navegador) | No hay servidor |
+| El inicio de sesión: no comprueba la contraseña | No hay forma de guardar un hash con seguridad en el navegador. Fingir una comprobación daría una impresión equivocada de cómo funciona el producto |
+| El QR | No hay una dirección real que codificar |
+
+**Errores detectados durante la validación y corregidos**
+
+| # | Problema | Cómo apareció | Corrección |
+|---|----------|---------------|------------|
+| 1 | La vista previa funcionaba la primera vez y fallaba la segunda: `Identifier 'CONFIDENCE_THRESHOLD' has already been declared` | Al abrirla dos veces seguidas | `document.open()` no limpia el ámbito global del iframe, así que al reescribir chocaban las constantes del motor. Ahora cada apertura estrena un iframe |
+| 2 | Quitar el botón de descargar el QR dejaba la pestaña Compartir a medio llenar | Error de consola al abrir Compartir | `panel.js` le asigna propiedades y lo encontraba nulo. Se oculta en vez de quitarlo |
+
+**Falso hallazgo:** mi script de prueba buscaba `.msg.error` sin acotar y encontraba los
+avisos ocultos de la pantalla de acceso. Es la segunda vez que el mismo descuido me confunde;
+los selectores de prueba van acotados a su contenedor.
+
 **Siguiente paso:** Módulo 3 — Comprensión y gestión de conversación.

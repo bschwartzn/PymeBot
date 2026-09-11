@@ -1,0 +1,386 @@
+<title>PymeBot para tu negocio</title>
+<link
+  rel="icon"
+  href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛠%3C/text%3E%3C/svg%3E"
+/>
+
+<style>
+/*__ESTILOS_PANEL__*/
+
+/* ==================== Añadidos propios del demo ==================== */
+
+.aviso-demo {
+  background: #1c2430;
+  color: #e8edf5;
+  font-size: 13.5px;
+  line-height: 1.5;
+  padding: 11px 24px;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.aviso-demo strong { color: #fff; }
+.aviso-demo span { color: #a8b4c4; }
+
+/* Cajón de vista previa: el chat del cliente, con el negocio que se está editando. */
+.previsualizar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 100vw);
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, .13);
+  transform: translateX(100%);
+  transition: transform .22s ease;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+}
+.previsualizar.abierto { transform: none; }
+
+.previsualizar-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+.previsualizar-barra h2 { margin: 0; font-size: 14.5px; }
+.previsualizar-barra p { margin: 1px 0 0; font-size: 12.5px; color: var(--muted); }
+.previsualizar iframe { flex: 1; width: 100%; border: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .previsualizar { transition: none; }
+}
+</style>
+
+<div class="aviso-demo">
+  <strong>Demo de PymeBot.</strong>
+  <span>
+    Es el panel real: lo que edites cambia el bot de verdad, aquí mismo. Los cambios quedan
+    solo en este navegador y el acceso no comprueba la contraseña.
+  </span>
+</div>
+
+<!--__CUERPO_PANEL__-->
+
+<aside class="previsualizar" id="previsualizar" aria-hidden="true">
+  <div class="previsualizar-barra">
+    <div>
+      <h2>Así lo ve tu cliente</h2>
+      <p>Con los cambios que tienes sin guardar</p>
+    </div>
+    <button class="btn-ghost" id="cerrar-preview" type="button">Cerrar</button>
+  </div>
+  <iframe id="marco-preview" title="Vista previa del chat"></iframe>
+</aside>
+
+<script>
+  /* ===================================================================
+     Validación y motor: tomados tal cual de src/. No son una copia.
+     =================================================================== */
+
+  /*__SCHEMA__*/
+
+  /*__MOTOR__*/
+
+  /* ===================================================================
+     El servidor, sustituido por el navegador.
+
+     Implementa los mismos endpoints que src/server.js sobre localStorage.
+     El panel llama a fetch() sin saber que no hay nadie al otro lado.
+     =================================================================== */
+
+  var EJEMPLOS = /*__EJEMPLOS__*/;
+  var PLANTILLA_CHAT = /*__PLANTILLA_CHAT__*/;
+  var QR_MUESTRA = /*__QR__*/;
+
+  var LLAVE = 'pymebot-demo';
+
+  function estadoInicial() {
+    return { usuario: null, negocios: {} };
+  }
+
+  function leerEstado() {
+    try {
+      var crudo = localStorage.getItem(LLAVE);
+      return crudo ? JSON.parse(crudo) : estadoInicial();
+    } catch (err) {
+      // Navegación privada o almacenamiento bloqueado: el demo funciona igual,
+      // simplemente no recuerda nada al recargar.
+      return estadoInicial();
+    }
+  }
+
+  function guardarEstado(estado) {
+    try {
+      localStorage.setItem(LLAVE, JSON.stringify(estado));
+    } catch (err) {
+      /* sin guardar: el demo sigue usable en esta sesión */
+    }
+  }
+
+  var estado = leerEstado();
+
+  function respuesta(status, cuerpo) {
+    return Promise.resolve({
+      ok: status >= 200 && status < 300,
+      status: status,
+      json: function () {
+        return Promise.resolve(cuerpo);
+      },
+      text: function () {
+        return Promise.resolve(typeof cuerpo === 'string' ? cuerpo : JSON.stringify(cuerpo));
+      },
+      headers: { get: function () { return null; } },
+    });
+  }
+
+  function resumen(slug, negocio) {
+    return {
+      slug: slug,
+      name: negocio.name,
+      tagline: negocio.tagline,
+      intents: negocio.intents.length,
+      ownerId: negocio.ownerId,
+      active: negocio.active,
+    };
+  }
+
+  /** Guarda validando con el esquema real, para que los errores sean los de verdad. */
+  function guardarNegocio(slug, crudo) {
+    var resultado = validateBusiness(crudo);
+    if (!resultado.ok) {
+      return respuesta(422, {
+        error: 'La información del negocio tiene errores.',
+        errors: resultado.errors,
+        warnings: resultado.warnings,
+      });
+    }
+    estado.negocios[slug] = resultado.business;
+    guardarEstado(estado);
+    return respuesta(200, { slug: slug, business: resultado.business, warnings: resultado.warnings });
+  }
+
+  function slugLibre(nombre) {
+    var base = slugify(nombre) || 'negocio';
+    var slug = base;
+    var n = 2;
+    while (estado.negocios[slug]) {
+      slug = (base + '-' + n).slice(0, 40);
+      n += 1;
+    }
+    return slug;
+  }
+
+  var NEGOCIO_INICIAL = {
+    tagline: '',
+    topics: ['Horarios', 'Precios', 'Cómo llegar'],
+    intents: [
+      {
+        id: 'horarios',
+        keywords: ['horario', 'abren', 'cierran', 'atienden', 'a que hora'],
+        answer: 'Atendemos de lunes a viernes de 9:00 a 18:00.',
+      },
+      {
+        id: 'ubicacion',
+        keywords: ['donde estan', 'direccion', 'ubicacion', 'como llegar'],
+        answer: 'Estamos en (escribe aquí tu dirección).',
+      },
+    ],
+  };
+
+  window.fetch = function (ruta, opciones) {
+    opciones = opciones || {};
+    var metodo = (opciones.method || 'GET').toUpperCase();
+    var cuerpo = opciones.body ? JSON.parse(opciones.body) : null;
+    var partes = String(ruta).split('?')[0].split('/').filter(Boolean); // ['api','businesses',slug]
+
+    // --- cuentas ---
+    if (ruta === '/api/auth/me') return respuesta(200, { user: estado.usuario });
+
+    if (ruta === '/api/auth/signup' || ruta === '/api/auth/login') {
+      var correo = (cuerpo && cuerpo.email ? String(cuerpo.email) : '').trim().toLowerCase();
+      if (!correo || correo.indexOf('@') === -1) {
+        return respuesta(422, { error: 'Escribe un correo válido.', campo: 'email' });
+      }
+      if (ruta === '/api/auth/signup' && (!cuerpo.password || cuerpo.password.length < 8)) {
+        return respuesta(422, { error: 'La contraseña debe tener al menos 8 caracteres.', campo: 'password' });
+      }
+
+      // El demo NO comprueba la contraseña: no hay dónde guardar un hash con seguridad
+      // en el navegador, y fingirlo daría una impresión equivocada de cómo funciona.
+      estado.usuario = { id: 'demo', email: correo, name: (cuerpo.name || '').trim() || correo.split('@')[0] };
+
+      if (cuerpo.businessName && String(cuerpo.businessName).trim()) {
+        var nombre = String(cuerpo.businessName).trim();
+        var nuevo = slugLibre(nombre);
+        var creado = validateBusiness(
+          Object.assign({}, NEGOCIO_INICIAL, { name: nombre, ownerId: 'demo' }),
+        );
+        if (creado.ok) estado.negocios[nuevo] = creado.business;
+      }
+
+      guardarEstado(estado);
+      return respuesta(ruta.indexOf('signup') !== -1 ? 201 : 200, { user: estado.usuario });
+    }
+
+    if (ruta === '/api/auth/logout') {
+      estado.usuario = null;
+      guardarEstado(estado);
+      return respuesta(200, { ok: true });
+    }
+
+    if (!estado.usuario) return respuesta(401, { error: 'Necesitas iniciar sesión.' });
+
+    // --- ejemplos ---
+    if (ruta === '/api/examples') {
+      return respuesta(200, {
+        examples: EJEMPLOS.map(function (e) {
+          return { slug: e.slug, name: e.name, tagline: e.tagline || '', intents: e.intents.length };
+        }),
+      });
+    }
+
+    if (partes[1] === 'examples' && partes[3] === 'copy' && metodo === 'POST') {
+      var original = null;
+      for (var i = 0; i < EJEMPLOS.length; i += 1) if (EJEMPLOS[i].slug === partes[2]) original = EJEMPLOS[i];
+      if (!original) return respuesta(404, { error: 'Ese ejemplo no existe.' });
+
+      var copia = JSON.parse(JSON.stringify(original));
+      delete copia.slug;
+      copia.name = original.name + ' (mi copia)';
+      copia.ownerId = 'demo';
+      return guardarNegocio(slugLibre(copia.name), copia);
+    }
+
+    // --- negocios ---
+    if (ruta === '/api/businesses' && metodo === 'GET') {
+      var lista = Object.keys(estado.negocios).sort().map(function (slug) {
+        return resumen(slug, estado.negocios[slug]);
+      });
+      return respuesta(200, { businesses: lista });
+    }
+
+    if (ruta === '/api/businesses' && metodo === 'POST') {
+      var comoSeLlama = cuerpo && cuerpo.name ? String(cuerpo.name).trim() : '';
+      if (!comoSeLlama) return respuesta(422, { error: 'El negocio necesita un nombre.' });
+      return guardarNegocio(
+        slugLibre(comoSeLlama),
+        Object.assign({}, NEGOCIO_INICIAL, { name: comoSeLlama, ownerId: 'demo' }),
+      );
+    }
+
+    if (partes[1] === 'businesses' && partes[2]) {
+      var slug = decodeURIComponent(partes[2]);
+      var negocio = estado.negocios[slug];
+      if (!negocio) return respuesta(404, { error: 'Ese negocio no existe.' });
+
+      if (partes[3] === 'share') {
+        return respuesta(200, {
+          url: 'https://tu-servidor.cl/c/' + slug,
+          qr: 'qr-de-muestra',
+          embed: '<script src="https://tu-servidor.cl/widget.js" data-negocio="' + slug + '" defer><\/script>',
+          whatsapp: 'https://wa.me/?text=' + encodeURIComponent('Resuelve tus dudas por aquí: https://tu-servidor.cl/c/' + slug),
+        });
+      }
+
+      if (metodo === 'GET') return respuesta(200, { slug: slug, business: negocio });
+      if (metodo === 'PUT') return guardarNegocio(slug, Object.assign({}, cuerpo, { ownerId: 'demo' }));
+      if (metodo === 'DELETE') {
+        delete estado.negocios[slug];
+        guardarEstado(estado);
+        return respuesta(200, { ok: true });
+      }
+    }
+
+    // El QR se pide como texto; en el demo se devuelve uno de muestra.
+    if (ruta === 'qr-de-muestra') return respuesta(200, QR_MUESTRA);
+
+    return respuesta(404, { error: 'No encontrado.' });
+  };
+
+  /* ===================================================================
+     El panel, tal cual está en public/panel.js.
+     =================================================================== */
+
+  /*__PANEL_JS__*/
+
+  /* ===================================================================
+     Añadidos del demo: vista previa del chat y avisos.
+     =================================================================== */
+
+  (function () {
+    var cajon = document.getElementById('previsualizar');
+
+    /** Arma el chat del cliente con lo que hay AHORA en el formulario, sin guardar. */
+    function chatConLoQueHayEnPantalla() {
+      var editado = leerFormulario();
+      var validado = validateBusiness(editado);
+      var negocio = validado.ok ? validado.business : estado.negocios[slugActual];
+      if (!negocio) return '';
+
+      return PLANTILLA_CHAT
+        .replace('/*__BUSINESS__*/', function () { return JSON.stringify(negocio); })
+        .replace(/__NOMBRE__/g, function () { return String(negocio.name).replace(/[<>&"]/g, ''); });
+    }
+
+    function abrirPreview() {
+      var html = chatConLoQueHayEnPantalla();
+      if (!html) return;
+
+      // Cada apertura estrena un iframe. Reutilizarlo no sirve: document.open() no limpia
+      // el ámbito global, así que al reescribir chocan las constantes del motor
+      // ("Identifier 'CONFIDENCE_THRESHOLD' has already been declared").
+      var anterior = document.getElementById('marco-preview');
+      var marco = document.createElement('iframe');
+      marco.id = 'marco-preview';
+      marco.title = 'Vista previa del chat';
+      anterior.replaceWith(marco);
+
+      // Se escribe el documento en vez de usar src: así la vista previa refleja los
+      // cambios sin guardar, y los estilos del chat no tocan los del panel.
+      var doc = marco.contentDocument;
+      doc.open();
+      doc.write(html);
+      doc.close();
+
+      cajon.classList.add('abierto');
+      cajon.setAttribute('aria-hidden', 'false');
+    }
+
+    function cerrarPreview() {
+      cajon.classList.remove('abierto');
+      cajon.setAttribute('aria-hidden', 'true');
+    }
+
+    document.getElementById('cerrar-preview').addEventListener('click', cerrarPreview);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') cerrarPreview();
+    });
+
+    // "Probar el bot" abre la vista previa en vez de navegar a una dirección que no existe.
+    var probar = document.getElementById('probar');
+    probar.addEventListener('click', function (e) {
+      e.preventDefault();
+      abrirPreview();
+    });
+    probar.removeAttribute('target');
+    probar.textContent = 'Probar el bot →';
+
+    // En el demo no hay un QR real que descargar ni una dirección que abrir.
+    // Se oculta en vez de quitarlo: panel.js le asigna propiedades y quitarlo lo
+    // haría fallar, dejando la pestaña Compartir a medio llenar.
+    document.getElementById('descargar-qr').hidden = true;
+    document.getElementById('abrir-url').addEventListener('click', function (e) {
+      e.preventDefault();
+      abrirPreview();
+    });
+    document.getElementById('abrir-url').textContent = 'Ver el chat';
+  })();
+</script>

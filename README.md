@@ -116,7 +116,29 @@ El link se distribuye igual *por* WhatsApp y funciona hoy. Cuando haya evidencia
 clientes usan el bot, WhatsApp pasa a ser una inversión justificada — y será un adaptador
 sobre el mismo `POST /api/chat`, no una reescritura.
 
-### Probar sin contratar hosting
+### Enseñar el panel sin contratar hosting
+
+```bash
+npm run build:demo
+```
+
+Genera `dist/demo.html`: **el panel del dueño funcionando en un solo archivo.** Sirve para
+sentarse con un dueño de pyme y ver si entiende cómo configurar su bot — que es la reacción
+más valiosa que se puede recoger, y la que no se obtiene enseñando solo el chat.
+
+No es una maqueta: usa el HTML, el CSS y el JavaScript reales del panel, la validación real
+(`src/knowledge/schema.js`) y el motor real (`src/bot/`). Lo único sustituido es el servidor,
+por una implementación que guarda en el navegador. Como el demo *es* el producto, no puede
+desviarse de él.
+
+Incluye una vista previa lateral que muestra el chat del cliente **con los cambios sin
+guardar**, así se ve el efecto de editar una respuesta al momento.
+
+Lo que no hace: el acceso no comprueba la contraseña (no hay dónde guardar un hash con
+seguridad en el navegador, y fingirlo daría una impresión equivocada), los cambios quedan
+solo en ese navegador, y el QR es de muestra. El propio demo lo dice en pantalla.
+
+### Probar el chat sin contratar hosting
 
 ```bash
 npm run build:chat -- mi-negocio
