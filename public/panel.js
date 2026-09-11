@@ -289,20 +289,47 @@ async function copiar(texto, boton) {
   }, 2000);
 }
 
+/** Pinta la dirección, el QR y el resto de las formas de compartir. */
+async function pintarCompartir(slug, url, rutaQr) {
+  $('url-publica').value = url;
+  $('abrir-url').href = url;
+  $('descargar-qr').href = rutaQr;
+  $('descargar-qr').setAttribute('download', `qr-${slug}.svg`);
+
+  // El QR se pide como texto y se inserta: así se ve en pantalla y se imprime nítido.
+  const res = await fetch(rutaQr);
+  $('qr').innerHTML = res.ok ? await res.text() : '';
+}
+
 async function cargarCompartir(slug) {
   const { ok, datos } = await api('GET', `/api/businesses/${slug}/share`);
   if (!ok) return;
 
-  $('url-publica').value = datos.url;
-  $('abrir-url').href = datos.url;
   $('codigo-embed').value = datos.embed;
   $('compartir-whatsapp').href = datos.whatsapp;
-  $('descargar-qr').href = datos.qr;
-  $('descargar-qr').setAttribute('download', `qr-${slug}.svg`);
 
-  // El QR se pide como texto y se inserta: así se ve en pantalla y se imprime nítido.
-  const res = await fetch(datos.qr);
-  $('qr').innerHTML = res.ok ? await res.text() : '';
+  await pintarCompartir(slug, datos.url, datos.qr);
+
+  // Avisar cuando la dirección no sirve para escanear desde un teléfono.
+  const aviso = $('aviso-local');
+  const boton = $('usar-red');
+  aviso.hidden = !datos.soloLocal;
+
+  if (datos.soloLocal) {
+    if (datos.urlEnLaRed) {
+      $('sugerencia-red').textContent =
+        ` Para probar desde tu celular conectado a la misma wifi, usa ${datos.urlEnLaRed}`;
+      boton.hidden = false;
+      boton.onclick = () => {
+        pintarCompartir(slug, datos.urlEnLaRed, datos.qrEnLaRed);
+        aviso.hidden = true;
+      };
+    } else {
+      $('sugerencia-red').textContent =
+        ' Publica PymeBot en un servidor con dirección propia para que el QR funcione.';
+      boton.hidden = true;
+    }
+  }
 }
 
 $('copiar-url').addEventListener('click', (e) => copiar($('url-publica').value, e.target));

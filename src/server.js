@@ -15,6 +15,7 @@
  */
 
 const path = require('path');
+const os = require('os');
 const express = require('express');
 const QRCode = require('qrcode');
 
@@ -174,6 +175,41 @@ function createApp({
     return `${base.replace(/\/+$/, '')}/c/${encodeURIComponent(slug)}`;
   }
 
+  /**
+   * ¿Esta dirección solo existe dentro del computador que corre el servidor?
+   *
+   * Importa porque el QR se escanea CON UN TELÉFONO. Un QR que codifica "localhost"
+   * nunca va a funcionar: en el teléfono, localhost es el propio teléfono.
+   */
+  function esSoloLocal(url) {
+    try {
+      const host = new URL(url).hostname;
+      return host === 'localhost' || host === '127.0.0.1' || host === '::1' || host === '0.0.0.0';
+    } catch (err) {
+      return false;
+    }
+  }
+
+  /**
+   * La dirección del servidor dentro de la red local (la wifi de la casa o del local).
+   * Es lo que sí puede abrir un teléfono conectado a la misma red.
+   */
+  function urlEnLaRed(req, slug) {
+    // El puerto sale de la petición, no de process.env.PORT: si el servidor arrancó en
+    // otro puerto (o PORT no está definida), la dirección sugerida sería la equivocada.
+    const desdeHost = String(req.get('host') || '').split(':')[1];
+    const puerto = desdeHost || req.socket.localPort || process.env.PORT || 3000;
+
+    for (const interfaces of Object.values(os.networkInterfaces())) {
+      for (const nic of interfaces || []) {
+        if (nic.family === 'IPv4' && !nic.internal) {
+          return `http://${nic.address}:${puerto}/c/${encodeURIComponent(slug)}`;
+        }
+      }
+    }
+    return null;
+  }
+
   function sinNegocios(res) {
     return res.status(503).json({ error: 'Todavía no hay ningún negocio configurado.' });
   }
@@ -261,7 +297,14 @@ function createApp({
       return res.status(404).json({ error: 'Ese negocio no existe.' });
     }
 
-    const svg = await QRCode.toString(publicUrl(req, req.params.slug), {
+    // ?red=1 codifica la dirección dentro de la red local, que es la que sirve para
+    // escanear desde un teléfono mientras se prueba en el computador.
+    const destino =
+      req.query.red === '1'
+        ? urlEnLaRed(req, req.params.slug) || publicUrl(req, req.params.slug)
+        : publicUrl(req, req.params.slug);
+
+    const svg = await QRCode.toString(destino, {
       type: 'svg',
       margin: 1,
       // Nivel Q: sigue leyéndose aunque el papel se manche o se raye.
@@ -366,6 +409,7 @@ function createApp({
   app.get('/api/businesses/:slug/share', requireAuth, requireOwnedBusiness, (req, res) => {
     const url = publicUrl(req, req.params.slug);
     const origen = url.slice(0, url.indexOf('/c/'));
+    const soloLocal = esSoloLocal(url);
 
     res.json({
       url,
@@ -373,6 +417,11 @@ function createApp({
       embed:
         `<script src="${origen}/widget.js" data-negocio="${req.params.slug}" defer></script>`,
       whatsapp: `https://wa.me/?text=${encodeURIComponent(`Resuelve tus dudas por aquí: ${url}`)}`,
+      // Si la dirección solo existe en este computador, el QR no sirve para escanear.
+      // Se ofrece la de la red local, que un teléfono en la misma wifi sí puede abrir.
+      soloLocal,
+      urlEnLaRed: soloLocal ? urlEnLaRed(req, req.params.slug) : null,
+      qrEnLaRed: soloLocal ? `/api/businesses/${req.params.slug}/qr.svg?red=1` : null,
     });
   });
 

@@ -99,6 +99,7 @@
   var EJEMPLOS = /*__EJEMPLOS__*/;
   var PLANTILLA_CHAT = /*__PLANTILLA_CHAT__*/;
   var QR_MUESTRA = /*__QR__*/;
+  var URL_CHAT_DEMO = /*__URL_CHAT_DEMO__*/;
 
   var LLAVE = 'pymebot-demo';
 
@@ -283,7 +284,7 @@
 
       if (partes[3] === 'share') {
         return respuesta(200, {
-          url: 'https://tu-servidor.cl/c/' + slug,
+          url: 'https://tu-servidor.cl/c/' + slug, // dirección de ejemplo: en el demo no hay servidor
           qr: 'qr-de-muestra',
           embed: '<script src="https://tu-servidor.cl/widget.js" data-negocio="' + slug + '" defer><\/script>',
           whatsapp: 'https://wa.me/?text=' + encodeURIComponent('Resuelve tus dudas por aquí: https://tu-servidor.cl/c/' + slug),
@@ -377,6 +378,32 @@
     // Se oculta en vez de quitarlo: panel.js le asigna propiedades y quitarlo lo
     // haría fallar, dejando la pestaña Compartir a medio llenar.
     document.getElementById('descargar-qr').hidden = true;
+
+    /*
+     * Decir en pantalla qué es este QR.
+     *
+     * En el demo no puede apuntar al negocio que se edita: los negocios viven en el
+     * localStorage de este navegador, así que un teléfono abriría uno vacío. Apunta a un
+     * chat publicado de verdad, para que se pueda escanear y se vea funcionar.
+     */
+    var tarjetaQr = document.getElementById('qr').closest('.compartir-tarjeta');
+    if (tarjetaQr) {
+      var nota = document.createElement('p');
+      nota.className = 'ayuda';
+      nota.innerHTML =
+        '<strong>En el demo este QR es un ejemplo:</strong> escanéalo y abre un chat de ' +
+        'demostración que funciona. En PymeBot instalado, apunta a la dirección de tu ' +
+        'propio negocio.';
+      tarjetaQr.appendChild(nota);
+
+      var abrirChat = document.createElement('a');
+      abrirChat.className = 'btn-ghost';
+      abrirChat.href = URL_CHAT_DEMO;
+      abrirChat.target = '_blank';
+      abrirChat.rel = 'noopener';
+      abrirChat.textContent = 'Abrir ese chat ↗';
+      tarjetaQr.appendChild(abrirChat);
+    }
     document.getElementById('abrir-url').addEventListener('click', function (e) {
       e.preventDefault();
       abrirPreview();

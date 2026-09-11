@@ -60,8 +60,26 @@ function cuerpoDelPanel() {
     .filter((f) => f.endsWith('.json'))
     .map((f) => ({ slug: f.replace(/\.json$/, ''), ...JSON.parse(read('data', 'businesses', f)) }));
 
-  // Un QR de muestra: en el demo no hay una dirección real que codificar.
-  const qrMuestra = await QRCode.toString('https://tu-servidor.cl/c/tu-negocio', {
+  /*
+   * El QR del demo.
+   *
+   * No puede apuntar al negocio que se está editando, y conviene entender por qué: los
+   * negocios del demo viven en el localStorage de ESE navegador, así que un teléfono que
+   * escaneara un enlace al propio demo abriría uno vacío. Y meter el negocio dentro del QR
+   * tampoco sirve: un negocio configurado pesa ~8 KB y un QR admite ~1,6 KB.
+   *
+   * Así que apunta a un chat publicado de verdad. Es escaneable y abre un bot que funciona,
+   * que es lo que hay que enseñar. La pantalla dice que es un ejemplo.
+   *
+   * Se pasa por argumento porque depende de dónde esté publicado:
+   *   npm run build:demo -- https://mi-chat-publicado
+   */
+  const URL_CHAT_DEMO =
+    process.argv[2] ||
+    process.env.PYMEBOT_DEMO_CHAT_URL ||
+    'https://claude.ai/code/artifact/4d34c5d9-3097-45a1-a714-5fd08fcd2ed9';
+
+  const qrMuestra = await QRCode.toString(URL_CHAT_DEMO, {
     type: 'svg',
     margin: 1,
     errorCorrectionLevel: 'Q',
@@ -75,9 +93,10 @@ function cuerpoDelPanel() {
     .replace('/*__PANEL_JS__*/', () => read('public', 'panel.js'))
     .replace('/*__EJEMPLOS__*/', () => JSON.stringify(ejemplos, null, 2))
     .replace('/*__PLANTILLA_CHAT__*/', () => comoCadenaJs(plantillaChat))
-    .replace('/*__QR__*/', () => comoCadenaJs(qrMuestra));
+    .replace('/*__QR__*/', () => comoCadenaJs(qrMuestra))
+    .replace('/*__URL_CHAT_DEMO__*/', () => comoCadenaJs(URL_CHAT_DEMO));
 
-  for (const marcador of ['__ESTILOS_PANEL__', '__CUERPO_PANEL__', '__SCHEMA__', '__MOTOR__', '__PANEL_JS__', '__EJEMPLOS__', '__PLANTILLA_CHAT__', '__QR__']) {
+  for (const marcador of ['__ESTILOS_PANEL__', '__CUERPO_PANEL__', '__SCHEMA__', '__MOTOR__', '__PANEL_JS__', '__EJEMPLOS__', '__PLANTILLA_CHAT__', '__QR__', '__URL_CHAT_DEMO__']) {
     if (html.includes(marcador)) throw new Error(`La plantilla no se rellenó: queda ${marcador}.`);
   }
 
@@ -85,5 +104,7 @@ function cuerpoDelPanel() {
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, html);
 
-  console.log(`dist/demo.html generado · ${ejemplos.length} ejemplos · ${(html.length / 1024).toFixed(1)} KB`);
+  console.log(
+    `dist/demo.html generado · ${ejemplos.length} ejemplos · QR → ${URL_CHAT_DEMO} · ${(html.length / 1024).toFixed(1)} KB`,
+  );
 })();

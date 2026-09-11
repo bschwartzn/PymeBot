@@ -252,3 +252,98 @@ test('sin pedir negocio sí se usa el por defecto: es el caso del sandbox', asyn
     await srv.close();
   }
 });
+
+/* --- El QR se escanea con un teléfono: una dirección local no le sirve de nada --- */
+
+test('avisa cuando la dirección solo existe en el computador del dueño', async () => {
+  const srv = await startServer();
+  try {
+    const ana = await srv.dueno('ana@ejemplo.cl');
+    const { body } = await ana.get(`/api/businesses/${ana.slug}/share`, {
+      'X-Forwarded-Host': 'localhost:3000',
+      'X-Forwarded-Proto': 'http',
+    });
+
+    assert.strictEqual(body.soloLocal, true, 'localhost no lo puede abrir un teléfono');
+    assert.ok(body.qrEnLaRed, 'debería ofrecer un QR con la dirección de la red local');
+  } finally {
+    await srv.close();
+  }
+});
+
+test('con un dominio de verdad no avisa nada', async () => {
+  const srv = await startServer();
+  try {
+    const ana = await srv.dueno('ana@ejemplo.cl');
+    const { body } = await ana.get(`/api/businesses/${ana.slug}/share`, {
+      'X-Forwarded-Host': 'chat.mipyme.cl',
+      'X-Forwarded-Proto': 'https',
+    });
+
+    assert.strictEqual(body.soloLocal, false);
+    assert.strictEqual(body.urlEnLaRed, null);
+    assert.strictEqual(body.qrEnLaRed, null);
+  } finally {
+    await srv.close();
+  }
+});
+
+test('el QR de la red local se genera y es distinto del normal', async () => {
+  const srv = await startServer();
+  try {
+    const ana = await srv.dueno('ana@ejemplo.cl');
+    const normal = await srv.cliente().get(`/api/businesses/${ana.slug}/qr.svg`);
+    const enRed = await srv.cliente().get(`/api/businesses/${ana.slug}/qr.svg?red=1`);
+
+    assert.strictEqual(enRed.status, 200);
+    assert.ok(enRed.tipo.includes('image/svg+xml'));
+    assert.notStrictEqual(normal.body, enRed.body, 'deberían codificar direcciones distintas');
+  } finally {
+    await srv.close();
+  }
+});
+
+test('el QR codifica exactamente la dirección del chat, no otra cosa', async () => {
+  const QRCode = require('qrcode');
+  const srv = await startServer();
+  try {
+    const ana = await srv.dueno('ana@ejemplo.cl');
+    const { body } = await srv.cliente().get(`/api/businesses/${ana.slug}/qr.svg`, {
+      'X-Forwarded-Host': 'chat.mipyme.cl',
+      'X-Forwarded-Proto': 'https',
+    });
+
+    // La generación es determinista: si el SVG coincide con el de la URL esperada, es
+    // porque codifica esa URL y ninguna otra. Verifica el contenido, no solo que haya SVG.
+    const esperado = await QRCode.toString(`https://chat.mipyme.cl/c/${ana.slug}`, {
+      type: 'svg',
+      margin: 1,
+      errorCorrectionLevel: 'Q',
+    });
+
+    assert.strictEqual(body, esperado, 'el QR no apunta a la dirección del chat');
+  } finally {
+    await srv.close();
+  }
+});
+
+test('la dirección de red sugerida usa el puerto real del servidor', async () => {
+  const srv = await startServer();
+  try {
+    const ana = await srv.dueno('ana@ejemplo.cl');
+    const puertoReal = new URL(srv.base).port;
+
+    const { body } = await ana.get(`/api/businesses/${ana.slug}/share`, {
+      'X-Forwarded-Host': 'localhost:9999',
+      'X-Forwarded-Proto': 'http',
+    });
+
+    assert.strictEqual(body.soloLocal, true);
+    assert.ok(
+      body.urlEnLaRed.includes(`:${puertoReal}/`),
+      `sugirió ${body.urlEnLaRed}, pero el servidor escucha en ${puertoReal}`,
+    );
+  } finally {
+    await srv.close();
+  }
+});

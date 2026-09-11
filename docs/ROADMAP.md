@@ -512,4 +512,47 @@ guardar**, para ver el efecto de editar una respuesta al momento.
 avisos ocultos de la pantalla de acceso. Es la segunda vez que el mismo descuido me confunde;
 los selectores de prueba van acotados a su contenedor.
 
+---
+
+### Corrección: el código QR — ✅
+
+Reportado por el usuario: «el código QR no funciona». Eran **dos fallos distintos**, y el
+importante no era el del demo.
+
+**1. En el producto real: un QR que un teléfono nunca podría abrir.**
+
+Corriendo PymeBot en local, el QR codificaba `http://localhost:3000/c/...`. Se genera
+correctamente y se ve perfecto, pero es inservible: en el teléfono que lo escanea,
+`localhost` es el propio teléfono. Cualquiera que probara el producto en su máquina se
+habría encontrado con esto.
+
+Corregido: el panel detecta que la dirección solo existe en el computador del dueño, lo
+avisa, y ofrece la dirección del servidor **dentro de la red local** —que un teléfono en la
+misma wifi sí puede abrir— con un botón para cambiar el QR a esa dirección.
+
+Al validarlo apareció un segundo fallo dentro del primero: la dirección de red usaba el
+puerto de `process.env.PORT` en vez del puerto en que el servidor realmente escucha, así que
+sugería `:3000` cuando corría en `:3100`. Ahora sale de la petición.
+
+**2. En el demo: el QR apuntaba a un dominio inventado, sin decirlo.**
+
+Apuntaba a `tu-servidor.cl`, que no existe. Y —error mío— **afirmé que el demo lo advertía
+en pantalla; no lo hacía.** Esa advertencia estaba solo en la documentación.
+
+Aquí hay un límite real que conviene dejar escrito: **en el demo es imposible un QR del
+negocio que se está editando.** Los negocios del demo viven en el `localStorage` de ese
+navegador, así que un teléfono que escaneara un enlace al propio demo abriría uno vacío. Y
+meter el negocio dentro del QR tampoco sirve: un negocio configurado pesa ~8 KB y un QR
+admite ~1,6 KB.
+
+Corregido de la única forma honesta: el QR del demo apunta a un chat publicado de verdad
+—se escanea y abre un bot que funciona— y la tarjeta dice en pantalla que es un ejemplo y
+que en PymeBot instalado apunta a la dirección del propio negocio.
+
+**Cómo se verificó.** No bastaba con comprobar que se generara un SVG: eso ya pasaba cuando
+el QR estaba mal. Se rasterizaron los tres QR en Chromium y se **decodificaron** con un
+lector, como lo haría la cámara de un teléfono. Los tres devuelven la dirección correcta.
+Para la suite quedó un test más barato que compara el SVG generado con el de la URL esperada:
+al ser determinista, coincidir prueba que codifica esa dirección y no otra.
+
 **Siguiente paso:** Módulo 3 — Comprensión y gestión de conversación.

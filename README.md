@@ -75,7 +75,7 @@ comprensión; no se baja para que pase.
 npm test
 ```
 
-138 tests sobre el motor, las sesiones, la API HTTP, la validación de negocios, el
+143 tests sobre el motor, las sesiones, la API HTTP, la validación de negocios, el
 repositorio, la autenticación y autorización, el canal público, la precisión y el sandbox.
 
 ---
@@ -97,6 +97,7 @@ Desde la pestaña **Compartir** del panel tienes las cuatro formas de distribuir
 |---|---|
 | **El link** | Estado de WhatsApp, bio de Instagram, ficha de Google, respuesta automática fuera de horario |
 | **Código QR** | Negocios con local: impreso en el mesón, la vitrina o la mesa |
+
 | **Widget** | Negocios que ya tienen página web: una línea y aparece una burbuja de chat |
 | **Enlace de WhatsApp** | Para reenviar el link a un cliente en un toque |
 
@@ -105,6 +106,12 @@ El widget se instala así:
 ```html
 <script src="https://tu-servidor/widget.js" data-negocio="mi-negocio" defer></script>
 ```
+
+> **El QR se escanea con un teléfono**, así que la dirección tiene que ser alcanzable desde
+> uno. Si corres PymeBot en tu computador, el QR apuntará a `localhost` y **no funcionará**:
+> en el teléfono, `localhost` es el propio teléfono. El panel te avisa y te ofrece la
+> dirección de tu red local, que sí sirve para probar desde el celular conectado a la misma
+> wifi. Para algo definitivo, despliega con `PYMEBOT_PUBLIC_URL`.
 
 ### ¿Y WhatsApp?
 
@@ -302,7 +309,7 @@ public/
   index.*              Sandbox interno de pruebas
 scripts/               Generadores de páginas sin servidor y medidor de precisión
 dist/                  Páginas en un solo archivo, sin servidor (generadas)
-tests/                 138 tests con el runner nativo de Node
+tests/                 143 tests con el runner nativo de Node
 docs/ROADMAP.md        Plan modular completo
 ```
 
