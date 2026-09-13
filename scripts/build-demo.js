@@ -89,6 +89,7 @@ function cuerpoDelPanel() {
     .replace('/*__ESTILOS_PANEL__*/', () => read('public', 'panel.css'))
     .replace('<!--__CUERPO_PANEL__-->', () => cuerpoDelPanel())
     .replace('/*__SCHEMA__*/', () => toBrowserScript(read('src', 'knowledge', 'schema.js')))
+    .replace('/*__METRICAS__*/', () => toBrowserScript(read('src', 'chat', 'metricas.js')))
     .replace('/*__MOTOR__*/', () => motor)
     .replace('/*__PANEL_JS__*/', () => read('public', 'panel.js'))
     .replace('/*__EJEMPLOS__*/', () => JSON.stringify(ejemplos, null, 2))
@@ -96,7 +97,7 @@ function cuerpoDelPanel() {
     .replace('/*__QR__*/', () => comoCadenaJs(qrMuestra))
     .replace('/*__URL_CHAT_DEMO__*/', () => comoCadenaJs(URL_CHAT_DEMO));
 
-  for (const marcador of ['__ESTILOS_PANEL__', '__CUERPO_PANEL__', '__SCHEMA__', '__MOTOR__', '__PANEL_JS__', '__EJEMPLOS__', '__PLANTILLA_CHAT__', '__QR__', '__URL_CHAT_DEMO__']) {
+  for (const marcador of ['__ESTILOS_PANEL__', '__CUERPO_PANEL__', '__SCHEMA__', '__METRICAS__', '__MOTOR__', '__PANEL_JS__', '__EJEMPLOS__', '__PLANTILLA_CHAT__', '__QR__', '__URL_CHAT_DEMO__']) {
     if (html.includes(marcador)) throw new Error(`La plantilla no se rellenó: queda ${marcador}.`);
   }
 

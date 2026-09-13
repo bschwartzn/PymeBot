@@ -89,6 +89,8 @@
 
   /*__MOTOR__*/
 
+  /*__METRICAS__*/
+
   /* ===================================================================
      El servidor, sustituido por el navegador.
 
@@ -104,13 +106,15 @@
   var LLAVE = 'pymebot-demo';
 
   function estadoInicial() {
-    return { usuario: null, negocios: {} };
+    return { usuario: null, negocios: {}, conversaciones: {} };
   }
 
   function leerEstado() {
     try {
       var crudo = localStorage.getItem(LLAVE);
-      return crudo ? JSON.parse(crudo) : estadoInicial();
+      var leido = crudo ? JSON.parse(crudo) : estadoInicial();
+      if (!leido.conversaciones) leido.conversaciones = {};
+      return leido;
     } catch (err) {
       // Navegación privada o almacenamiento bloqueado: el demo funciona igual,
       // simplemente no recuerda nada al recargar.
@@ -291,6 +295,12 @@
         });
       }
 
+      if (partes[3] === 'metrics') {
+        // resumir() es la misma función del servidor: lo que se ve aquí es lo que se vería
+        // en producción, solo que con las conversaciones que probaste tú.
+        return respuesta(200, resumir(estado.conversaciones[slug] || []));
+      }
+
       if (metodo === 'GET') return respuesta(200, { slug: slug, business: negocio });
       if (metodo === 'PUT') return guardarNegocio(slug, Object.assign({}, cuerpo, { ownerId: 'demo' }));
       if (metodo === 'DELETE') {
@@ -318,6 +328,8 @@
 
   (function () {
     var cajon = document.getElementById('previsualizar');
+    /** Cada apertura de la vista previa es una conversación distinta. */
+    var idDeLaPrueba = null;
 
     /** Arma el chat del cliente con lo que hay AHORA en el formulario, sin guardar. */
     function chatConLoQueHayEnPantalla() {
@@ -334,6 +346,7 @@
     function abrirPreview() {
       var html = chatConLoQueHayEnPantalla();
       if (!html) return;
+      idDeLaPrueba = 'prueba-' + Date.now();
 
       // Cada apertura estrena un iframe. Reutilizarlo no sirve: document.open() no limpia
       // el ámbito global, así que al reescribir chocan las constantes del motor
@@ -351,6 +364,30 @@
       doc.write(html);
       doc.close();
 
+      /*
+       * Lo que pruebes en la vista previa cuenta como conversación.
+       *
+       * No es un adorno: hace que la pestaña Conversaciones muestre datos REALES —los
+       * tuyos— en vez de cifras inventadas. Se envuelve `respond` dentro del iframe, que
+       * es del mismo origen, para no tocar la plantilla del chat que comparte el producto.
+       */
+      var ventana = marco.contentWindow;
+      var original = ventana.respond;
+      ventana.respond = function (texto) {
+        var r = original.apply(this, arguments);
+        if (!estado.conversaciones[slugActual]) estado.conversaciones[slugActual] = [];
+        estado.conversaciones[slugActual].push({
+          at: new Date().toISOString(),
+          conversationId: idDeLaPrueba,
+          channel: 'web',
+          pregunta: texto,
+          intent: r.intent,
+          matched: r.matched,
+        });
+        guardarEstado(estado);
+        return r;
+      };
+
       cajon.classList.add('abierto');
       cajon.setAttribute('aria-hidden', 'false');
     }
@@ -358,6 +395,8 @@
     function cerrarPreview() {
       cajon.classList.remove('abierto');
       cajon.setAttribute('aria-hidden', 'true');
+      // Al volver al panel, las cifras reflejan lo que se acaba de probar.
+      if (slugActual) cargarConversaciones(slugActual);
     }
 
     document.getElementById('cerrar-preview').addEventListener('click', cerrarPreview);

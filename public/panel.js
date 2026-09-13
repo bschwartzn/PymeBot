@@ -413,7 +413,8 @@ function convertirEnPregunta(texto) {
 
 async function cargarConversaciones(slug) {
   const { ok, datos } = await api('GET', `/api/businesses/${slug}/metrics`);
-  if (!ok) return;
+  // Sin métricas no se pinta nada, pero tampoco se rompe el resto del panel.
+  if (!ok || !datos || !Array.isArray(datos.preguntasSinRespuesta)) return;
 
   const cifrasEl = $('cifras');
   cifrasEl.innerHTML = '';

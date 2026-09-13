@@ -1279,6 +1279,88 @@ function respond(message, business, session = null) {
   return { reply, intent: intent.id, score, matched: true };
 }
 
+  /**
+ * Qué preguntan los clientes, y qué no supo responder el bot.
+ *
+ * La métrica que de verdad le sirve al dueño no es cuántos mensajes recibió: es la lista
+ * de preguntas que su bot NO supo contestar. Cada una es una respuesta que le falta
+ * configurar, y arreglarla es trabajo de dos minutos.
+ */
+
+
+const DIAS_POR_DEFECTO = 14;
+
+function diaDe(iso) {
+  return String(iso).slice(0, 10);
+}
+
+/** Agrupa preguntas parecidas para no repetir veinte veces la misma. */
+function agrupar(registros, clave) {
+  const grupos = new Map();
+
+  for (const registro of registros) {
+    const k = clave(registro);
+    if (!k) continue;
+
+    if (!grupos.has(k)) grupos.set(k, { clave: k, veces: 0, ejemplo: registro.pregunta, ultima: registro.at });
+    const grupo = grupos.get(k);
+    grupo.veces += 1;
+    if (registro.at > grupo.ultima) {
+      grupo.ultima = registro.at;
+      grupo.ejemplo = registro.pregunta;
+    }
+  }
+
+  return [...grupos.values()].sort((a, b) => b.veces - a.veces || (a.clave < b.clave ? -1 : 1));
+}
+
+/**
+ * Resume la actividad de un negocio.
+ * @param {Array} registros lo que devuelve ConversationLog.leer
+ */
+function resumir(registros, { dias = DIAS_POR_DEFECTO, ahora = Date.now() } = {}) {
+  const desde = new Date(ahora - dias * 24 * 60 * 60 * 1000).toISOString();
+  const recientes = registros.filter((r) => r.at >= desde);
+
+  const conversaciones = new Set(recientes.map((r) => r.conversationId));
+  const sinRespuesta = recientes.filter((r) => r.matched === false && r.intent !== 'pausado');
+
+  // Los días se rellenan aunque no haya tráfico: un hueco en el gráfico también informa.
+  const porDia = [];
+  for (let i = dias - 1; i >= 0; i -= 1) {
+    const dia = diaDe(new Date(ahora - i * 24 * 60 * 60 * 1000).toISOString());
+    porDia.push({ dia, mensajes: recientes.filter((r) => diaDe(r.at) === dia).length });
+  }
+
+  return {
+    dias,
+    mensajes: recientes.length,
+    conversaciones: conversaciones.size,
+    mensajesPorConversacion: conversaciones.size
+      ? Number((recientes.length / conversaciones.size).toFixed(1))
+      : 0,
+
+    // El número que le importa al dueño: cuánto NO supo responder su bot.
+    sinRespuesta: sinRespuesta.length,
+    tasaDeAcierto: recientes.length
+      ? Number((((recientes.length - sinRespuesta.length) / recientes.length) * 100).toFixed(1))
+      : null,
+
+    porDia,
+
+    /** Las preguntas que el bot no supo responder, agrupadas y de mayor a menor. */
+    preguntasSinRespuesta: agrupar(sinRespuesta, (r) => normalize(r.pregunta)).slice(0, 25),
+
+    /** De qué temas preguntan más, entre los que sí sabe responder. */
+    temasMasPreguntados: agrupar(
+      recientes.filter((r) => r.matched),
+      (r) => r.intent,
+    ).slice(0, 12),
+
+    canales: agrupar(recientes, (r) => r.channel || 'web'),
+  };
+}
+
   /* ===================================================================
      El servidor, sustituido por el navegador.
 
@@ -2066,13 +2148,15 @@ function respond(message, business, session = null) {
   var LLAVE = 'pymebot-demo';
 
   function estadoInicial() {
-    return { usuario: null, negocios: {} };
+    return { usuario: null, negocios: {}, conversaciones: {} };
   }
 
   function leerEstado() {
     try {
       var crudo = localStorage.getItem(LLAVE);
-      return crudo ? JSON.parse(crudo) : estadoInicial();
+      var leido = crudo ? JSON.parse(crudo) : estadoInicial();
+      if (!leido.conversaciones) leido.conversaciones = {};
+      return leido;
     } catch (err) {
       // Navegación privada o almacenamiento bloqueado: el demo funciona igual,
       // simplemente no recuerda nada al recargar.
@@ -2251,6 +2335,12 @@ function respond(message, business, session = null) {
           embed: '<script src="https://tu-servidor.cl/widget.js" data-negocio="' + slug + '" defer><\/script>',
           whatsapp: 'https://wa.me/?text=' + encodeURIComponent('Resuelve tus dudas por aquí: https://tu-servidor.cl/c/' + slug),
         });
+      }
+
+      if (partes[3] === 'metrics') {
+        // resumir() es la misma función del servidor: lo que se ve aquí es lo que se vería
+        // en producción, solo que con las conversaciones que probaste tú.
+        return respuesta(200, resumir(estado.conversaciones[slug] || []));
       }
 
       if (metodo === 'GET') return respuesta(200, { slug: slug, business: negocio });
@@ -2687,7 +2777,8 @@ function convertirEnPregunta(texto) {
 
 async function cargarConversaciones(slug) {
   const { ok, datos } = await api('GET', `/api/businesses/${slug}/metrics`);
-  if (!ok) return;
+  // Sin métricas no se pinta nada, pero tampoco se rompe el resto del panel.
+  if (!ok || !datos || !Array.isArray(datos.preguntasSinRespuesta)) return;
 
   const cifrasEl = $('cifras');
   cifrasEl.innerHTML = '';
@@ -2915,6 +3006,8 @@ async function entrarAlPanel() {
 
   (function () {
     var cajon = document.getElementById('previsualizar');
+    /** Cada apertura de la vista previa es una conversación distinta. */
+    var idDeLaPrueba = null;
 
     /** Arma el chat del cliente con lo que hay AHORA en el formulario, sin guardar. */
     function chatConLoQueHayEnPantalla() {
@@ -2931,6 +3024,7 @@ async function entrarAlPanel() {
     function abrirPreview() {
       var html = chatConLoQueHayEnPantalla();
       if (!html) return;
+      idDeLaPrueba = 'prueba-' + Date.now();
 
       // Cada apertura estrena un iframe. Reutilizarlo no sirve: document.open() no limpia
       // el ámbito global, así que al reescribir chocan las constantes del motor
@@ -2948,6 +3042,30 @@ async function entrarAlPanel() {
       doc.write(html);
       doc.close();
 
+      /*
+       * Lo que pruebes en la vista previa cuenta como conversación.
+       *
+       * No es un adorno: hace que la pestaña Conversaciones muestre datos REALES —los
+       * tuyos— en vez de cifras inventadas. Se envuelve `respond` dentro del iframe, que
+       * es del mismo origen, para no tocar la plantilla del chat que comparte el producto.
+       */
+      var ventana = marco.contentWindow;
+      var original = ventana.respond;
+      ventana.respond = function (texto) {
+        var r = original.apply(this, arguments);
+        if (!estado.conversaciones[slugActual]) estado.conversaciones[slugActual] = [];
+        estado.conversaciones[slugActual].push({
+          at: new Date().toISOString(),
+          conversationId: idDeLaPrueba,
+          channel: 'web',
+          pregunta: texto,
+          intent: r.intent,
+          matched: r.matched,
+        });
+        guardarEstado(estado);
+        return r;
+      };
+
       cajon.classList.add('abierto');
       cajon.setAttribute('aria-hidden', 'false');
     }
@@ -2955,6 +3073,8 @@ async function entrarAlPanel() {
     function cerrarPreview() {
       cajon.classList.remove('abierto');
       cajon.setAttribute('aria-hidden', 'true');
+      // Al volver al panel, las cifras reflejan lo que se acaba de probar.
+      if (slugActual) cargarConversaciones(slugActual);
     }
 
     document.getElementById('cerrar-preview').addEventListener('click', cerrarPreview);
