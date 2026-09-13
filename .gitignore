@@ -10,3 +10,6 @@ data/*.tmp
 
 # Conversaciones de clientes: datos reales, nunca al repositorio.
 data/conversations/
+
+# El sitio se construye en CI, no se sube compilado.
+dist/sitio/

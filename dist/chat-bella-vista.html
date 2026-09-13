@@ -1,0 +1,741 @@
+<title>Peluquería Bella Vista</title>
+<meta name="description" content="Resolvemos tus dudas al instante." />
+
+<style>
+/*
+ * La página que ve el cliente final.
+ *
+ * Se diseña para el teléfono primero: casi todo el tráfico llega desde un link
+ * compartido por WhatsApp o desde un QR, y se abre en el navegador del móvil.
+ */
+
+:root {
+  --fondo: #f2f4f7;
+  --panel: #ffffff;
+  --texto: #18202b;
+  --suave: #667085;
+  --linea: #e3e8ef;
+  --burbuja: #f2f4f7;
+  --marca: #1f6feb;
+  --marca-texto: #ffffff;
+  --error-bg: #fdecec;
+  --error: #a12a2a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #0e1116;
+    --panel: #161b22;
+    --texto: #e6edf3;
+    --suave: #8d97a5;
+    --linea: #262c36;
+    --burbuja: #21262d;
+    --marca: #4d8ef7;
+    --marca-texto: #06142b;
+    --error-bg: #3a1d1d;
+    --error: #f3a7a7;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  justify-content: center;
+}
+
+.chat {
+  width: min(640px, 100%);
+  /* dvh en vez de vh: en el móvil la barra del navegador cambia de alto al hacer scroll. */
+  height: 100dvh;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Cabecera ---------- */
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  padding-top: max(14px, env(safe-area-inset-top));
+  border-bottom: 1px solid var(--linea);
+  flex: none;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--burbuja);
+  color: var(--marca);
+  display: grid;
+  place-items: center;
+}
+.avatar svg { width: 23px; height: 23px; }
+
+.identidad { min-width: 0; }
+.identidad h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.identidad p {
+  margin: 1px 0 0;
+  font-size: 13px;
+  color: var(--suave);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Conversación ---------- */
+
+.hilo {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.burbuja {
+  max-width: 85%;
+  padding: 11px 15px;
+  border-radius: 18px;
+  font-size: 15.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.burbuja.bot {
+  align-self: flex-start;
+  background: var(--burbuja);
+  border-bottom-left-radius: 5px;
+}
+
+.burbuja.cliente {
+  align-self: flex-end;
+  background: var(--marca);
+  color: var(--marca-texto);
+  border-bottom-right-radius: 5px;
+}
+
+.burbuja.aviso {
+  align-self: center;
+  background: var(--error-bg);
+  color: var(--error);
+  font-size: 14px;
+  text-align: center;
+  max-width: 100%;
+}
+
+.escribiendo { display: flex; gap: 4px; align-items: center; padding: 15px; }
+.escribiendo i {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--suave); animation: latir 1.2s infinite;
+}
+.escribiendo i:nth-child(2) { animation-delay: .18s; }
+.escribiendo i:nth-child(3) { animation-delay: .36s; }
+@keyframes latir { 0%,60%,100% { opacity:.25 } 30% { opacity:.9 } }
+
+/* ---------- Atajos ---------- */
+
+.atajos {
+  display: flex;
+  gap: 7px;
+  padding: 0 18px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: none;
+}
+.atajos::-webkit-scrollbar { display: none; }
+.atajos:empty { display: none; }
+
+.atajo {
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--marca);
+  background: transparent;
+  border: 1px solid var(--linea);
+  border-radius: 999px;
+  padding: 7px 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  flex: none;
+}
+.atajo:hover { border-color: var(--marca); }
+
+/* ---------- Escribir ---------- */
+
+.escribir {
+  display: flex;
+  gap: 9px;
+  padding: 12px 18px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--linea);
+  flex: none;
+}
+
+.campo {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  /* 16px exactos: menos que eso hace que Safari en iPhone haga zoom al enfocar. */
+  font-size: 16px;
+  color: var(--texto);
+  background: var(--burbuja);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 12px 18px;
+}
+.campo::placeholder { color: var(--suave); }
+.campo:focus { outline: none; border-color: var(--marca); }
+
+.enviar {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: var(--marca);
+  color: var(--marca-texto);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.enviar svg { width: 21px; height: 21px; }
+.enviar:disabled { opacity: .45; cursor: default; }
+
+:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+</style>
+
+<main class="chat">
+  <header class="cabecera">
+    <div class="avatar" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="7" width="18" height="13" rx="4" />
+        <path d="M12 7V3.5" />
+        <circle cx="12" cy="2.6" r="1.2" fill="currentColor" stroke="none" />
+        <path d="M8.6 12.4v1.6M15.4 12.4v1.6" />
+        <path d="M9.6 16.6h4.8" />
+      </svg>
+    </div>
+    <div class="identidad">
+      <h1 id="negocio">Peluquería Bella Vista</h1>
+      <p id="rubro"></p>
+    </div>
+  </header>
+
+  <section class="hilo" id="hilo" aria-live="polite" aria-label="Conversación"></section>
+
+  <div class="atajos" id="atajos"></div>
+
+  <form class="escribir" id="escribir" autocomplete="off">
+    <input
+      class="campo"
+      id="campo"
+      type="text"
+      placeholder="Escribe tu pregunta…"
+      maxlength="1000"
+      aria-label="Tu mensaje"
+      enterkeyhint="send"
+    />
+    <button class="enviar" id="enviar" type="submit" aria-label="Enviar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 12h15M13 6l6 6-6 6" />
+      </svg>
+    </button>
+  </form>
+</main>
+
+<script>
+  /* ====================================================================
+     Motor de PymeBot — generado desde src/bot/ por scripts/build-chat.js.
+     No editar aquí: se cambia el código fuente y se regenera.
+     ==================================================================== */
+
+  /**
+ * Utilidades de texto.
+ *
+ * El objetivo es que "¿Cuánto CUESTA?" y "cuanto cuesta" sean lo mismo para el motor.
+ * En español esto significa: minúsculas, sin acentos, sin signos de puntuación
+ * (incluidos ¿ ¡) y sin espacios sobrantes.
+ */
+
+/** Pasa un texto a su forma canónica comparable. */
+function normalize(text) {
+  if (typeof text !== 'string') return '';
+  return text
+    .toLowerCase()
+    // La ñ es una letra propia del español, no una n con acento: se protege antes de
+    // que NFD la descomponga, o 'año' se convertiría en 'ano'.
+    .replace(/ñ/g, '\u0001')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // quita los acentos ya separados por NFD
+    .replace(/\u0001/g, 'ñ')
+    .replace(/[^a-z0-9ñ\s]/g, ' ') // ¿ ? ! . , y emojis se vuelven espacio
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Forma usada solo para COMPARAR, no para mostrar.
+ *
+ * Añade a la normalización el plegado de la ñ. La ñ se conserva en `normalize` porque es
+ * una letra propia del español, pero al comparar tiene que dar igual cómo se escribió:
+ * el dueño del negocio escribe la palabra clave "cumpleanos" y el cliente pregunta por
+ * "cumpleaños". Confundir "año" con "ano" es un riesgo teórico; que no coincidan las
+ * palabras clave escritas sin ñ es un fallo que ocurre todos los días.
+ */
+function fold(text) {
+  return normalize(text).replace(/ñ/g, 'n');
+}
+
+/** Divide un texto normalizado en palabras. */
+function tokenize(text) {
+  const normalized = normalize(text);
+  return normalized ? normalized.split(' ') : [];
+}
+
+/**
+ * Compara dos palabras tolerando el plural del español.
+ * "horarios" debe encontrar la palabra clave "horario", y "precio" la clave "precios".
+ */
+function wordsMatch(rawA, rawB) {
+  const a = rawA.replace(/ñ/g, 'n');
+  const b = rawB.replace(/ñ/g, 'n');
+  if (a === b) return true;
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  if (short.length < 3) return false; // evita que "la"/"las" cuenten como coincidencia
+  return long === short + 's' || long === short + 'es';
+}
+
+/**
+ * Motor de intenciones.
+ *
+ * Estrategia deliberadamente simple: cada intención declara palabras clave y una
+ * respuesta. Se puntúa cuántas palabras clave aparecen en el mensaje y gana la
+ * intención con mayor puntaje, siempre que supere un umbral mínimo de confianza.
+ *
+ * Es determinista, se testea con facilidad y no depende de ningún servicio externo.
+ */
+
+
+/**
+ * Puntaje mínimo por defecto para aceptar una intención. Debajo de esto, respondemos el
+ * respaldo. Cada negocio puede subirlo o bajarlo desde su panel: subirlo hace que el bot
+ * responda menos pero se equivoque menos, bajarlo al revés.
+ */
+const CONFIDENCE_THRESHOLD = 1;
+
+/** El umbral que corresponde a este negocio. */
+function thresholdFor(business) {
+  const propio = business && Number(business.confidenceThreshold);
+  return Number.isFinite(propio) && propio > 0 ? propio : CONFIDENCE_THRESHOLD;
+}
+
+/**
+ * Puntúa una palabra clave contra el mensaje del usuario.
+ * Las claves de varias palabras ("cuanto cuesta") valen más que las de una sola,
+ * porque son mucho más específicas.
+ */
+function scoreKeyword(keyword, messageTokens, paddedMessage) {
+  // `fold` en vez de `normalize`: comparar tiene que ser indiferente a cómo se escribió la ñ.
+  const normalizedKeyword = fold(keyword);
+  if (!normalizedKeyword) return 0;
+
+  const keywordWords = normalizedKeyword.split(' ');
+
+  if (keywordWords.length > 1) {
+    return paddedMessage.includes(` ${normalizedKeyword} `) ? keywordWords.length * 1.5 : 0;
+  }
+
+  const found = messageTokens.some((token) => wordsMatch(token, normalizedKeyword));
+  if (!found) return 0;
+
+  // Una palabra larga ("transferencia") es mejor señal que una corta ("hora").
+  return normalizedKeyword.length >= 6 ? 1.5 : 1;
+}
+
+/** Puntúa una intención completa. */
+function scoreIntent(intent, messageTokens, paddedMessage) {
+  let score = 0;
+  for (const keyword of intent.keywords || []) {
+    score += scoreKeyword(keyword, messageTokens, paddedMessage);
+  }
+  return score;
+}
+
+/**
+ * Busca la mejor intención para un mensaje.
+ * @returns {{intent: object|null, score: number}}
+ */
+function matchIntent(message, business) {
+  const messageTokens = tokenize(message);
+  if (messageTokens.length === 0) return { intent: null, score: 0 };
+
+  const paddedMessage = ` ${fold(message)} `;
+
+  let best = null;
+  let bestScore = 0;
+
+  for (const intent of business.intents || []) {
+    const score = scoreIntent(intent, messageTokens, paddedMessage);
+    if (score > bestScore) {
+      best = intent;
+      bestScore = score;
+    }
+  }
+
+  if (bestScore < thresholdFor(business)) return { intent: null, score: bestScore };
+  return { intent: best, score: bestScore };
+}
+
+/** Arma el mensaje de "no entendí" con la lista de temas que el negocio sí cubre. */
+function buildFallback(business) {
+  const topics = (business.topics || []).map((topic) => `• ${topic}`).join('\n');
+  const parts = [business.fallback];
+  if (topics) parts.push(topics);
+  if (business.handoff) parts.push(business.handoff);
+  return parts.filter(Boolean).join('\n');
+}
+
+/**
+ * Genera la respuesta a un mensaje.
+ *
+ * `session` aporta el mínimo de contexto conversacional del MVP: saber si el bot ya
+ * saludó, para no repetir el saludo largo en cada "hola".
+ *
+ * @returns {{reply: string, intent: string, score: number, matched: boolean}}
+ */
+function respond(message, business, session = null) {
+  // Bot pausado: no se intenta entender nada, se responde lo que el dueño dejó escrito.
+  if (business && business.active === false) {
+    return {
+      reply: business.pausedMessage || 'En este momento no estamos atendiendo por aquí.',
+      intent: 'pausado',
+      score: 0,
+      matched: false,
+    };
+  }
+
+  const normalized = normalize(message);
+
+  if (!normalized) {
+    // Sin texto real. Distinguimos dos casos que se ven iguales para el motor:
+    // un mensaje realmente vacío, y uno que sí traía contenido (solo emojis o signos)
+    // pero que la normalización dejó sin palabras. Decirle "no recibí nada" a quien
+    // acaba de escribir 👍 es confuso, así que ese caso va al fallback normal.
+    const escribioAlgo = typeof message === 'string' && message.trim() !== '';
+    if (escribioAlgo) {
+      return { reply: buildFallback(business), intent: 'fallback', score: 0, matched: false };
+    }
+    return {
+      reply: 'No recibí ningún mensaje. ¿Me cuentas en qué te puedo ayudar?',
+      intent: 'vacio',
+      score: 0,
+      matched: false,
+    };
+  }
+
+  const { intent, score } = matchIntent(message, business);
+
+  if (!intent) {
+    return { reply: buildFallback(business), intent: 'fallback', score, matched: false };
+  }
+
+  let reply = intent.answer;
+
+  // Único comportamiento contextual del MVP: no repetir el saludo largo.
+  if (intent.id === 'saludo' && session && session.greeted) {
+    reply = business.greetingRepeat || reply;
+  }
+
+  return { reply, intent: intent.id, score, matched: true };
+}
+
+  const NEGOCIO = {
+  "name": "Peluquería Bella Vista",
+  "tagline": "Corte, color y barbería en el centro de Valparaíso",
+  "greeting": "¡Hola! 👋 Soy el asistente de Peluquería Bella Vista. Puedo ayudarte con horarios, precios, servicios y cómo llegar. ¿Qué necesitas saber?",
+  "greetingRepeat": "¡Aquí sigo! ¿En qué más te ayudo?",
+  "fallback": "Perdona, no estoy seguro de haber entendido eso. Puedo ayudarte con estos temas:",
+  "handoff": "Si prefieres, escríbenos directamente al +56 9 1234 5678 y te atiende una persona del equipo.",
+  "topics": [
+    "Horarios de atención",
+    "Precios",
+    "Servicios",
+    "Cómo llegar",
+    "Reservar una hora",
+    "Formas de pago"
+  ],
+  "active": true,
+  "confidenceThreshold": 1,
+  "pausedMessage": "En este momento no estamos atendiendo por aquí. Escríbenos directamente y te respondemos a la brevedad.",
+  "ownerId": null,
+  "intents": [
+    {
+      "id": "saludo",
+      "keywords": [
+        "hola",
+        "buenas",
+        "buenos dias",
+        "buenas tardes",
+        "buenas noches",
+        "hey",
+        "que tal"
+      ],
+      "answer": "¡Hola! 👋 Cuéntame, ¿qué necesitas saber?"
+    },
+    {
+      "id": "horarios",
+      "keywords": [
+        "horario",
+        "horarios",
+        "hora de atencion",
+        "abren",
+        "cierran",
+        "abierto",
+        "cerrado",
+        "atienden",
+        "a que hora",
+        "domingo",
+        "sabado",
+        "fin de semana"
+      ],
+      "answer": "Atendemos de lunes a viernes de 10:00 a 20:00 y los sábados de 10:00 a 17:00. Los domingos permanecemos cerrados. 🕒"
+    },
+    {
+      "id": "precios",
+      "keywords": [
+        "precio",
+        "precios",
+        "cuanto cuesta",
+        "cuanto vale",
+        "valor",
+        "tarifa",
+        "cobran",
+        "cuanto sale",
+        "caro",
+        "barato"
+      ],
+      "answer": "Nuestros precios son: corte de dama $12.000 · corte de varón $9.000 · barba $6.000 · color desde $25.000 · peinado desde $15.000. 💇"
+    },
+    {
+      "id": "servicios",
+      "keywords": [
+        "servicio",
+        "servicios",
+        "que hacen",
+        "ofrecen",
+        "corte",
+        "color",
+        "tinte",
+        "barba",
+        "peinado",
+        "manicure",
+        "trabajos",
+        "cortar",
+        "cortarme",
+        "pelo",
+        "cabello",
+        "mechas",
+        "tratamiento",
+        "uñas"
+      ],
+      "answer": "Ofrecemos corte de dama y varón, barbería, coloración y mechas, peinados para eventos, tratamientos capilares y manicure. ✂️"
+    },
+    {
+      "id": "ubicacion",
+      "keywords": [
+        "donde estan",
+        "direccion",
+        "ubicacion",
+        "como llegar",
+        "lugar",
+        "local",
+        "mapa",
+        "queda"
+      ],
+      "answer": "Estamos en Av. Brasil 1234, local 3, Valparaíso, a una cuadra de la Plaza Victoria. 📍"
+    },
+    {
+      "id": "reservas",
+      "keywords": [
+        "reservar",
+        "reserva",
+        "agendar",
+        "cita",
+        "hora",
+        "turno",
+        "pedir hora",
+        "disponibilidad"
+      ],
+      "answer": "Puedes reservar tu hora llamando o escribiendo por WhatsApp al +56 9 1234 5678. ¡Pronto podrás agendar directamente por aquí! 📅"
+    },
+    {
+      "id": "pagos",
+      "keywords": [
+        "pago",
+        "pagos",
+        "pagar",
+        "efectivo",
+        "tarjeta",
+        "debito",
+        "credito",
+        "transferencia",
+        "aceptan"
+      ],
+      "answer": "Aceptamos efectivo, tarjetas de débito y crédito, y transferencia bancaria. 💳"
+    },
+    {
+      "id": "contacto",
+      "keywords": [
+        "telefono",
+        "contacto",
+        "whatsapp",
+        "correo",
+        "email",
+        "llamar",
+        "numero"
+      ],
+      "answer": "Puedes contactarnos al +56 9 1234 5678 o escribirnos a hola@bellavista.cl. 📞"
+    },
+    {
+      "id": "agradecimiento",
+      "keywords": [
+        "gracias",
+        "muchas gracias",
+        "genial",
+        "perfecto",
+        "buenisimo",
+        "excelente"
+      ],
+      "answer": "¡De nada! 😊 ¿Necesitas algo más?"
+    },
+    {
+      "id": "cierre",
+      "keywords": [
+        "no",
+        "nada",
+        "nada mas",
+        "ninguna",
+        "ok",
+        "listo",
+        "vale",
+        "eso es todo",
+        "estoy bien",
+        "no gracias",
+        "no nada",
+        "asi esta bien"
+      ],
+      "answer": "¡Perfecto! Si te surge cualquier otra duda, aquí estaré. 😊"
+    },
+    {
+      "id": "despedida",
+      "keywords": [
+        "chao",
+        "adios",
+        "hasta luego",
+        "nos vemos",
+        "bye",
+        "me voy"
+      ],
+      "answer": "¡Hasta pronto! Que tengas un excelente día. 👋"
+    }
+  ]
+};
+
+  /* ==================================================================== */
+
+  const hiloEl = document.getElementById("hilo");
+  const atajosEl = document.getElementById("atajos");
+  const formEl = document.getElementById("escribir");
+  const campoEl = document.getElementById("campo");
+  const enviarEl = document.getElementById("enviar");
+
+  // Sin servidor, la sesión es simplemente lo que el motor necesita recordar.
+  const sesion = { greeted: false };
+
+  function burbuja(texto, quien) {
+    const el = document.createElement("div");
+    el.className = "burbuja " + quien;
+    el.textContent = texto;
+    hiloEl.appendChild(el);
+    hiloEl.scrollTop = hiloEl.scrollHeight;
+    return el;
+  }
+
+  function escribiendo() {
+    const el = document.createElement("div");
+    el.className = "burbuja bot escribiendo";
+    el.innerHTML = "<i></i><i></i><i></i>";
+    hiloEl.appendChild(el);
+    hiloEl.scrollTop = hiloEl.scrollHeight;
+    return el;
+  }
+
+  function enviar(texto) {
+    const mensaje = String(texto || "").trim();
+    if (!mensaje) return;
+
+    burbuja(mensaje, "cliente");
+    campoEl.value = "";
+    enviarEl.disabled = true;
+
+    const pensando = escribiendo();
+
+    // Una pausa breve para que se lea como una conversación.
+    setTimeout(function () {
+      const resultado = respond(mensaje, NEGOCIO, sesion);
+      pensando.remove();
+      burbuja(resultado.reply, "bot");
+      if (resultado.intent === "saludo") sesion.greeted = true;
+      enviarEl.disabled = false;
+      campoEl.focus();
+    }, 300);
+  }
+
+  formEl.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+    enviar(campoEl.value);
+  });
+
+  document.getElementById("rubro").textContent = NEGOCIO.tagline || "";
+  burbuja(NEGOCIO.active === false ? NEGOCIO.pausedMessage : NEGOCIO.greeting, "bot");
+
+  if (NEGOCIO.active !== false) {
+    (NEGOCIO.topics || []).forEach(function (tema) {
+      const boton = document.createElement("button");
+      boton.className = "atajo";
+      boton.type = "button";
+      boton.textContent = tema;
+      boton.addEventListener("click", function () {
+        enviar(tema);
+      });
+      atajosEl.appendChild(boton);
+    });
+  }
+</script>

@@ -1,0 +1,74 @@
+# Publica el sitio público de PymeBot en GitHub Pages.
+#
+# Qué publica: la landing, el chat funcionando de cada negocio y el panel de demostración.
+# Qué NO publica: el panel real con cuentas, que necesita el servidor Node y un disco
+# persistente. Un hosting estático no puede guardar nada ni autenticar a nadie.
+#
+# El sitio se CONSTRUYE aquí desde src/, no se sube ya compilado: así lo publicado nunca
+# puede quedar desfasado del código.
+
+name: Publicar sitio
+
+on:
+  push:
+    branches: [claude/pymebot-modular-plan-ev6kdh, main]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'scripts/**'
+      - 'data/businesses/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch: # para lanzarlo a mano desde la pestaña Actions
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un despliegue a la vez; si llegan dos seguidos, gana el último.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  construir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Los tests corren antes de publicar: no tiene sentido exponer un bot roto.
+      - run: npm test
+
+      # enablement: true activa GitHub Pages por API si todavía no lo está, usando el
+      # permiso `pages: write` de arriba. Evita tener que ir a configurarlo a mano.
+      - name: Preparar Pages
+        id: pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      # La dirección base se toma de Pages, no se escribe a mano: así los links entre
+      # páginas siguen funcionando aunque cambie el nombre del repositorio.
+      - name: Construir el sitio
+        run: npm run build:sitio -- "${{ steps.pages.outputs.base_url }}"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/sitio
+
+  publicar:
+    needs: construir
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
