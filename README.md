@@ -198,8 +198,12 @@ a ningún servidor, así que los datos del negocio no quedan en registros ajenos
 
 Sus límites, que conviene conocer antes de usarlo con clientes:
 
-- **El enlace es largo** (unos 4.800 caracteres). Se manda por WhatsApp sin problema, pero
-  no cabe en un código QR, que admite unos 2.900.
+- **El enlace es largo**, porque lleva el negocio dentro. Se manda por WhatsApp sin
+  problema. El **código QR se genera de verdad** desde ese enlace y abre el chat al
+  escanearlo, pero como un QR admite unos 2.900 caracteres, un bot con muchos temas se
+  pasa y el panel lo dice en vez de mostrar un QR que no sirve. Cuando cabe, el panel
+  también indica **de qué tamaño imprimirlo**: cuantos más temas, más puntitos tiene y más
+  grande hay que imprimirlo para que una cámara lo lea.
 - **Si editas el bot, hay que volver a compartirlo.** La información viaja dentro del
   enlace, así que el que ya enviaste sigue con la versión anterior.
 - **Las conversaciones de esos enlaces no vuelven.** Sin servidor no hay dónde anotarlas,

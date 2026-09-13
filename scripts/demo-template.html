@@ -92,6 +92,12 @@
   /*__METRICAS__*/
 
   /* ===================================================================
+     Generador de códigos QR (la misma librería que usa el servidor).
+     =================================================================== */
+
+  /*__GENERADOR_QR__*/
+
+  /* ===================================================================
      El servidor, sustituido por el navegador.
 
      Implementa los mismos endpoints que src/server.js sobre localStorage.
@@ -100,8 +106,6 @@
 
   var EJEMPLOS = /*__EJEMPLOS__*/;
   var PLANTILLA_CHAT = /*__PLANTILLA_CHAT__*/;
-  var QR_MUESTRA = /*__QR__*/;
-  var URL_CHAT_DEMO = /*__URL_CHAT_DEMO__*/;
 
   var LLAVE = 'pymebot-demo';
 
@@ -327,7 +331,7 @@
         return enlaceDelNegocio(negocio).then(function (url) {
           return respuesta(200, {
             url: url,
-            qr: 'qr-de-muestra',
+            qr: null, // lo dibuja el navegador desde el enlace de arriba
             embed:
               '<iframe src="' + url + '" style="width:100%;max-width:420px;height:600px;border:0;border-radius:16px"' +
               ' title="Chat de ' + String(negocio.name).replace(/"/g, '') + '"><\/iframe>',
@@ -354,9 +358,6 @@
         return respuesta(200, { ok: true });
       }
     }
-
-    // El QR se pide como texto; en el demo se devuelve uno de muestra.
-    if (ruta === 'qr-de-muestra') return respuesta(200, QR_MUESTRA);
 
     return respuesta(404, { error: 'No encontrado.' });
   };
@@ -489,24 +490,60 @@
       document.getElementById('url-publica').parentElement.after(notaLink);
     }
 
-    var tarjetaQr = document.getElementById('qr').closest('.compartir-tarjeta');
-    if (tarjetaQr) {
-      var nota = document.createElement('p');
-      nota.className = 'ayuda';
-      nota.innerHTML =
-        '<strong>En el demo este QR es un ejemplo:</strong> escanéalo y abre un chat de ' +
-        'demostración que funciona. No puede llevar tu negocio dentro como el enlace de ' +
-        'arriba: un QR admite ~2.900 caracteres y un negocio configurado ocupa más.';
-      tarjetaQr.appendChild(nota);
+    /*
+     * El QR, generado desde el enlace REAL del negocio que se está editando.
+     *
+     * Se escanea y abre el chat de ESE negocio, no una demostración. El límite es de
+     * capacidad, no de implementación: un QR admite unos 2.900 caracteres, y como el
+     * enlace lleva el negocio dentro, uno con muchos temas se pasa. En ese caso se dice,
+     * en vez de mostrar un QR que lleva a otra parte.
+     */
+    var CAPACIDAD_QR = 2900;
 
-      var abrirChat = document.createElement('a');
-      abrirChat.className = 'btn-ghost';
-      abrirChat.href = URL_CHAT_DEMO;
-      abrirChat.target = '_blank';
-      abrirChat.rel = 'noopener';
-      abrirChat.textContent = 'Abrir ese chat ↗';
-      tarjetaQr.appendChild(abrirChat);
-    }
+    var notaQr = document.createElement('p');
+    notaQr.className = 'ayuda';
+    document.getElementById('qr').closest('.compartir-tarjeta').appendChild(notaQr);
+
+    window.pintarQrDelEnlace = function (enlace) {
+      var caja = document.getElementById('qr');
+
+      if (enlace.length > CAPACIDAD_QR) {
+        caja.innerHTML = '';
+        notaQr.innerHTML =
+          '<strong>Tu bot tiene demasiados temas para un código QR.</strong> El enlace lleva ' +
+          'la información de tu negocio dentro y ocupa ' + enlace.length.toLocaleString('es-CL') +
+          ' caracteres; un QR admite unos 2.900. Comparte el enlace de arriba por WhatsApp. ' +
+          'Con PymeBot en un servidor el enlace es corto y el QR vuelve a funcionar.';
+        return;
+      }
+
+      QRLib.toString(enlace, { type: 'svg', margin: 1, errorCorrectionLevel: 'L' }, function (err, svg) {
+        if (err) {
+          caja.innerHTML = '';
+          notaQr.textContent = 'No se pudo generar el código QR para este enlace.';
+          return;
+        }
+        caja.innerHTML = svg;
+
+        /*
+         * Decirle de qué tamaño imprimirlo.
+         *
+         * Es lo que de verdad decide si se escanea. Cuantos más temas tenga el bot, más
+         * largo es el enlace y más puntitos tiene el QR; si se imprime pequeño, la cámara
+         * de un teléfono no los distingue. La regla práctica es ~0,4 mm por punto a unos
+         * 20 cm de distancia.
+         */
+        var puntos = QRLib.create(enlace, { errorCorrectionLevel: 'L' }).modules.size;
+        var mm = Math.ceil((puntos * 0.4) / 5) * 5;
+
+        notaQr.innerHTML =
+          '<strong>Este QR funciona:</strong> escanéalo con la cámara de un teléfono y abre ' +
+          'el chat de tu negocio. Imprímelo de <strong>' + mm + ' × ' + mm + ' mm como mínimo</strong>' +
+          (mm >= 45
+            ? '; tiene muchos puntitos porque tu bot tiene varios temas, así que más pequeño no se escanea.'
+            : '.');
+      });
+    };
     document.getElementById('abrir-url').addEventListener('click', function (e) {
       e.preventDefault();
       abrirPreview();

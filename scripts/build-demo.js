@@ -18,6 +18,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const os = require('os');
+const { execFileSync } = require('child_process');
 const QRCode = require('qrcode');
 
 const ROOT = path.join(__dirname, '..');
@@ -61,29 +63,28 @@ function cuerpoDelPanel() {
     .map((f) => ({ slug: f.replace(/\.json$/, ''), ...JSON.parse(read('data', 'businesses', f)) }));
 
   /*
-   * El QR del demo.
+   * El generador de QR, empaquetado para el navegador.
    *
-   * No puede apuntar al negocio que se está editando, y conviene entender por qué: los
-   * negocios del demo viven en el localStorage de ESE navegador, así que un teléfono que
-   * escaneara un enlace al propio demo abriría uno vacío. Y meter el negocio dentro del QR
-   * tampoco sirve: un negocio configurado pesa ~8 KB y un QR admite ~1,6 KB.
+   * Se empaqueta la MISMA librería que usa el servidor, en vez de escribir un generador a
+   * mano o cargar uno de un CDN: un QR mal generado se ve idéntico a uno bueno y solo se
+   * descubre al escanearlo con un teléfono.
    *
-   * Así que apunta a un chat publicado de verdad. Es escaneable y abre un bot que funciona,
-   * que es lo que hay que enseñar. La pantalla dice que es un ejemplo.
-   *
-   * Se pasa por argumento porque depende de dónde esté publicado:
-   *   npm run build:demo -- https://mi-chat-publicado
+   * Así el demo puede generar el QR del enlace REAL del negocio que se está editando, en
+   * vez de enseñar uno de muestra que lleva a otra parte.
    */
-  const URL_CHAT_DEMO =
-    process.argv[2] ||
-    process.env.PYMEBOT_DEMO_CHAT_URL ||
-    'https://claude.ai/code/artifact/4d34c5d9-3097-45a1-a714-5fd08fcd2ed9';
+  const bundleQr = path.join(fs.mkdtempSync(path.join(os.tmpdir(), 'pymebot-qr-')), 'qr.js');
+  execFileSync(
+    'npx',
+    [
+      'esbuild', '--bundle', '--format=iife', '--global-name=QRLib', '--minify',
+      '--platform=browser', `--outfile=${bundleQr}`,
+      path.join(ROOT, 'node_modules', 'qrcode', 'lib', 'browser.js'),
+    ],
+    { cwd: ROOT, stdio: 'pipe' },
+  );
+  const generadorQr = fs.readFileSync(bundleQr, 'utf8');
 
-  const qrMuestra = await QRCode.toString(URL_CHAT_DEMO, {
-    type: 'svg',
-    margin: 1,
-    errorCorrectionLevel: 'Q',
-  });
+
 
   const html = read('scripts', 'demo-template.html')
     .replace('/*__ESTILOS_PANEL__*/', () => read('public', 'panel.css'))
@@ -94,10 +95,9 @@ function cuerpoDelPanel() {
     .replace('/*__PANEL_JS__*/', () => read('public', 'panel.js'))
     .replace('/*__EJEMPLOS__*/', () => JSON.stringify(ejemplos, null, 2))
     .replace('/*__PLANTILLA_CHAT__*/', () => comoCadenaJs(plantillaChat))
-    .replace('/*__QR__*/', () => comoCadenaJs(qrMuestra))
-    .replace('/*__URL_CHAT_DEMO__*/', () => comoCadenaJs(URL_CHAT_DEMO));
+    .replace('/*__GENERADOR_QR__*/', () => generadorQr);
 
-  for (const marcador of ['__ESTILOS_PANEL__', '__CUERPO_PANEL__', '__SCHEMA__', '__METRICAS__', '__MOTOR__', '__PANEL_JS__', '__EJEMPLOS__', '__PLANTILLA_CHAT__', '__QR__', '__URL_CHAT_DEMO__']) {
+  for (const marcador of ['__ESTILOS_PANEL__', '__CUERPO_PANEL__', '__SCHEMA__', '__METRICAS__', '__MOTOR__', '__PANEL_JS__', '__EJEMPLOS__', '__PLANTILLA_CHAT__', '__GENERADOR_QR__']) {
     if (html.includes(marcador)) throw new Error(`La plantilla no se rellenó: queda ${marcador}.`);
   }
 
@@ -106,6 +106,6 @@ function cuerpoDelPanel() {
   fs.writeFileSync(out, html);
 
   console.log(
-    `dist/demo.html generado · ${ejemplos.length} ejemplos · QR → ${URL_CHAT_DEMO} · ${(html.length / 1024).toFixed(1)} KB`,
+    `dist/demo.html generado · ${ejemplos.length} ejemplos · ${(html.length / 1024).toFixed(1)} KB`,
   );
 })();

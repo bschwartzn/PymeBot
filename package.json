@@ -25,5 +25,8 @@
   "private": true,
   "overrides": {
     "qs": "^6.16.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
   }
 }

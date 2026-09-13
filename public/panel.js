@@ -293,6 +293,13 @@ async function copiar(texto, boton) {
 async function pintarCompartir(slug, url, rutaQr) {
   $('url-publica').value = url;
   $('abrir-url').href = url;
+
+  // Sin servidor que genere el QR, lo dibuja el propio navegador desde el enlace.
+  if (!rutaQr && typeof window.pintarQrDelEnlace === 'function') {
+    window.pintarQrDelEnlace(url);
+    return;
+  }
+
   $('descargar-qr').href = rutaQr;
   $('descargar-qr').setAttribute('download', `qr-${slug}.svg`);
 
