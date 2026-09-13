@@ -1,0 +1,179 @@
+<title>Chat</title>
+<meta name="description" content="Resolvemos tus dudas al instante." />
+
+<style>
+/*__ESTILOS__*/
+</style>
+
+<main class="chat">
+  <header class="cabecera">
+    <div class="avatar" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="7" width="18" height="13" rx="4" />
+        <path d="M12 7V3.5" />
+        <circle cx="12" cy="2.6" r="1.2" fill="currentColor" stroke="none" />
+        <path d="M8.6 12.4v1.6M15.4 12.4v1.6" />
+        <path d="M9.6 16.6h4.8" />
+      </svg>
+    </div>
+    <div class="identidad">
+      <h1 id="negocio">Cargando…</h1>
+      <p id="rubro"></p>
+    </div>
+  </header>
+
+  <section class="hilo" id="hilo" aria-live="polite" aria-label="Conversación"></section>
+
+  <div class="atajos" id="atajos"></div>
+
+  <form class="escribir" id="escribir" autocomplete="off">
+    <input
+      class="campo"
+      id="campo"
+      type="text"
+      placeholder="Escribe tu pregunta…"
+      maxlength="1000"
+      aria-label="Tu mensaje"
+      enterkeyhint="send"
+    />
+    <button class="enviar" id="enviar" type="submit" aria-label="Enviar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 12h15M13 6l6 6-6 6" />
+      </svg>
+    </button>
+  </form>
+</main>
+
+<script>
+  /* ====================================================================
+     Chat de un negocio que viaja DENTRO del link.
+     Motor generado desde src/bot/ por scripts/build-sitio.js.
+     ==================================================================== */
+
+  /*__ENGINE__*/
+
+  /* ==================================================================== */
+
+  const hiloEl = document.getElementById("hilo");
+  const atajosEl = document.getElementById("atajos");
+  const formEl = document.getElementById("escribir");
+  const campoEl = document.getElementById("campo");
+  const enviarEl = document.getElementById("enviar");
+
+  const sesion = { greeted: false };
+  let NEGOCIO = null;
+
+  function burbuja(texto, quien) {
+    const el = document.createElement("div");
+    el.className = "burbuja " + quien;
+    el.textContent = texto;
+    hiloEl.appendChild(el);
+    hiloEl.scrollTop = hiloEl.scrollHeight;
+    return el;
+  }
+
+  function escribiendo() {
+    const el = document.createElement("div");
+    el.className = "burbuja bot escribiendo";
+    el.innerHTML = "<i></i><i></i><i></i>";
+    hiloEl.appendChild(el);
+    hiloEl.scrollTop = hiloEl.scrollHeight;
+    return el;
+  }
+
+  function enviar(texto) {
+    const mensaje = String(texto || "").trim();
+    if (!mensaje || !NEGOCIO) return;
+
+    burbuja(mensaje, "cliente");
+    campoEl.value = "";
+    enviarEl.disabled = true;
+
+    const pensando = escribiendo();
+
+    setTimeout(function () {
+      const resultado = respond(mensaje, NEGOCIO, sesion);
+      pensando.remove();
+      burbuja(resultado.reply, "bot");
+      if (resultado.intent === "saludo") sesion.greeted = true;
+      enviarEl.disabled = false;
+      campoEl.focus();
+    }, 280);
+  }
+
+  formEl.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+    enviar(campoEl.value);
+  });
+
+  /* ---------------------------------------------------------------- link */
+
+  function desdeBase64Url(texto) {
+    const normal = texto.replace(/-/g, "+").replace(/_/g, "/");
+    const binario = atob(normal + "=".repeat((4 - (normal.length % 4)) % 4));
+    const bytes = new Uint8Array(binario.length);
+    for (let i = 0; i < binario.length; i += 1) bytes[i] = binario.charCodeAt(i);
+    return bytes;
+  }
+
+  /**
+   * El negocio viaja en la parte del link que sigue al #.
+   *
+   * Se usa el fragmento y no la ruta a propósito: el navegador NUNCA lo envía al servidor,
+   * así que la información del negocio no queda en los registros de nadie.
+   *
+   * Prefijo "z" = comprimido con deflate; "b" = tal cual, para navegadores sin
+   * DecompressionStream.
+   */
+  async function leerNegocioDelLink() {
+    const datos = location.hash.slice(1);
+    if (!datos) return null;
+
+    const bytes = desdeBase64Url(datos.slice(1));
+
+    if (datos[0] === "z") {
+      const flujo = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      return JSON.parse(await new Response(flujo).text());
+    }
+    return JSON.parse(new TextDecoder().decode(bytes));
+  }
+
+  function noDisponible(motivo) {
+    document.getElementById("negocio").textContent = "Chat no disponible";
+    burbuja(motivo, "aviso");
+    campoEl.disabled = true;
+    enviarEl.disabled = true;
+  }
+
+  (async function arrancar() {
+    try {
+      NEGOCIO = await leerNegocioDelLink();
+    } catch (err) {
+      return noDisponible("Este enlace está incompleto o dañado. Pídele al negocio que te lo envíe de nuevo.");
+    }
+
+    if (!NEGOCIO || !NEGOCIO.name) {
+      return noDisponible("Este enlace no trae la información del negocio. Pídeselo de nuevo.");
+    }
+
+    document.getElementById("negocio").textContent = NEGOCIO.name;
+    document.getElementById("rubro").textContent = NEGOCIO.tagline || "";
+    document.title = NEGOCIO.name;
+
+    const pausado = NEGOCIO.active === false;
+    burbuja(pausado ? NEGOCIO.pausedMessage : NEGOCIO.greeting, "bot");
+
+    if (!pausado) {
+      for (const tema of NEGOCIO.topics || []) {
+        const boton = document.createElement("button");
+        boton.className = "atajo";
+        boton.type = "button";
+        boton.textContent = tema;
+        boton.addEventListener("click", function () {
+          enviar(tema);
+        });
+        atajosEl.appendChild(boton);
+      }
+    }
+  })();
+</script>

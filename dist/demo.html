@@ -453,6 +453,72 @@ input[type="range"] { width: 100%; accent-color: var(--brand); cursor: pointer; 
 
 .vacio-seccion { font-size: 14.5px; color: var(--muted); margin: 0; }
 
+/* ==================== Conversaciones completas ==================== */
+
+.conversaciones { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+
+.conversacion {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.conversacion > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-size: 14px;
+  list-style: none;
+}
+.conversacion > summary::-webkit-details-marker { display: none; }
+.conversacion > summary::before {
+  content: "▸";
+  color: var(--muted);
+  flex: none;
+  transition: transform .15s;
+}
+.conversacion[open] > summary::before { transform: rotate(90deg); }
+.conversacion > summary:hover { background: var(--soft); }
+
+.conversacion .cuando { flex: 1; min-width: 0; }
+.conversacion .resumen { color: var(--muted); font-size: 13px; }
+.conversacion .marca-canal {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  background: var(--soft);
+  border-radius: 999px;
+  padding: 2px 9px;
+  flex: none;
+}
+.conversacion .fallo {
+  font-size: 11.5px;
+  color: var(--warn);
+  background: var(--warn-bg);
+  border-radius: 999px;
+  padding: 2px 9px;
+  flex: none;
+}
+
+.transcripcion {
+  border-top: 1px solid var(--border);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--soft);
+}
+
+.dicho { max-width: 82%; padding: 9px 13px; border-radius: 14px; font-size: 14.5px; line-height: 1.45; white-space: pre-wrap; }
+.dicho.cliente { align-self: flex-end; background: var(--brand); color: #fff; border-bottom-right-radius: 4px; }
+.dicho.bot { align-self: flex-start; background: var(--panel); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+/* Marcar dónde falló: es lo que el dueño busca al leer una conversación. */
+.dicho.bot.no-supo { border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); background: var(--warn-bg); }
+
 
 /* ==================== Añadidos propios del demo ==================== */
 
@@ -772,6 +838,15 @@ input[type="range"] { width: 100%; accent-color: var(--brand); cursor: pointer; 
               <div class="compartir-tarjeta">
                 <h3>Los temas que más te preguntan</h3>
                 <div id="mas-preguntados" class="barras"></div>
+              </div>
+
+              <div class="compartir-tarjeta">
+                <h3>Todas las conversaciones</h3>
+                <p class="ayuda">
+                  Lo que te escribieron tus clientes, tal cual. Haz clic en una para leerla
+                  completa.
+                </p>
+                <div id="conversaciones" class="conversaciones"></div>
               </div>
             </fieldset>
           </form>
@@ -1359,6 +1434,47 @@ function resumir(registros, { dias = DIAS_POR_DEFECTO, ahora = Date.now() } = {}
 
     canales: agrupar(recientes, (r) => r.channel || 'web'),
   };
+}
+
+/**
+ * Reconstruye las conversaciones a partir del registro plano.
+ *
+ * El registro guarda un intercambio por línea; aquí se juntan los de una misma
+ * conversación para poder LEERLAS, no solo contarlas. Ver qué le dijo un cliente de verdad
+ * al bot vale más que cualquier cifra: es donde se descubre que la respuesta era correcta
+ * pero sonaba seca, o que la persona preguntó tres veces lo mismo de distinta forma.
+ */
+function conversaciones(registros, { limite = 50 } = {}) {
+  const porId = new Map();
+
+  for (const registro of registros) {
+    const id = registro.conversationId || 'sin-id';
+
+    if (!porId.has(id)) {
+      porId.set(id, {
+        id,
+        canal: registro.channel || 'web',
+        inicio: registro.at,
+        fin: registro.at,
+        mensajes: [],
+        sinRespuesta: 0,
+      });
+    }
+
+    const conversacion = porId.get(id);
+    conversacion.fin = registro.at;
+    conversacion.mensajes.push({
+      at: registro.at,
+      pregunta: registro.pregunta,
+      respuesta: registro.respuesta,
+      intent: registro.intent,
+      matched: registro.matched,
+    });
+    if (registro.matched === false && registro.intent !== 'pausado') conversacion.sinRespuesta += 1;
+  }
+
+  // Las más recientes primero: es lo que el dueño quiere mirar al entrar.
+  return [...porId.values()].sort((a, b) => (a.fin < b.fin ? 1 : -1)).slice(0, limite);
 }
 
   /* ===================================================================
@@ -2147,6 +2263,42 @@ function resumir(registros, { dias = DIAS_POR_DEFECTO, ahora = Date.now() } = {}
 
   var LLAVE = 'pymebot-demo';
 
+  /* ------------------------------------------------------------------
+     El enlace compartible.
+
+     Sin servidor, un link solo puede funcionar si lleva la información del negocio
+     dentro. Va después del # a propósito: esa parte de la URL el navegador NUNCA la
+     envía a ningún servidor, así que los datos del negocio no quedan en registros
+     ajenos. Se comprime con deflate porque un negocio configurado pesa ~8 KB y
+     comprimido baja a ~3,5 KB.
+
+     Prefijo "z" = comprimido; "b" = tal cual, para navegadores sin CompressionStream.
+     ------------------------------------------------------------------ */
+
+  function aBase64Url(bytes) {
+    var binario = '';
+    for (var i = 0; i < bytes.length; i += 1) binario += String.fromCharCode(bytes[i]);
+    return btoa(binario).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  /** La dirección de chat/compartido.html, esté el sitio donde esté. */
+  function baseDelChat() {
+    var aqui = location.href.split('#')[0].split('?')[0];
+    return aqui.replace(/[^/]*$/, '') + 'chat/compartido.html';
+  }
+
+  async function enlaceDelNegocio(negocio) {
+    var bytes = new TextEncoder().encode(JSON.stringify(negocio));
+
+    if (typeof CompressionStream === 'undefined') {
+      return baseDelChat() + '#b' + aBase64Url(bytes);
+    }
+
+    var flujo = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+    var comprimido = new Uint8Array(await new Response(flujo).arrayBuffer());
+    return baseDelChat() + '#z' + aBase64Url(comprimido);
+  }
+
   function estadoInicial() {
     return { usuario: null, negocios: {}, conversaciones: {} };
   }
@@ -2329,12 +2481,21 @@ function resumir(registros, { dias = DIAS_POR_DEFECTO, ahora = Date.now() } = {}
       if (!negocio) return respuesta(404, { error: 'Ese negocio no existe.' });
 
       if (partes[3] === 'share') {
-        return respuesta(200, {
-          url: 'https://tu-servidor.cl/c/' + slug, // dirección de ejemplo: en el demo no hay servidor
-          qr: 'qr-de-muestra',
-          embed: '<script src="https://tu-servidor.cl/widget.js" data-negocio="' + slug + '" defer><\/script>',
-          whatsapp: 'https://wa.me/?text=' + encodeURIComponent('Resuelve tus dudas por aquí: https://tu-servidor.cl/c/' + slug),
+        // Se calcula de verdad: el enlace lleva el negocio dentro, así que funciona.
+        return enlaceDelNegocio(negocio).then(function (url) {
+          return respuesta(200, {
+            url: url,
+            qr: 'qr-de-muestra',
+            embed:
+              '<iframe src="' + url + '" style="width:100%;max-width:420px;height:600px;border:0;border-radius:16px"' +
+              ' title="Chat de ' + String(negocio.name).replace(/"/g, '') + '"><\/iframe>',
+            whatsapp: 'https://wa.me/?text=' + encodeURIComponent('Resuelve tus dudas por aquí: ' + url),
+          });
         });
+      }
+
+      if (partes[3] === 'conversations') {
+        return respuesta(200, { conversaciones: conversaciones(estado.conversaciones[slug] || []) });
       }
 
       if (partes[3] === 'metrics') {
@@ -2870,6 +3031,106 @@ async function cargarConversaciones(slug) {
   }
 }
 
+/** "hoy 14:32", "ayer 09:10" o "12 sep 14:32": más legible que una fecha completa. */
+function cuando(iso) {
+  const fecha = new Date(iso);
+  // 24 horas: es como se lee la hora en Chile, y evita el "09:36 p. m." del formato largo.
+  const hora = fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+  const hoy = new Date();
+  const mismoDia = (a, b) => a.toDateString() === b.toDateString();
+  if (mismoDia(fecha, hoy)) return `hoy ${hora}`;
+
+  const ayer = new Date(hoy);
+  ayer.setDate(ayer.getDate() - 1);
+  if (mismoDia(fecha, ayer)) return `ayer ${hora}`;
+
+  return `${fecha.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })} ${hora}`;
+}
+
+async function cargarTranscripciones(slug) {
+  const contenedor = $('conversaciones');
+  contenedor.innerHTML = '';
+
+  const { ok, datos } = await api('GET', `/api/businesses/${slug}/conversations`);
+  if (!ok || !datos || !Array.isArray(datos.conversaciones)) return;
+
+  if (datos.conversaciones.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'vacio-seccion';
+    p.textContent = 'Todavía nadie ha conversado con tu bot. Comparte tu link y vuelve a mirar.';
+    contenedor.appendChild(p);
+    return;
+  }
+
+  for (const conversacion of datos.conversaciones) {
+    const caja = document.createElement('details');
+    caja.className = 'conversacion';
+
+    const cabecera = document.createElement('summary');
+
+    const momento = document.createElement('span');
+    momento.className = 'cuando';
+    const n = conversacion.mensajes.length;
+    momento.innerHTML = '';
+    momento.append(
+      cuando(conversacion.inicio),
+      Object.assign(document.createElement('span'), {
+        className: 'resumen',
+        textContent: `  ·  ${n} ${n === 1 ? 'pregunta' : 'preguntas'}`,
+      }),
+    );
+    cabecera.appendChild(momento);
+
+    if (conversacion.sinRespuesta > 0) {
+      const fallo = document.createElement('span');
+      fallo.className = 'fallo';
+      fallo.textContent = `${conversacion.sinRespuesta} sin responder`;
+      cabecera.appendChild(fallo);
+    }
+
+    const canal = document.createElement('span');
+    canal.className = 'marca-canal';
+    canal.textContent = conversacion.canal;
+    cabecera.appendChild(canal);
+
+    caja.appendChild(cabecera);
+
+    const hilo = document.createElement('div');
+    hilo.className = 'transcripcion';
+    for (const mensaje of conversacion.mensajes) {
+      const dijo = document.createElement('div');
+      dijo.className = 'dicho cliente';
+      dijo.textContent = mensaje.pregunta;
+      hilo.appendChild(dijo);
+
+      const contesto = document.createElement('div');
+      contesto.className = `dicho bot${mensaje.matched === false && mensaje.intent !== 'pausado' ? ' no-supo' : ''}`;
+      contesto.textContent = mensaje.respuesta;
+      hilo.appendChild(contesto);
+    }
+    caja.appendChild(hilo);
+
+    contenedor.appendChild(caja);
+  }
+}
+
+/**
+ * Todo lo que se deriva del negocio y queda obsoleto cuando cambia algo.
+ *
+ * Va junto a propósito: el enlace para compartir lleva la información del negocio dentro,
+ * así que si se genera una sola vez al abrir, el dueño edita su bot, comparte el enlace, y
+ * sus clientes reciben la versión vieja sin que nadie se entere.
+ */
+async function refrescar(slug) {
+  await Promise.all([
+    cargarLista(),
+    cargarCompartir(slug),
+    cargarConversaciones(slug),
+    cargarTranscripciones(slug),
+  ]);
+}
+
 async function abrir(slug) {
   const { ok, datos } = await api('GET', `/api/businesses/${slug}`);
   if (!ok) {
@@ -2877,7 +3138,7 @@ async function abrir(slug) {
     return;
   }
   pintar(slug, datos.business);
-  await Promise.all([cargarLista(), cargarCompartir(slug), cargarConversaciones(slug)]);
+  await refrescar(slug);
 }
 
 /* -------------------------------------------------------------- guardar */
@@ -2922,7 +3183,8 @@ formEl.addEventListener('submit', async (event) => {
 
     tituloEl.textContent = datos.business.name;
     pintarEstado(datos.business.active);
-    await cargarLista();
+    // Incluye regenerar el enlace: si no, seguiría entregando el bot de antes de guardar.
+    await refrescar(slugActual);
   } catch (err) {
     mostrarMensaje('error', 'No se pudo conectar con el servidor.');
   } finally {
@@ -3059,6 +3321,9 @@ async function entrarAlPanel() {
           conversationId: idDeLaPrueba,
           channel: 'web',
           pregunta: texto,
+          // La respuesta también: sin ella, la transcripción muestra al cliente hablando
+          // solo, que es justo lo que se quiere leer.
+          respuesta: r.reply,
           intent: r.intent,
           matched: r.matched,
         });
@@ -3073,8 +3338,11 @@ async function entrarAlPanel() {
     function cerrarPreview() {
       cajon.classList.remove('abierto');
       cajon.setAttribute('aria-hidden', 'true');
-      // Al volver al panel, las cifras reflejan lo que se acaba de probar.
-      if (slugActual) cargarConversaciones(slugActual);
+      // Al volver al panel, las cifras Y las conversaciones reflejan lo que se probó.
+      if (slugActual) {
+        cargarConversaciones(slugActual);
+        cargarTranscripciones(slugActual);
+      }
     }
 
     document.getElementById('cerrar-preview').addEventListener('click', cerrarPreview);
@@ -3103,14 +3371,27 @@ async function entrarAlPanel() {
      * localStorage de este navegador, así que un teléfono abriría uno vacío. Apunta a un
      * chat publicado de verdad, para que se pueda escanear y se vea funcionar.
      */
+    // Decir qué es este enlace: funciona de verdad, pero lleva el negocio dentro.
+    var cajaLink = document.getElementById('url-publica').closest('.bloque');
+    if (cajaLink) {
+      var notaLink = document.createElement('p');
+      notaLink.className = 'ayuda';
+      notaLink.innerHTML =
+        '<strong>Este enlace funciona de verdad:</strong> ábrelo en tu teléfono o mándalo por ' +
+        'WhatsApp. Lleva la información de tu negocio dentro, así que es largo, y si cambias ' +
+        'algo tendrás que volver a compartirlo. Con PymeBot instalado en un servidor el enlace ' +
+        'es corto y las conversaciones de tus clientes te llegan aquí.';
+      document.getElementById('url-publica').parentElement.after(notaLink);
+    }
+
     var tarjetaQr = document.getElementById('qr').closest('.compartir-tarjeta');
     if (tarjetaQr) {
       var nota = document.createElement('p');
       nota.className = 'ayuda';
       nota.innerHTML =
         '<strong>En el demo este QR es un ejemplo:</strong> escanéalo y abre un chat de ' +
-        'demostración que funciona. En PymeBot instalado, apunta a la dirección de tu ' +
-        'propio negocio.';
+        'demostración que funciona. No puede llevar tu negocio dentro como el enlace de ' +
+        'arriba: un QR admite ~2.900 caracteres y un negocio configurado ocupa más.';
       tarjetaQr.appendChild(nota);
 
       var abrirChat = document.createElement('a');

@@ -50,6 +50,32 @@ for (const slug of negocios) {
   fs.copyFileSync(path.join(ROOT, 'dist', `chat-${slug}.html`), path.join(SALIDA, 'chat', `${slug}.html`));
 }
 
+// --- La página que abre un negocio que viaja dentro del link ---
+// Es lo que hace que el botón "Compartir" del panel entregue un link que de verdad
+// funciona, aun sin servidor: la información del negocio va en el propio enlace.
+const { validateBusiness } = require(path.join(ROOT, 'src', 'knowledge', 'schema'));
+void validateBusiness; // se usa abajo solo para no re-leer el esquema
+
+function aNavegador(fuente) {
+  return fuente
+    .replace(/^const .*= require\(.*\);\n/gm, '')
+    .replace(/^module\.exports = .*;\n/gm, '')
+    .trim();
+}
+
+const motor = [
+  aNavegador(fs.readFileSync(path.join(ROOT, 'src', 'bot', 'text.js'), 'utf8')),
+  aNavegador(fs.readFileSync(path.join(ROOT, 'src', 'bot', 'engine.js'), 'utf8')),
+].join('\n\n');
+
+fs.writeFileSync(
+  path.join(SALIDA, 'chat', 'compartido.html'),
+  fs
+    .readFileSync(path.join(ROOT, 'scripts', 'chat-compartido-template.html'), 'utf8')
+    .replace('/*__ESTILOS__*/', () => fs.readFileSync(path.join(ROOT, 'public', 'chat.css'), 'utf8'))
+    .replace('/*__ENGINE__*/', () => motor),
+);
+
 // --- El panel de demostración ---
 // Ruta relativa: panel.html vive en la raíz del sitio, igual que index.html.
 correr('build-demo.js', ['chat/dona-elba.html']);

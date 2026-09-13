@@ -66,6 +66,12 @@ Cada una de esas preguntas trae un botón **«Responder esto»** que crea la pre
 rellenada con las palabras clave del cliente. Es el círculo completo: el bot falla, lo ves,
 y lo arreglas en dos minutos sin salir de la pantalla.
 
+Más abajo, **todas las conversaciones completas**: quién escribió qué y qué contestó el bot,
+con las respuestas fallidas marcadas. Las cifras dicen que algo va mal; leer la conversación
+dice por qué — que la respuesta era correcta pero sonaba seca, o que la persona preguntó
+tres veces lo mismo de distinta forma. Son datos de los clientes del negocio, así que solo
+las ve su dueño.
+
 ## Medir qué tan bien responde
 
 ```bash
@@ -87,7 +93,7 @@ comprensión; no se baja para que pase.
 npm test
 ```
 
-167 tests sobre el motor, las sesiones, la API HTTP, la validación de negocios, el
+174 tests sobre el motor, las sesiones, la API HTTP, la validación de negocios, el
 repositorio, la autenticación y autorización, el canal público, las conversaciones y sus
 métricas, el endurecimiento de producción y la precisión del bot.
 
@@ -181,6 +187,27 @@ guardar**, así se ve el efecto de editar una respuesta al momento.
 Lo que no hace: el acceso no comprueba la contraseña (no hay dónde guardar un hash con
 seguridad en el navegador, y fingirlo daría una impresión equivocada), los cambios quedan
 solo en ese navegador, y el QR es de muestra. El propio demo lo dice en pantalla.
+
+### El enlace del sitio estático lleva el negocio dentro
+
+En el sitio estático no hay servidor, así que un enlace compartido solo puede funcionar si
+transporta la información del negocio. Eso es exactamente lo que hace: el botón
+**Compartir** genera una dirección real que abre el chat de ese negocio en cualquier
+teléfono. Va después del `#` a propósito — esa parte de la URL el navegador nunca la envía
+a ningún servidor, así que los datos del negocio no quedan en registros ajenos.
+
+Sus límites, que conviene conocer antes de usarlo con clientes:
+
+- **El enlace es largo** (unos 4.800 caracteres). Se manda por WhatsApp sin problema, pero
+  no cabe en un código QR, que admite unos 2.900.
+- **Si editas el bot, hay que volver a compartirlo.** La información viaja dentro del
+  enlace, así que el que ya enviaste sigue con la versión anterior.
+- **Las conversaciones de esos enlaces no vuelven.** Sin servidor no hay dónde anotarlas,
+  así que no aparecen en la pestaña Conversaciones.
+
+Las tres desaparecen al instalar PymeBot en un servidor: el enlace pasa a ser corto
+(`tuservidor.cl/c/tu-negocio`), refleja siempre la última versión, y las conversaciones
+llegan al panel.
 
 ### Probar el chat sin contratar hosting
 
@@ -353,7 +380,7 @@ public/
   index.*              Sandbox interno de pruebas
 scripts/               Generadores de páginas sin servidor y medidor de precisión
 dist/                  Páginas en un solo archivo, sin servidor (generadas)
-tests/                 167 tests con el runner nativo de Node
+tests/                 174 tests con el runner nativo de Node
 docs/ROADMAP.md        Plan modular completo
 docs/CANALES.md        Cómo añadir WhatsApp u otro canal
 ```

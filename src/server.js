@@ -25,7 +25,7 @@ const { BusinessRepository, ValidationError } = require('./knowledge/repository'
 const { UserStore, AuthError } = require('./auth/users');
 const { AuthSessionStore, readCookie, cookieOptions, COOKIE_NAME } = require('./auth/sessions');
 const { ConversationLog } = require('./chat/conversaciones');
-const { resumir } = require('./chat/metricas');
+const { resumir, conversaciones } = require('./chat/metricas');
 const { crearAtencion, MensajeInvalido } = require('./chat/atender');
 const { rateLimit } = require('./http/limits');
 const { cabecerasDeSeguridad } = require('./http/seguridad');
@@ -473,6 +473,17 @@ function createApp({
   app.get('/api/businesses/:slug/metrics', requireAuth, requireOwnedBusiness, (req, res) => {
     const dias = Math.min(Math.max(Number(req.query.dias) || 14, 1), 90);
     res.json(resumir(conversations.leer(req.params.slug), { dias }));
+  });
+
+  /**
+   * Las conversaciones completas, para leerlas.
+   *
+   * Son datos de los clientes del negocio, así que solo las ve su dueño: van detrás de
+   * requireOwnedBusiness igual que todo lo demás.
+   */
+  app.get('/api/businesses/:slug/conversations', requireAuth, requireOwnedBusiness, (req, res) => {
+    const limite = Math.min(Math.max(Number(req.query.limite) || 50, 1), 200);
+    res.json({ conversaciones: conversaciones(conversations.leer(req.params.slug), { limite }) });
   });
 
   app.post('/api/businesses', limitarEscritura, requireAuth, (req, res) => {

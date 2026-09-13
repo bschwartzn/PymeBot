@@ -313,3 +313,43 @@ test('sin ningún negocio configurado, el chat lo dice en vez de fallar', async 
     await srv.close();
   }
 });
+
+test('las conversaciones son privadas: solo las lee el dueño del negocio', async () => {
+  const srv = await startServer();
+  try {
+    const ana = await srv.dueno('ana@ejemplo.cl');
+    const beto = await srv.dueno('beto@ejemplo.cl');
+    const anonimo = srv.cliente();
+
+    // Un cliente conversa con el bot de Ana.
+    await anonimo.post('/api/chat', { message: 'a que hora abren', business: ana.slug });
+
+    const deAna = await ana.get(`/api/businesses/${ana.slug}/conversations`);
+    assert.strictEqual(deAna.status, 200);
+    assert.strictEqual(deAna.body.conversaciones.length, 1);
+    assert.strictEqual(deAna.body.conversaciones[0].mensajes[0].pregunta, 'a que hora abren');
+
+    // Son datos de los clientes de Ana: nadie más los ve.
+    assert.strictEqual((await beto.get(`/api/businesses/${ana.slug}/conversations`)).status, 404);
+    assert.strictEqual((await anonimo.get(`/api/businesses/${ana.slug}/conversations`)).status, 401);
+  } finally {
+    await srv.close();
+  }
+});
+
+test('al eliminar un negocio se borran sus conversaciones', async () => {
+  const srv = await startServer();
+  try {
+    const ana = await srv.dueno('ana@ejemplo.cl');
+    await srv.cliente().post('/api/chat', { message: 'hola', business: ana.slug });
+
+    await ana.del(`/api/businesses/${ana.slug}`);
+
+    // Recreado con el mismo identificador, no debe heredar las conversaciones de antes.
+    srv.repository.save(ana.slug, { ...NEGOCIO, ownerId: ana.userId });
+    const despues = await ana.get(`/api/businesses/${ana.slug}/conversations`);
+    assert.deepStrictEqual(despues.body.conversaciones, []);
+  } finally {
+    await srv.close();
+  }
+});

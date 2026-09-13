@@ -506,6 +506,106 @@ async function cargarConversaciones(slug) {
   }
 }
 
+/** "hoy 14:32", "ayer 09:10" o "12 sep 14:32": más legible que una fecha completa. */
+function cuando(iso) {
+  const fecha = new Date(iso);
+  // 24 horas: es como se lee la hora en Chile, y evita el "09:36 p. m." del formato largo.
+  const hora = fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+  const hoy = new Date();
+  const mismoDia = (a, b) => a.toDateString() === b.toDateString();
+  if (mismoDia(fecha, hoy)) return `hoy ${hora}`;
+
+  const ayer = new Date(hoy);
+  ayer.setDate(ayer.getDate() - 1);
+  if (mismoDia(fecha, ayer)) return `ayer ${hora}`;
+
+  return `${fecha.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })} ${hora}`;
+}
+
+async function cargarTranscripciones(slug) {
+  const contenedor = $('conversaciones');
+  contenedor.innerHTML = '';
+
+  const { ok, datos } = await api('GET', `/api/businesses/${slug}/conversations`);
+  if (!ok || !datos || !Array.isArray(datos.conversaciones)) return;
+
+  if (datos.conversaciones.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'vacio-seccion';
+    p.textContent = 'Todavía nadie ha conversado con tu bot. Comparte tu link y vuelve a mirar.';
+    contenedor.appendChild(p);
+    return;
+  }
+
+  for (const conversacion of datos.conversaciones) {
+    const caja = document.createElement('details');
+    caja.className = 'conversacion';
+
+    const cabecera = document.createElement('summary');
+
+    const momento = document.createElement('span');
+    momento.className = 'cuando';
+    const n = conversacion.mensajes.length;
+    momento.innerHTML = '';
+    momento.append(
+      cuando(conversacion.inicio),
+      Object.assign(document.createElement('span'), {
+        className: 'resumen',
+        textContent: `  ·  ${n} ${n === 1 ? 'pregunta' : 'preguntas'}`,
+      }),
+    );
+    cabecera.appendChild(momento);
+
+    if (conversacion.sinRespuesta > 0) {
+      const fallo = document.createElement('span');
+      fallo.className = 'fallo';
+      fallo.textContent = `${conversacion.sinRespuesta} sin responder`;
+      cabecera.appendChild(fallo);
+    }
+
+    const canal = document.createElement('span');
+    canal.className = 'marca-canal';
+    canal.textContent = conversacion.canal;
+    cabecera.appendChild(canal);
+
+    caja.appendChild(cabecera);
+
+    const hilo = document.createElement('div');
+    hilo.className = 'transcripcion';
+    for (const mensaje of conversacion.mensajes) {
+      const dijo = document.createElement('div');
+      dijo.className = 'dicho cliente';
+      dijo.textContent = mensaje.pregunta;
+      hilo.appendChild(dijo);
+
+      const contesto = document.createElement('div');
+      contesto.className = `dicho bot${mensaje.matched === false && mensaje.intent !== 'pausado' ? ' no-supo' : ''}`;
+      contesto.textContent = mensaje.respuesta;
+      hilo.appendChild(contesto);
+    }
+    caja.appendChild(hilo);
+
+    contenedor.appendChild(caja);
+  }
+}
+
+/**
+ * Todo lo que se deriva del negocio y queda obsoleto cuando cambia algo.
+ *
+ * Va junto a propósito: el enlace para compartir lleva la información del negocio dentro,
+ * así que si se genera una sola vez al abrir, el dueño edita su bot, comparte el enlace, y
+ * sus clientes reciben la versión vieja sin que nadie se entere.
+ */
+async function refrescar(slug) {
+  await Promise.all([
+    cargarLista(),
+    cargarCompartir(slug),
+    cargarConversaciones(slug),
+    cargarTranscripciones(slug),
+  ]);
+}
+
 async function abrir(slug) {
   const { ok, datos } = await api('GET', `/api/businesses/${slug}`);
   if (!ok) {
@@ -513,7 +613,7 @@ async function abrir(slug) {
     return;
   }
   pintar(slug, datos.business);
-  await Promise.all([cargarLista(), cargarCompartir(slug), cargarConversaciones(slug)]);
+  await refrescar(slug);
 }
 
 /* -------------------------------------------------------------- guardar */
@@ -558,7 +658,8 @@ formEl.addEventListener('submit', async (event) => {
 
     tituloEl.textContent = datos.business.name;
     pintarEstado(datos.business.active);
-    await cargarLista();
+    // Incluye regenerar el enlace: si no, seguiría entregando el bot de antes de guardar.
+    await refrescar(slugActual);
   } catch (err) {
     mostrarMensaje('error', 'No se pudo conectar con el servidor.');
   } finally {

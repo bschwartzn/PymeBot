@@ -81,4 +81,45 @@ function resumir(registros, { dias = DIAS_POR_DEFECTO, ahora = Date.now() } = {}
   };
 }
 
-module.exports = { resumir, agrupar };
+/**
+ * Reconstruye las conversaciones a partir del registro plano.
+ *
+ * El registro guarda un intercambio por línea; aquí se juntan los de una misma
+ * conversación para poder LEERLAS, no solo contarlas. Ver qué le dijo un cliente de verdad
+ * al bot vale más que cualquier cifra: es donde se descubre que la respuesta era correcta
+ * pero sonaba seca, o que la persona preguntó tres veces lo mismo de distinta forma.
+ */
+function conversaciones(registros, { limite = 50 } = {}) {
+  const porId = new Map();
+
+  for (const registro of registros) {
+    const id = registro.conversationId || 'sin-id';
+
+    if (!porId.has(id)) {
+      porId.set(id, {
+        id,
+        canal: registro.channel || 'web',
+        inicio: registro.at,
+        fin: registro.at,
+        mensajes: [],
+        sinRespuesta: 0,
+      });
+    }
+
+    const conversacion = porId.get(id);
+    conversacion.fin = registro.at;
+    conversacion.mensajes.push({
+      at: registro.at,
+      pregunta: registro.pregunta,
+      respuesta: registro.respuesta,
+      intent: registro.intent,
+      matched: registro.matched,
+    });
+    if (registro.matched === false && registro.intent !== 'pausado') conversacion.sinRespuesta += 1;
+  }
+
+  // Las más recientes primero: es lo que el dueño quiere mirar al entrar.
+  return [...porId.values()].sort((a, b) => (a.fin < b.fin ? 1 : -1)).slice(0, limite);
+}
+
+module.exports = { resumir, agrupar, conversaciones };

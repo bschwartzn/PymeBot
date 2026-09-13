@@ -445,3 +445,69 @@ input[type="range"] { width: 100%; accent-color: var(--brand); cursor: pointer; 
 .barra .valor { width: 30px; text-align: right; flex: none; font-variant-numeric: tabular-nums; }
 
 .vacio-seccion { font-size: 14.5px; color: var(--muted); margin: 0; }
+
+/* ==================== Conversaciones completas ==================== */
+
+.conversaciones { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+
+.conversacion {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.conversacion > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-size: 14px;
+  list-style: none;
+}
+.conversacion > summary::-webkit-details-marker { display: none; }
+.conversacion > summary::before {
+  content: "▸";
+  color: var(--muted);
+  flex: none;
+  transition: transform .15s;
+}
+.conversacion[open] > summary::before { transform: rotate(90deg); }
+.conversacion > summary:hover { background: var(--soft); }
+
+.conversacion .cuando { flex: 1; min-width: 0; }
+.conversacion .resumen { color: var(--muted); font-size: 13px; }
+.conversacion .marca-canal {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  background: var(--soft);
+  border-radius: 999px;
+  padding: 2px 9px;
+  flex: none;
+}
+.conversacion .fallo {
+  font-size: 11.5px;
+  color: var(--warn);
+  background: var(--warn-bg);
+  border-radius: 999px;
+  padding: 2px 9px;
+  flex: none;
+}
+
+.transcripcion {
+  border-top: 1px solid var(--border);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--soft);
+}
+
+.dicho { max-width: 82%; padding: 9px 13px; border-radius: 14px; font-size: 14.5px; line-height: 1.45; white-space: pre-wrap; }
+.dicho.cliente { align-self: flex-end; background: var(--brand); color: #fff; border-bottom-right-radius: 4px; }
+.dicho.bot { align-self: flex-start; background: var(--panel); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+/* Marcar dónde falló: es lo que el dueño busca al leer una conversación. */
+.dicho.bot.no-supo { border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); background: var(--warn-bg); }

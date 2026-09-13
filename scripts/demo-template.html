@@ -105,6 +105,42 @@
 
   var LLAVE = 'pymebot-demo';
 
+  /* ------------------------------------------------------------------
+     El enlace compartible.
+
+     Sin servidor, un link solo puede funcionar si lleva la información del negocio
+     dentro. Va después del # a propósito: esa parte de la URL el navegador NUNCA la
+     envía a ningún servidor, así que los datos del negocio no quedan en registros
+     ajenos. Se comprime con deflate porque un negocio configurado pesa ~8 KB y
+     comprimido baja a ~3,5 KB.
+
+     Prefijo "z" = comprimido; "b" = tal cual, para navegadores sin CompressionStream.
+     ------------------------------------------------------------------ */
+
+  function aBase64Url(bytes) {
+    var binario = '';
+    for (var i = 0; i < bytes.length; i += 1) binario += String.fromCharCode(bytes[i]);
+    return btoa(binario).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  /** La dirección de chat/compartido.html, esté el sitio donde esté. */
+  function baseDelChat() {
+    var aqui = location.href.split('#')[0].split('?')[0];
+    return aqui.replace(/[^/]*$/, '') + 'chat/compartido.html';
+  }
+
+  async function enlaceDelNegocio(negocio) {
+    var bytes = new TextEncoder().encode(JSON.stringify(negocio));
+
+    if (typeof CompressionStream === 'undefined') {
+      return baseDelChat() + '#b' + aBase64Url(bytes);
+    }
+
+    var flujo = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+    var comprimido = new Uint8Array(await new Response(flujo).arrayBuffer());
+    return baseDelChat() + '#z' + aBase64Url(comprimido);
+  }
+
   function estadoInicial() {
     return { usuario: null, negocios: {}, conversaciones: {} };
   }
@@ -287,12 +323,21 @@
       if (!negocio) return respuesta(404, { error: 'Ese negocio no existe.' });
 
       if (partes[3] === 'share') {
-        return respuesta(200, {
-          url: 'https://tu-servidor.cl/c/' + slug, // dirección de ejemplo: en el demo no hay servidor
-          qr: 'qr-de-muestra',
-          embed: '<script src="https://tu-servidor.cl/widget.js" data-negocio="' + slug + '" defer><\/script>',
-          whatsapp: 'https://wa.me/?text=' + encodeURIComponent('Resuelve tus dudas por aquí: https://tu-servidor.cl/c/' + slug),
+        // Se calcula de verdad: el enlace lleva el negocio dentro, así que funciona.
+        return enlaceDelNegocio(negocio).then(function (url) {
+          return respuesta(200, {
+            url: url,
+            qr: 'qr-de-muestra',
+            embed:
+              '<iframe src="' + url + '" style="width:100%;max-width:420px;height:600px;border:0;border-radius:16px"' +
+              ' title="Chat de ' + String(negocio.name).replace(/"/g, '') + '"><\/iframe>',
+            whatsapp: 'https://wa.me/?text=' + encodeURIComponent('Resuelve tus dudas por aquí: ' + url),
+          });
         });
+      }
+
+      if (partes[3] === 'conversations') {
+        return respuesta(200, { conversaciones: conversaciones(estado.conversaciones[slug] || []) });
       }
 
       if (partes[3] === 'metrics') {
@@ -381,6 +426,9 @@
           conversationId: idDeLaPrueba,
           channel: 'web',
           pregunta: texto,
+          // La respuesta también: sin ella, la transcripción muestra al cliente hablando
+          // solo, que es justo lo que se quiere leer.
+          respuesta: r.reply,
           intent: r.intent,
           matched: r.matched,
         });
@@ -395,8 +443,11 @@
     function cerrarPreview() {
       cajon.classList.remove('abierto');
       cajon.setAttribute('aria-hidden', 'true');
-      // Al volver al panel, las cifras reflejan lo que se acaba de probar.
-      if (slugActual) cargarConversaciones(slugActual);
+      // Al volver al panel, las cifras Y las conversaciones reflejan lo que se probó.
+      if (slugActual) {
+        cargarConversaciones(slugActual);
+        cargarTranscripciones(slugActual);
+      }
     }
 
     document.getElementById('cerrar-preview').addEventListener('click', cerrarPreview);
@@ -425,14 +476,27 @@
      * localStorage de este navegador, así que un teléfono abriría uno vacío. Apunta a un
      * chat publicado de verdad, para que se pueda escanear y se vea funcionar.
      */
+    // Decir qué es este enlace: funciona de verdad, pero lleva el negocio dentro.
+    var cajaLink = document.getElementById('url-publica').closest('.bloque');
+    if (cajaLink) {
+      var notaLink = document.createElement('p');
+      notaLink.className = 'ayuda';
+      notaLink.innerHTML =
+        '<strong>Este enlace funciona de verdad:</strong> ábrelo en tu teléfono o mándalo por ' +
+        'WhatsApp. Lleva la información de tu negocio dentro, así que es largo, y si cambias ' +
+        'algo tendrás que volver a compartirlo. Con PymeBot instalado en un servidor el enlace ' +
+        'es corto y las conversaciones de tus clientes te llegan aquí.';
+      document.getElementById('url-publica').parentElement.after(notaLink);
+    }
+
     var tarjetaQr = document.getElementById('qr').closest('.compartir-tarjeta');
     if (tarjetaQr) {
       var nota = document.createElement('p');
       nota.className = 'ayuda';
       nota.innerHTML =
         '<strong>En el demo este QR es un ejemplo:</strong> escanéalo y abre un chat de ' +
-        'demostración que funciona. En PymeBot instalado, apunta a la dirección de tu ' +
-        'propio negocio.';
+        'demostración que funciona. No puede llevar tu negocio dentro como el enlace de ' +
+        'arriba: un QR admite ~2.900 caracteres y un negocio configurado ocupa más.';
       tarjetaQr.appendChild(nota);
 
       var abrirChat = document.createElement('a');
