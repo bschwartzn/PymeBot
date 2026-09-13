@@ -24,12 +24,15 @@ const { SessionStore } = require('./bot/sessions');
 const { BusinessRepository, ValidationError } = require('./knowledge/repository');
 const { UserStore, AuthError } = require('./auth/users');
 const { AuthSessionStore, readCookie, cookieOptions, COOKIE_NAME } = require('./auth/sessions');
+const { rateLimit } = require('./http/limits');
+const { cabecerasDeSeguridad } = require('./http/seguridad');
+const config = require('./config');
 
 /** Largo máximo de un mensaje. Un cliente real no escribe 2.000 caracteres. */
 const MAX_MESSAGE_LENGTH = 1000;
 
 /** Negocio que se usa en el chat cuando nadie pide uno en particular. */
-const DEFAULT_SLUG = process.env.PYMEBOT_BUSINESS || 'dona-elba';
+const DEFAULT_SLUG = config.defaultBusiness;
 
 /** Freno a la fuerza bruta contra el login. */
 const LOGIN_MAX_INTENTOS = 10;
@@ -63,8 +66,34 @@ function createApp({
   sessions = new SessionStore(),
 } = {}) {
   const app = express();
+
+  /*
+   * Cuántos proxies hay delante. Render, Fly y Railway ponen uno.
+   * Sin esto req.ip sería la IP del proxy y TODOS los visitantes compartirían el mismo
+   * contador del límite de peticiones, dejándolo inservible. Se confía en un número fijo
+   * de saltos y no en la cabecera a ciegas, que cualquiera podría falsificar.
+   */
+  app.set('trust proxy', config.trustProxy);
+  app.disable('x-powered-by');
+
+  app.use(cabecerasDeSeguridad({ isProduction: config.isProduction }));
   app.use(express.json({ limit: '256kb' }));
-  app.use(express.static(path.join(__dirname, '..', 'public')));
+  app.use(
+    express.static(path.join(__dirname, '..', 'public'), {
+      // Los archivos llevan su contenido en el nombre solo en dist/; aquí se revalida.
+      maxAge: config.isProduction ? '5m' : 0,
+    }),
+  );
+
+  const limitarChat = rateLimit({
+    ...config.limits.chat,
+    mensaje: 'Estás escribiendo muy rápido. Espera unos segundos e inténtalo de nuevo.',
+  });
+  const limitarAuth = rateLimit({
+    ...config.limits.auth,
+    mensaje: 'Demasiados intentos. Espera unos minutos antes de volver a probar.',
+  });
+  const limitarEscritura = rateLimit(config.limits.write);
 
   /** Intentos fallidos de login, por correo. Se limpia solo. */
   const intentosFallidos = new Map();
@@ -214,12 +243,15 @@ function createApp({
     return res.status(503).json({ error: 'Todavía no hay ningún negocio configurado.' });
   }
 
+  // Lo consulta el hosting para saber si la instancia está viva. Tiene que ser barato y
+  // no depender de nada que pueda fallar por su cuenta.
   app.get('/health', (req, res) => {
     res.json({
       status: 'ok',
       businesses: repository.list().length,
       users: users.count,
       sessions: sessions.size,
+      uptime: Math.round(process.uptime()),
     });
   });
 
@@ -243,7 +275,7 @@ function createApp({
     });
   });
 
-  app.post('/api/chat', (req, res) => {
+  app.post('/api/chat', limitarChat, (req, res) => {
     const { sessionId, message } = req.body || {};
 
     if (typeof message !== 'string' || message.trim() === '') {
@@ -328,7 +360,7 @@ function createApp({
     return user;
   }
 
-  app.post('/api/auth/signup', (req, res) => {
+  app.post('/api/auth/signup', limitarAuth, (req, res) => {
     const { email, password, name, businessName } = req.body || {};
 
     let user;
@@ -356,7 +388,7 @@ function createApp({
     res.status(201).json({ user, business: slug });
   });
 
-  app.post('/api/auth/login', (req, res) => {
+  app.post('/api/auth/login', limitarAuth, (req, res) => {
     const { email, password } = req.body || {};
     const clave = UserStore.normalizeEmail(email);
 
@@ -425,7 +457,7 @@ function createApp({
     });
   });
 
-  app.post('/api/businesses', requireAuth, (req, res) => {
+  app.post('/api/businesses', limitarEscritura, requireAuth, (req, res) => {
     const nombre = req.body && typeof req.body.name === 'string' ? req.body.name.trim() : '';
     if (!nombre) return res.status(422).json({ error: 'El negocio necesita un nombre.' });
 
@@ -459,7 +491,7 @@ function createApp({
     }
   });
 
-  app.put('/api/businesses/:slug', requireAuth, requireOwnedBusiness, (req, res) => {
+  app.put('/api/businesses/:slug', limitarEscritura, requireAuth, requireOwnedBusiness, (req, res) => {
     try {
       // El dueño se toma del servidor, nunca del cuerpo: si no, cualquiera regalaría
       // o se apropiaría de un negocio ajeno mandando otro ownerId.
@@ -479,22 +511,6 @@ function createApp({
   });
 
   return app;
-}
-
-// Solo levanta el servidor cuando se ejecuta directamente (los tests importan createApp).
-if (require.main === module) {
-  const port = Number(process.env.PORT) || 3000;
-  const repository = new BusinessRepository();
-  const app = createApp({ repository });
-
-  app.listen(port, () => {
-    console.log(`\n  🤖 PymeBot escuchando en http://localhost:${port}`);
-    console.log(`     Panel del dueño:    http://localhost:${port}/panel.html`);
-    for (const negocio of repository.list()) {
-      console.log(`     Chat de ${negocio.name}: http://localhost:${port}/c/${negocio.slug}`);
-    }
-    console.log('');
-  });
 }
 
 module.exports = { createApp, MAX_MESSAGE_LENGTH, DEFAULT_SLUG, negocioInicial };

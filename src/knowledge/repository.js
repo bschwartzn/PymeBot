@@ -14,7 +14,7 @@ const path = require('path');
 
 const { validateBusiness, slugify, isValidSlug } = require('./schema');
 
-const DEFAULT_DIR = path.join(__dirname, '..', '..', 'data', 'businesses');
+const { businessesDir: DEFAULT_DIR } = require('../config');
 
 /** Error con la lista de problemas que el editor le muestra al usuario. */
 class ValidationError extends Error {

@@ -12,7 +12,7 @@ const fs = require('fs');
 const path = require('path');
 const { randomBytes } = require('crypto');
 
-const DEFAULT_FILE = path.join(__dirname, '..', '..', 'data', 'sessions.json');
+const { sessionsFile: DEFAULT_FILE } = require('../config');
 
 /** Una sesión dura 30 días. Pasado eso hay que volver a entrar. */
 const TTL_MS = 30 * 24 * 60 * 60 * 1000;

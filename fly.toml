@@ -1,0 +1,40 @@
+# Plano de despliegue para Fly.io, como alternativa a Render.
+#
+# Cómo se usa:
+#   fly launch --no-deploy        (crea la aplicación con este archivo)
+#   fly volumes create pymebot_datos --size 1
+#   fly secrets set PYMEBOT_PUBLIC_URL=https://TU-APP.fly.dev
+#   fly deploy
+
+app = "pymebot"
+primary_region = "scl"   # Santiago
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+  PYMEBOT_DATA_DIR = "/data"
+  PYMEBOT_TRUST_PROXY = "1"
+
+# El volumen es obligatorio: sin él cada despliegue borra cuentas y negocios.
+[[mounts]]
+  source = "pymebot_datos"
+  destination = "/data"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "suspend"
+  auto_start_machines = true
+  # Una sola instancia: los datos están en disco y las sesiones en memoria, así que dos
+  # instancias se pisarían. Para escalar habría que mover ambas cosas a algo compartido.
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    interval = "30s"
+    timeout = "4s"
+    grace_period = "10s"
+    method = "GET"
+    path = "/health"

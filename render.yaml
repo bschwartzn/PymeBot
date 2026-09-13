@@ -1,0 +1,32 @@
+# Plano de despliegue para Render.
+#
+# Cómo se usa: en Render → New → Blueprint, conectas este repositorio y Render lee este
+# archivo. No hay que configurar nada a mano salvo PYMEBOT_PUBLIC_URL.
+#
+# El disco es lo importante: sin él, cada despliegue borraría todas las cuentas y todos
+# los negocios. Render solo ofrece discos en los planes de pago (desde 7 USD al mes).
+
+services:
+  - type: web
+    name: pymebot
+    runtime: node
+    plan: starter # el plan gratuito NO admite disco: los datos se perderían en cada deploy
+    region: oregon
+    buildCommand: npm ci --omit=dev
+    startCommand: node src/arranque.js
+    healthCheckPath: /health
+
+    disk:
+      name: pymebot-datos
+      mountPath: /var/data
+      sizeGB: 1
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PYMEBOT_DATA_DIR
+        value: /var/data
+      - key: PYMEBOT_TRUST_PROXY
+        value: "1"
+      - key: PYMEBOT_PUBLIC_URL
+        sync: false # se define en el panel de Render con la dirección real del servicio

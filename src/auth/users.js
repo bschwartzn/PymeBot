@@ -11,7 +11,7 @@ const { randomUUID } = require('crypto');
 
 const { hashPassword, verifyPassword, checkPasswordStrength } = require('./passwords');
 
-const DEFAULT_FILE = path.join(__dirname, '..', '..', 'data', 'users.json');
+const { usersFile: DEFAULT_FILE } = require('../config');
 
 /** Validación de correo deliberadamente laxa: lo estricto rechaza direcciones válidas. */
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
