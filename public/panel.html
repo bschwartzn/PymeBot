@@ -117,6 +117,7 @@
               <button class="seccion-tab" type="button" data-seccion="mensajes">Mensajes</button>
               <button class="seccion-tab" type="button" data-seccion="comportamiento">Comportamiento</button>
               <button class="seccion-tab" type="button" data-seccion="compartir">Compartir</button>
+              <button class="seccion-tab" type="button" data-seccion="conversaciones">Conversaciones</button>
             </nav>
 
             <fieldset class="bloque" data-seccion="identidad">
@@ -246,6 +247,28 @@
                   <input id="codigo-embed" type="text" readonly aria-label="Código para tu web" />
                   <button id="copiar-embed" class="btn-ghost" type="button">Copiar</button>
                 </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="bloque" data-seccion="conversaciones" hidden>
+              <p class="ayuda bloque-intro">
+                Lo que preguntaron tus clientes en los últimos 14 días.
+              </p>
+
+              <div class="cifras" id="cifras"></div>
+
+              <div class="compartir-tarjeta">
+                <h3>Preguntas que tu bot no supo responder</h3>
+                <p class="ayuda">
+                  Cada una es una respuesta que te falta cargar. Agrégala y el bot dejará de
+                  fallar en esa pregunta.
+                </p>
+                <div id="sin-respuesta" class="sin-respuesta"></div>
+              </div>
+
+              <div class="compartir-tarjeta">
+                <h3>Los temas que más te preguntan</h3>
+                <div id="mas-preguntados" class="barras"></div>
               </div>
             </fieldset>
           </form>

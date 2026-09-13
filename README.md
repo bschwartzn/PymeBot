@@ -4,8 +4,9 @@ Chatbot para pequeñas empresas. Responde las preguntas frecuentes de los client
 (horarios, precios, servicios, ubicación) con la información que el propio negocio
 configura.
 
-> **Estado:** núcleo conversacional, base de conocimiento editable, panel del dueño con
-> cuentas y **canal público para el cliente final** (link, QR y widget).
+> **Estado:** listo para desplegar. Núcleo conversacional, base de conocimiento editable,
+> panel del dueño con cuentas, canal público (link, QR y widget) y **medición de
+> conversaciones**.
 > El desarrollo es modular y progresivo: cada módulo se construye, se prueba y se corrige
 > antes de pasar al siguiente. El plan completo está en [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
@@ -54,6 +55,17 @@ reutilizarán WhatsApp y el resto de los canales.
 Es un **ambiente sandbox**: no hay WhatsApp, ni base de datos, ni cuentas de usuario.
 Solo el chat, para validar que el bot responde bien.
 
+## Qué preguntaron tus clientes
+
+Cada conversación queda anotada en `data/conversations/<negocio>.jsonl`, una línea por
+mensaje. Sobrevive a los reinicios y alimenta la pestaña **Conversaciones** del panel, que
+muestra cuántas conversaciones hubo, qué porcentaje supo responder el bot, y —lo más útil—
+**la lista de preguntas que no supo contestar**.
+
+Cada una de esas preguntas trae un botón **«Responder esto»** que crea la pregunta ya
+rellenada con las palabras clave del cliente. Es el círculo completo: el bot falla, lo ves,
+y lo arreglas en dos minutos sin salir de la pantalla.
+
 ## Medir qué tan bien responde
 
 ```bash
@@ -75,8 +87,9 @@ comprensión; no se baja para que pase.
 npm test
 ```
 
-143 tests sobre el motor, las sesiones, la API HTTP, la validación de negocios, el
-repositorio, la autenticación y autorización, el canal público, la precisión y el sandbox.
+167 tests sobre el motor, las sesiones, la API HTTP, la validación de negocios, el
+repositorio, la autenticación y autorización, el canal público, las conversaciones y sus
+métricas, el endurecimiento de producción y la precisión del bot.
 
 ---
 
@@ -324,6 +337,13 @@ src/
     passwords.js       Hash con scrypt
     users.js           Cuentas
     sessions.js        Sesiones y cookie
+  chat/                ── El chat, sin saber de canales
+    atender.js         El núcleo: la frontera que hará posible WhatsApp
+    conversaciones.js  Registro en disco, una línea por mensaje
+    metricas.js        Qué preguntan y qué no supo responder
+  http/                Límite de peticiones y cabeceras de seguridad
+  config.js            Toda la configuración de entorno, en un lugar
+  arranque.js          Punto de arranque: siembra, escucha y cierra ordenadamente
 data/businesses/       La información de cada negocio
 data/evals/            Preguntas de prueba para medir la precisión
 public/
@@ -333,31 +353,64 @@ public/
   index.*              Sandbox interno de pruebas
 scripts/               Generadores de páginas sin servidor y medidor de precisión
 dist/                  Páginas en un solo archivo, sin servidor (generadas)
-tests/                 143 tests con el runner nativo de Node
+tests/                 167 tests con el runner nativo de Node
 docs/ROADMAP.md        Plan modular completo
+docs/CANALES.md        Cómo añadir WhatsApp u otro canal
 ```
 
 ## Ponerlo en internet
 
-Es una aplicación Node normal, pero hay cuatro cosas que importan:
+El proyecto viene preparado para desplegarse. Es una aplicación Node normal con **una sola
+condición que no se puede saltar: necesita un disco persistente.** Todo vive en archivos
+—negocios, cuentas, sesiones, conversaciones— así que sin disco, cada despliegue borra
+todo. Eso descarta Vercel y Netlify.
 
-1. **Disco persistente.** Todo vive en `data/`: negocios, cuentas y sesiones. Si el host
-   borra el disco en cada despliegue, se pierde todo. Render, Railway y Fly.io ofrecen discos
-   persistentes; Vercel y Netlify **no sirven** para esto.
-2. **HTTPS obligatorio.** Sin él la cookie de sesión viaja en claro y `NODE_ENV=production`
-   la marca como `secure`, así que dejaría de funcionar.
-3. **`PYMEBOT_PUBLIC_URL`.** Sin esta variable, el link y el QR se generan desde las
-   cabeceras de la petición. Detrás de un proxy raro eso puede apuntar a `localhost` y el QR
-   impreso quedaría inservible. Defínela y te ahorras el problema:
+### Opción recomendada: Render
 
-   ```bash
-   PYMEBOT_PUBLIC_URL=https://chat.tupyme.cl
-   NODE_ENV=production
-   PORT=3000
-   ```
+El repositorio trae [`render.yaml`](render.yaml), así que no hay que configurar nada a mano:
 
-4. **Un límite de peticiones por IP en `POST /api/chat`.** La página del cliente es pública
-   y hoy no lo tiene. Ponlo antes de difundir el link ampliamente.
+1. En Render: **New → Blueprint**, y conecta este repositorio.
+2. Render lee `render.yaml` y crea el servicio con su disco de 1 GB montado en `/var/data`.
+3. Define **`PYMEBOT_PUBLIC_URL`** con la dirección que te asignó (por ejemplo
+   `https://pymebot.onrender.com`). Es la única variable que queda por poner a mano, y sin
+   ella el QR y los links compartidos salen mal.
+
+Cuesta unos 7 USD al mes: **el plan gratuito de Render no admite discos**, y sin disco se
+perderían todas las cuentas en cada despliegue.
+
+### Alternativa: Fly.io
+
+Trae [`fly.toml`](fly.toml) y [`Dockerfile`](Dockerfile):
+
+```bash
+fly launch --no-deploy
+fly volumes create pymebot_datos --size 1
+fly secrets set PYMEBOT_PUBLIC_URL=https://TU-APP.fly.dev
+fly deploy
+```
+
+### Variables de entorno
+
+Están todas documentadas en [`.env.example`](.env.example). Las que importan:
+
+| Variable | Para qué |
+|---|---|
+| `PYMEBOT_PUBLIC_URL` | La dirección pública. Sin ella, el QR puede apuntar a `localhost` |
+| `NODE_ENV=production` | Activa las cookies `secure` y las cabeceras de HTTPS |
+| `PYMEBOT_DATA_DIR` | Dónde se monta el disco persistente |
+| `PYMEBOT_TRUST_PROXY` | Cuántos proxies hay delante (1 en Render, Fly y Railway) |
+
+### Actualizar después
+
+`git push` a la rama conectada. Render y Fly redespliegan solos. El disco **no** se toca:
+las cuentas, los negocios y las conversaciones siguen ahí. Al primer arranque con un disco
+vacío se copian los negocios de ejemplo; en los siguientes, no se toca nada.
+
+### Una sola instancia
+
+Las sesiones viven en memoria y los datos en disco, así que dos instancias se pisarían.
+Para escalar habría que mover ambas cosas a algo compartido — no hace falta hasta tener
+bastantes negocios reales.
 
 ## Requisitos
 

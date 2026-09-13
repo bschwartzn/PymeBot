@@ -32,9 +32,9 @@ responde nada). La división real es por **capa técnica**, no por tema:
 | **2** | **Base de conocimiento configurable** | Cada negocio tiene información distinta y hoy está escrita en el código | ✅ Completado |
 | **3** | **Comprensión y gestión de conversación** | El bot falla con preguntas mal escritas, ambiguas o encadenadas | ⬅️ **Siguiente** |
 | **4** | **Captura de clientes (leads)** | Las conversaciones no generan valor comercial medible | ⬜ Pendiente |
-| **5** | **Canales / integraciones** | El cliente final necesita una forma de llegar al bot | 🟡 Link público, QR y widget ✅ · WhatsApp pendiente |
+| **5** | **Canales / integraciones** | El cliente final necesita una forma de llegar al bot | 🟡 Chat web, QR y widget ✅ · núcleo listo para WhatsApp ✅ · adaptador pendiente |
 | **6** | **Agendamiento** | Muchas consultas terminan en "quiero una cita" y hoy no se puede cerrar | ⬜ Pendiente |
-| **7** | **Panel, métricas y automatizaciones** | El dueño del negocio no puede administrar ni medir el bot | 🟡 Cuentas y panel ✅ · métricas y automatizaciones pendientes |
+| **7** | **Panel, métricas y automatizaciones** | El dueño del negocio no puede administrar ni medir el bot | 🟡 Cuentas, panel y métricas ✅ · automatizaciones pendientes |
 
 ### Módulo 1 — Núcleo conversacional + sandbox
 
@@ -583,5 +583,59 @@ el producto entrega es lo que evita que el primer cliente se decepcione en la se
 
 **Pendiente antes de compartirla:** el correo de contacto es un marcador
 (`CAMBIA-ESTO@tucorreo.cl`) que hay que reemplazar.
+
+---
+
+### De prototipo a producto desplegable — ✅ COMPLETADO
+
+**Fase 1 — Preparar el despliegue.** Seis huecos que el MVP no tenía cubiertos:
+
+| Hueco | Por qué importaba |
+|---|---|
+| La ruta de datos estaba fija junto al código | En un hosting, **cada despliegue habría borrado todas las cuentas y negocios**. Ahora se monta un disco en `PYMEBOT_DATA_DIR` |
+| Sin `trust proxy` | `req.ip` habría sido la del proxy: todos los visitantes compartiendo un contador y el límite inservible |
+| Sin límite de peticiones | El chat público estaba a punto de difundirse sin ninguno |
+| Sin cierre ordenado | El hosting manda SIGTERM al desplegar; sin atenderlo, una escritura a medias puede corromper un archivo de negocio |
+| Sin cabeceras de seguridad | La decisión que importa: el chat del cliente **sí** puede ir en un iframe ajeno —es el widget— y el panel **no**, porque permitiría montarle una página encima (clickjacking) |
+| Un disco nuevo llega vacío | El panel habría aparecido sin nada y el chat daría 503. Se siembran los ejemplos, y **solo la primera vez** |
+
+**Fase 2 — Verificación.** Docker CLI está disponible pero **sin demonio**, así que la
+imagen no se pudo construir aquí. Se verificó lo que sí se puede, que es lo que importa: la
+aplicación corriendo en modo producción sobre un disco vacío, la siembra, la salud, las
+cabeceras correctas por ruta, el límite cortando en el número exacto con `Retry-After`, el
+cierre limpio ante SIGTERM, y una instalación con `npm ci --omit=dev` sirviendo chat, QR y
+todas las páginas.
+
+**Fases 5 y 6 — El chat y la puerta para WhatsApp.**
+
+Se extrajo `atender()` (`src/chat/atender.js`): el núcleo de la conversación, sin HTTP
+dentro. `POST /api/chat` pasó a ser un adaptador delgado del canal web. **Lo único que
+distingue un canal de otro es `idExterno`**: en la web, lo que guarda el navegador; en
+WhatsApp, el número de teléfono. Documentado en [`docs/CANALES.md`](CANALES.md).
+
+Las conversaciones se anotan en disco (JSONL, una línea por mensaje, añadiendo al final:
+barato y resistente a un corte). Sobreviven a los reinicios y alimentan la pestaña
+**Conversaciones** del panel.
+
+**La decisión de producto de esta fase:** la métrica principal no es cuántos mensajes
+recibió el negocio, sino **qué preguntas su bot no supo responder**. Cada una es una
+respuesta que le falta cargar, y viene con un botón que la convierte en pregunta
+configurada, con las palabras clave ya rellenadas. El bot falla → el dueño lo ve → lo
+arregla en dos minutos. Ese círculo es el que hace que el producto mejore solo con usarlo.
+
+**Errores detectados durante la validación y corregidos**
+
+| # | Problema | Cómo apareció | Corrección |
+|---|----------|---------------|------------|
+| 1 | Al extraer el núcleo, el corte se llevó por delante las rutas `/c/:slug` y del QR, que vivían entre medio | 7 tests en rojo | Restauradas. Los tests las cazaron de inmediato |
+| 2 | Un fallo al anotar la conversación dejaba al cliente **sin respuesta** | Un test mío afirmaba lo contrario de lo que decía su nombre | Anotar va en `try/catch`: perder una línea de estadística es tolerable, dejar a un cliente sin respuesta no |
+| 3 | Las palabras clave prellenadas llegaban con signos (`cigarros?`) y el identificador venía vacío, así que chocaba con uno existente y el guardado fallaba | Probando el círculo en el navegador | Se limpian los signos y se propone un identificador que no choque |
+| 4 | Las barras de «temas más preguntados» no se dibujaban | En la captura del panel | `.relleno` era un `<span>` dentro de un contenedor no-flex, así que seguía siendo inline y el alto no le aplicaba. Y la pista gris no contrastaba sobre la tarjeta |
+
+**Lo que queda fuera del alcance de este entorno**
+
+El despliegue en sí. No hay credenciales de ningún hosting ni demonio de Docker, así que
+crear el servicio es un paso que hace el dueño del proyecto. Todo lo demás —configuración,
+planos de despliegue, endurecimiento y verificación— está hecho.
 
 **Siguiente paso:** Módulo 3 — Comprensión y gestión de conversación.

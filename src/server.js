@@ -24,6 +24,9 @@ const { SessionStore } = require('./bot/sessions');
 const { BusinessRepository, ValidationError } = require('./knowledge/repository');
 const { UserStore, AuthError } = require('./auth/users');
 const { AuthSessionStore, readCookie, cookieOptions, COOKIE_NAME } = require('./auth/sessions');
+const { ConversationLog } = require('./chat/conversaciones');
+const { resumir } = require('./chat/metricas');
+const { crearAtencion, MensajeInvalido } = require('./chat/atender');
 const { rateLimit } = require('./http/limits');
 const { cabecerasDeSeguridad } = require('./http/seguridad');
 const config = require('./config');
@@ -64,7 +67,13 @@ function createApp({
   users = new UserStore(),
   authSessions = new AuthSessionStore(),
   sessions = new SessionStore(),
+  conversations = new ConversationLog(),
 } = {}) {
+  /*
+   * El núcleo de la conversación, sin HTTP dentro. Cualquier canal (la web hoy, WhatsApp
+   * mañana) llama a esto; lo único que cambia entre canales es de dónde sale `idExterno`.
+   */
+  const atender = crearAtencion({ sessions, conversations });
   const app = express();
 
   /*
@@ -275,38 +284,41 @@ function createApp({
     });
   });
 
+  /**
+   * El canal web. Es un adaptador delgado: traduce la petición HTTP a `atender` y
+   * devuelve su respuesta. Un adaptador de WhatsApp hará exactamente lo mismo con el
+   * webhook, sin tocar nada del núcleo.
+   */
   app.post('/api/chat', limitarChat, (req, res) => {
     const { sessionId, message } = req.body || {};
-
-    if (typeof message !== 'string' || message.trim() === '') {
-      return res.status(400).json({ error: 'El campo "message" es obligatorio.' });
-    }
-    if (message.length > MAX_MESSAGE_LENGTH) {
-      return res.status(400).json({
-        error: `El mensaje supera el máximo de ${MAX_MESSAGE_LENGTH} caracteres.`,
-      });
-    }
 
     // Cada lectura va al disco, así que un cambio guardado en el panel aplica ya.
     const { slug, business, noEncontrado } = resolveBusiness(req.body.business);
     if (noEncontrado) return chatNoDisponible(res);
     if (!business) return sinNegocios(res);
 
-    const session = sessions.get(sessionId);
-    sessions.addMessage(session, 'user', message);
-
-    const result = respond(message, business, session);
-
-    sessions.addMessage(session, 'bot', result.reply);
-    if (result.intent === 'saludo') session.greeted = true;
+    let resultado;
+    try {
+      resultado = atender({
+        texto: message,
+        negocio: business,
+        slug,
+        canal: 'web',
+        // En la web, la conversación la identifica lo que guardó el navegador.
+        idExterno: sessionId,
+      });
+    } catch (err) {
+      if (err instanceof MensajeInvalido) return res.status(400).json({ error: err.message });
+      throw err;
+    }
 
     res.json({
-      sessionId: session.id,
+      sessionId: resultado.conversacion,
       business: slug,
-      reply: result.reply,
-      intent: result.intent,
-      matched: result.matched,
-      score: Number(result.score.toFixed(2)),
+      reply: resultado.reply,
+      intent: resultado.intent,
+      matched: resultado.matched,
+      score: resultado.score,
     });
   });
 
@@ -457,6 +469,12 @@ function createApp({
     });
   });
 
+  /** Qué preguntaron los clientes, y qué no supo responder el bot. */
+  app.get('/api/businesses/:slug/metrics', requireAuth, requireOwnedBusiness, (req, res) => {
+    const dias = Math.min(Math.max(Number(req.query.dias) || 14, 1), 90);
+    res.json(resumir(conversations.leer(req.params.slug), { dias }));
+  });
+
   app.post('/api/businesses', limitarEscritura, requireAuth, (req, res) => {
     const nombre = req.body && typeof req.body.name === 'string' ? req.body.name.trim() : '';
     if (!nombre) return res.status(422).json({ error: 'El negocio necesita un nombre.' });
@@ -507,6 +525,9 @@ function createApp({
 
   app.delete('/api/businesses/:slug', requireAuth, requireOwnedBusiness, (req, res) => {
     repository.remove(req.params.slug);
+    // Las conversaciones se van con el negocio: no tiene sentido guardar el registro de
+    // algo que ya no existe, y son datos de clientes de alguien.
+    conversations.borrar(req.params.slug);
     res.json({ ok: true });
   });
 

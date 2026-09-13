@@ -335,6 +335,176 @@ async function cargarCompartir(slug) {
 $('copiar-url').addEventListener('click', (e) => copiar($('url-publica').value, e.target));
 $('copiar-embed').addEventListener('click', (e) => copiar($('codigo-embed').value, e.target));
 
+/* -------------------------------------------------------- conversaciones */
+
+function cifra(contenedor, valor, etiqueta, clase = '') {
+  const caja = document.createElement('div');
+  caja.className = `cifra ${clase}`.trim();
+
+  const b = document.createElement('b');
+  b.textContent = valor;
+  caja.appendChild(b);
+
+  const span = document.createElement('span');
+  span.textContent = etiqueta;
+  caja.appendChild(span);
+
+  contenedor.appendChild(caja);
+}
+
+/** Minúsculas, sin acentos ni signos: la misma forma que usa el bot para comparar. */
+function limpiar(texto) {
+  return String(texto)
+    .toLowerCase()
+    .replace(/ñ/g, '\u0001')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\u0001/g, 'ñ')
+    .replace(/[^a-z0-9ñ\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Un identificador que no choque con los que ya existen. */
+function identificadorLibre(texto) {
+  const usados = new Set(
+    [...intentsEl.querySelectorAll('.intent-id')].map((el) => el.value.trim()).filter(Boolean),
+  );
+
+  const base =
+    limpiar(texto)
+      .split(' ')
+      .filter((p) => p.length > 3)
+      .slice(0, 2)
+      .join('_') || 'pregunta';
+
+  if (!usados.has(base)) return base;
+
+  let n = 2;
+  while (usados.has(`${base}_${n}`)) n += 1;
+  return `${base}_${n}`;
+}
+
+/**
+ * Convierte una pregunta sin responder en una pregunta configurada.
+ *
+ * Es el cierre del círculo: el bot falla, tú lo ves aquí, y lo arreglas sin salir de la
+ * pantalla. Se rellenan el identificador y las palabras clave para que solo haya que
+ * escribir la respuesta.
+ */
+function convertirEnPregunta(texto) {
+  document.querySelector('.seccion-tab[data-seccion="preguntas"]').click();
+
+  const bloque = agregarIntent({
+    // Sin signos: "cigarros?" como palabra clave se ve mal y confunde a quien lo edita.
+    id: identificadorLibre(texto),
+    keywords: limpiar(texto)
+      .split(' ')
+      .filter((p) => p.length > 3)
+      .slice(0, 6),
+    answer: '',
+  });
+
+  bloque.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  bloque.querySelector('.intent-answer').focus();
+
+  mostrarMensaje('ok', `Revisa las palabras clave y escribe la respuesta para «${texto}». Después, Guardar.`);
+}
+
+async function cargarConversaciones(slug) {
+  const { ok, datos } = await api('GET', `/api/businesses/${slug}/metrics`);
+  if (!ok) return;
+
+  const cifrasEl = $('cifras');
+  cifrasEl.innerHTML = '';
+  cifra(cifrasEl, datos.conversaciones, 'conversaciones');
+  cifra(cifrasEl, datos.mensajes, 'preguntas recibidas');
+  cifra(
+    cifrasEl,
+    datos.tasaDeAcierto === null ? '—' : `${datos.tasaDeAcierto}%`,
+    'supo responder',
+    datos.tasaDeAcierto === null ? '' : datos.tasaDeAcierto >= 80 ? 'buena' : 'floja',
+  );
+  cifra(cifrasEl, datos.sinRespuesta, 'no supo responder');
+
+  // Preguntas sin respuesta: lo más accionable de toda la pantalla.
+  const pendientesEl = $('sin-respuesta');
+  pendientesEl.innerHTML = '';
+
+  if (datos.preguntasSinRespuesta.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'vacio-seccion';
+    p.textContent =
+      datos.mensajes === 0
+        ? 'Todavía no hay conversaciones. Comparte tu link y vuelve a mirar.'
+        : 'Tu bot respondió todo lo que le preguntaron. 🎉';
+    pendientesEl.appendChild(p);
+  }
+
+  for (const pregunta of datos.preguntasSinRespuesta) {
+    const fila = document.createElement('div');
+    fila.className = 'pendiente';
+
+    const texto = document.createElement('span');
+    texto.className = 'texto';
+    texto.textContent = pregunta.ejemplo;
+    fila.appendChild(texto);
+
+    if (pregunta.veces > 1) {
+      const veces = document.createElement('span');
+      veces.className = 'veces';
+      veces.textContent = `${pregunta.veces} veces`;
+      fila.appendChild(veces);
+    }
+
+    const boton = document.createElement('button');
+    boton.className = 'btn-ghost';
+    boton.type = 'button';
+    boton.textContent = 'Responder esto';
+    boton.addEventListener('click', () => convertirEnPregunta(pregunta.ejemplo));
+    fila.appendChild(boton);
+
+    pendientesEl.appendChild(fila);
+  }
+
+  // Temas más preguntados.
+  const temasEl = $('mas-preguntados');
+  temasEl.innerHTML = '';
+  const tope = Math.max(1, ...datos.temasMasPreguntados.map((t) => t.veces));
+
+  if (datos.temasMasPreguntados.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'vacio-seccion';
+    p.textContent = 'Aún no hay preguntas respondidas que mostrar.';
+    temasEl.appendChild(p);
+  }
+
+  for (const tema of datos.temasMasPreguntados) {
+    const fila = document.createElement('div');
+    fila.className = 'barra';
+
+    const nombre = document.createElement('span');
+    nombre.className = 'nombre';
+    nombre.textContent = tema.clave;
+    fila.appendChild(nombre);
+
+    const pista = document.createElement('span');
+    pista.className = 'pista';
+    const relleno = document.createElement('span');
+    relleno.className = 'relleno';
+    relleno.style.width = `${Math.round((tema.veces / tope) * 100)}%`;
+    pista.appendChild(relleno);
+    fila.appendChild(pista);
+
+    const valor = document.createElement('span');
+    valor.className = 'valor';
+    valor.textContent = tema.veces;
+    fila.appendChild(valor);
+
+    temasEl.appendChild(fila);
+  }
+}
+
 async function abrir(slug) {
   const { ok, datos } = await api('GET', `/api/businesses/${slug}`);
   if (!ok) {
@@ -342,7 +512,7 @@ async function abrir(slug) {
     return;
   }
   pintar(slug, datos.business);
-  await Promise.all([cargarLista(), cargarCompartir(slug)]);
+  await Promise.all([cargarLista(), cargarCompartir(slug), cargarConversaciones(slug)]);
 }
 
 /* -------------------------------------------------------------- guardar */

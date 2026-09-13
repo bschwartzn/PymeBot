@@ -382,3 +382,66 @@ input[type="range"] { width: 100%; accent-color: var(--brand); cursor: pointer; 
   flex-direction: column;
   gap: 5px;
 }
+
+/* ==================== Conversaciones ==================== */
+
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.cifra {
+  background: var(--soft);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 15px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cifra b {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.cifra span { font-size: 12.5px; color: var(--muted); }
+/* La tasa de acierto es la única cifra con semáforo: dice si el bot está sirviendo. */
+.cifra.buena b { color: var(--ok); }
+.cifra.floja b { color: var(--warn); }
+
+.sin-respuesta { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+
+.pendiente {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 13px;
+}
+.pendiente .texto { flex: 1; min-width: 0; font-size: 14.5px; }
+.pendiente .veces {
+  font-size: 12.5px;
+  color: var(--warn);
+  background: var(--warn-bg);
+  border-radius: 999px;
+  padding: 2px 9px;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.barras { display: flex; flex-direction: column; gap: 7px; width: 100%; }
+.barra { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.barra .nombre { width: 140px; flex: none; color: var(--muted); }
+/* La pista usa el color del borde, no el de fondo: sobre una tarjeta clara, --soft
+   apenas se distingue del blanco y la barra parecía no existir. */
+.barra .pista { flex: 1; height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; }
+/* display:block es obligatorio: .pista no es flex, así que un <span> se quedaría inline
+   y ni el alto ni el ancho le aplicarían. */
+.barra .relleno { display: block; height: 100%; background: var(--brand); border-radius: 999px; }
+.barra .valor { width: 30px; text-align: right; flex: none; font-variant-numeric: tabular-nums; }
+
+.vacio-seccion { font-size: 14.5px; color: var(--muted); margin: 0; }
