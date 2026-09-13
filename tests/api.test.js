@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
+const { ConversationLog } = require('../src/chat/conversaciones');
 const { createApp, MAX_MESSAGE_LENGTH } = require('../src/server');
 const { BusinessRepository } = require('../src/knowledge/repository');
 
@@ -27,7 +28,7 @@ async function startServer() {
   const repository = new BusinessRepository({ dir });
   repository.save('negocio-de-prueba', NEGOCIO);
 
-  const app = createApp({ repository });
+  const app = createApp({ repository, conversations: new ConversationLog({ dir: path.join(dir, 'conversaciones') }) });
   const server = await new Promise((resolve) => {
     const s = app.listen(0, () => resolve(s));
   });

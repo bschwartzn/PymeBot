@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
+const { ConversationLog } = require('../src/chat/conversaciones');
 const { createApp } = require('../src/server');
 const { BusinessRepository } = require('../src/knowledge/repository');
 const { UserStore } = require('../src/auth/users');
@@ -27,6 +28,7 @@ async function startServer() {
       repository,
       users: new UserStore({ file: path.join(dir, 'users.json') }),
       authSessions: new AuthSessionStore({ file: path.join(dir, 'sessions.json') }),
+      conversations: new ConversationLog({ dir: path.join(dir, 'conversaciones') }),
     }).listen(0, () => r(s));
   });
 

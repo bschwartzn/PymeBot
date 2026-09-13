@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
+const { ConversationLog } = require('../src/chat/conversaciones');
 const { createApp } = require('../src/server');
 const { BusinessRepository } = require('../src/knowledge/repository');
 const { UserStore } = require('../src/auth/users');
@@ -21,9 +22,10 @@ async function startServer() {
   const repository = new BusinessRepository({ dir: path.join(dir, 'businesses') });
   const users = new UserStore({ file: path.join(dir, 'users.json') });
   const authSessions = new AuthSessionStore({ file: path.join(dir, 'sessions.json') });
+  const conversations = new ConversationLog({ dir: path.join(dir, 'conversaciones') });
 
   const server = await new Promise((r) => {
-    const s = createApp({ repository, users, authSessions }).listen(0, () => r(s));
+    const s = createApp({ repository, users, authSessions, conversations }).listen(0, () => r(s));
   });
   const base = `http://127.0.0.1:${server.address().port}`;
 
