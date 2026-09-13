@@ -13,7 +13,11 @@
  * Todo se genera desde src/, como el resto del proyecto: el sitio publicado no puede
  * prometer un bot distinto del que existe.
  *
- * Uso:  npm run build:sitio -- https://bschwartzn.github.io/pymebot-web
+ * Los links entre páginas son RELATIVOS, no absolutos. Eso hace que el mismo sitio
+ * funcione servido en la raíz de un dominio, en un subdirectorio de GitHub Pages, o
+ * arrastrado a cualquier hosting estático, sin reconstruirlo.
+ *
+ * Uso:  npm run build:sitio
  */
 
 const fs = require('fs');
@@ -22,9 +26,6 @@ const { execFileSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
 const SALIDA = path.join(ROOT, 'dist', 'sitio');
-
-/** La base pública. Importa para que los links entre páginas no se rompan. */
-const BASE = (process.argv[2] || '').replace(/\/+$/, '');
 
 function correr(script, args = []) {
   execFileSync('node', [path.join(__dirname, script), ...args], { cwd: ROOT, stdio: 'pipe' });
@@ -45,11 +46,12 @@ for (const slug of negocios) {
 }
 
 // --- El panel de demostración ---
-correr('build-demo.js', [`${BASE}/chat/dona-elba.html`]);
+// Ruta relativa: panel.html vive en la raíz del sitio, igual que index.html.
+correr('build-demo.js', ['chat/dona-elba.html']);
 fs.copyFileSync(path.join(ROOT, 'dist', 'demo.html'), path.join(SALIDA, 'panel.html'));
 
 // --- La landing, que es la portada del sitio ---
-correr('build-landing.js', ['dona-elba', `${BASE}/panel.html`, `${BASE}/chat/dona-elba.html`]);
+correr('build-landing.js', ['dona-elba', 'panel.html', 'chat/dona-elba.html']);
 fs.copyFileSync(path.join(ROOT, 'dist', 'pymebot.html'), path.join(SALIDA, 'index.html'));
 
 // GitHub Pages procesa el sitio con Jekyll salvo que se le diga que no. Sin esto, ignora
@@ -65,7 +67,7 @@ const archivos = [];
   }
 })(SALIDA);
 
-console.log(`dist/sitio/ armado para ${BASE || '(sin base)'}`);
+console.log('dist/sitio/ armado (links relativos: sirve en cualquier hosting estático)');
 for (const archivo of archivos) {
   const kb = (fs.statSync(path.join(SALIDA, archivo)).size / 1024).toFixed(1);
   console.log(`  ${archivo.padEnd(28)} ${kb} KB`);
