@@ -1,0 +1,1388 @@
+<title>PymeBot</title>
+<meta name="description" content="Un asistente que responde las preguntas de siempre de tus clientes, con la información que tú cargas." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Public+Sans:wght@400;500;600&display=swap"
+  rel="stylesheet"
+/>
+
+<style>
+  :root {
+    --fondo: #f3f6f5;
+    --papel: #ffffff;
+    --tinta: #0f1e1c;
+    --suave: #556764;
+    --tenue: #869894;
+    --linea: #dde5e3;
+    --azulejo: #0d5b56;
+    --azulejo-claro: #e3efed;
+    --azulejo-texto: #ffffff;
+    --mostaza: #a8710f;
+    --mostaza-fondo: #fbf2e0;
+
+    --display: "Fraunces", Georgia, "Times New Roman", serif;
+    --texto: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --fondo: #0a1413;
+      --papel: #12201e;
+      --tinta: #e7efed;
+      --suave: #9aaba7;
+      --tenue: #708280;
+      --linea: #21322f;
+      --azulejo: #58c4b4;
+      --azulejo-claro: #14302c;
+      --azulejo-texto: #04211e;
+      --mostaza: #dda94f;
+      --mostaza-fondo: #2b2315;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --fondo: #0a1413;
+    --papel: #12201e;
+    --tinta: #e7efed;
+    --suave: #9aaba7;
+    --tenue: #708280;
+    --linea: #21322f;
+    --azulejo: #58c4b4;
+    --azulejo-claro: #14302c;
+    --azulejo-texto: #04211e;
+    --mostaza: #dda94f;
+    --mostaza-fondo: #2b2315;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--fondo);
+    color: var(--tinta);
+    font-family: var(--texto);
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding-inline: 20px;
+  }
+
+  .envoltura { width: min(1060px, 100%); margin-inline: auto; }
+
+  h1, h2, h3 {
+    font-family: var(--display);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    text-wrap: balance;
+    margin: 0;
+  }
+  h1 { font-size: clamp(34px, 5.2vw, 52px); line-height: 1.08; }
+  h2 { font-size: clamp(26px, 3.4vw, 34px); line-height: 1.15; }
+  h3 { font-size: 19px; line-height: 1.3; }
+  p { margin: 0; }
+
+  .rotulo {
+    font-size: 12.5px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--azulejo);
+  }
+
+  section { padding-block: clamp(52px, 8vw, 84px); }
+
+  /* ---------------- Barra ---------------- */
+
+  .barra {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding-block: 20px;
+    border-bottom: 1px solid var(--linea);
+  }
+  .marca { display: flex; align-items: center; gap: 10px; }
+  .marca-signo {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: var(--azulejo); color: var(--azulejo-texto);
+    display: grid; place-items: center; flex: none;
+  }
+  .marca-signo svg { width: 19px; height: 19px; }
+  .marca strong { font-family: var(--display); font-size: 19px; font-weight: 700; }
+  .barra .estado { font-size: 13.5px; color: var(--tenue); }
+
+  /* ---------------- Portada ---------------- */
+
+  .portada {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: clamp(32px, 5vw, 52px);
+    align-items: start;
+  }
+  @media (min-width: 900px) {
+    .portada { grid-template-columns: 1fr 400px; }
+  }
+  /* Sin esto, el carrusel de sugerencias estira la columna y desborda la página. */
+  .portada > *, .demo, .ventana { min-width: 0; }
+
+  .argumento { display: flex; flex-direction: column; gap: 20px; max-width: 62ch; }
+  .argumento p { font-size: 18.5px; color: var(--suave); }
+  .argumento strong { color: var(--tinta); font-weight: 600; }
+
+  .preguntas-tipicas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .pregunta-tipica {
+    font-size: 14.5px;
+    color: var(--suave);
+    background: var(--papel);
+    border: 1px solid var(--linea);
+    border-radius: 999px;
+    padding: 6px 13px;
+  }
+
+  .acciones { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+
+  .boton {
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 10px;
+    padding: 12px 22px;
+    text-decoration: none;
+    display: inline-block;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .boton.primario { background: var(--azulejo); color: var(--azulejo-texto); }
+  .boton.primario:hover { filter: brightness(1.1); }
+  .boton.secundario { background: transparent; color: var(--tinta); border-color: var(--linea); }
+  .boton.secundario:hover { border-color: var(--azulejo); color: var(--azulejo); }
+
+  /* ---------------- El bot de verdad ---------------- */
+
+  .demo { display: flex; flex-direction: column; gap: 9px; }
+
+  .demo-nota {
+    font-size: 13px;
+    color: var(--tenue);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .punto-vivo {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--azulejo); flex: none;
+  }
+
+  .ventana {
+    background: var(--papel);
+    border: 1px solid var(--linea);
+    border-radius: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 500px;
+  }
+
+  .ventana-cabecera {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 13px 16px;
+    border-bottom: 1px solid var(--linea);
+    flex: none;
+  }
+  .ventana-cabecera .marca-signo { width: 32px; height: 32px; border-radius: 9px; }
+  .ventana-cabecera strong { font-size: 15px; display: block; }
+  .ventana-cabecera span { font-size: 12.5px; color: var(--tenue); }
+
+  .hilo {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+
+  .burbuja {
+    max-width: 88%;
+    padding: 10px 14px;
+    border-radius: 15px;
+    font-size: 15px;
+    line-height: 1.48;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+  .burbuja.bot {
+    align-self: flex-start;
+    background: var(--fondo);
+    border-bottom-left-radius: 4px;
+  }
+  .burbuja.cliente {
+    align-self: flex-end;
+    background: var(--azulejo);
+    color: var(--azulejo-texto);
+    border-bottom-right-radius: 4px;
+  }
+
+  .pensando { display: flex; gap: 4px; align-items: center; padding: 14px; }
+  .pensando i {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--tenue); animation: latir 1.2s infinite;
+  }
+  .pensando i:nth-child(2) { animation-delay: .18s; }
+  .pensando i:nth-child(3) { animation-delay: .36s; }
+  @keyframes latir { 0%,60%,100% { opacity:.25 } 30% { opacity:.9 } }
+
+  .sugerencias {
+    display: flex;
+    gap: 6px;
+    padding: 0 16px 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    flex: none;
+  }
+  .sugerencias::-webkit-scrollbar { display: none; }
+  .sugerencia {
+    font-family: inherit;
+    font-size: 13.5px;
+    color: var(--azulejo);
+    background: transparent;
+    border: 1px solid var(--linea);
+    border-radius: 999px;
+    padding: 6px 12px;
+    white-space: nowrap;
+    cursor: pointer;
+    flex: none;
+  }
+  .sugerencia:hover { border-color: var(--azulejo); }
+
+  .escribir {
+    display: flex;
+    gap: 8px;
+    padding: 12px 16px;
+    border-top: 1px solid var(--linea);
+    flex: none;
+  }
+  .campo {
+    flex: 1;
+    min-width: 0;
+    font-family: inherit;
+    font-size: 16px;
+    color: var(--tinta);
+    background: var(--fondo);
+    border: 1px solid transparent;
+    border-radius: 999px;
+    padding: 10px 16px;
+  }
+  .campo::placeholder { color: var(--tenue); }
+  .campo:focus { outline: none; border-color: var(--azulejo); }
+  .enviar {
+    width: 42px; height: 42px; flex: none;
+    border: 0; border-radius: 50%;
+    background: var(--azulejo); color: var(--azulejo-texto);
+    display: grid; place-items: center; cursor: pointer;
+  }
+  .enviar svg { width: 19px; height: 19px; }
+  .enviar:disabled { opacity: .45; cursor: default; }
+
+  /* ---------------- Pasos ---------------- */
+
+  .encabezado-seccion { display: flex; flex-direction: column; gap: 12px; max-width: 58ch; }
+  .encabezado-seccion p { color: var(--suave); }
+
+  .pasos {
+    list-style: none;
+    margin: 34px 0 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1px;
+    background: var(--linea);
+    border: 1px solid var(--linea);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  @media (min-width: 780px) { .pasos { grid-template-columns: repeat(3, 1fr); } }
+
+  .paso {
+    background: var(--papel);
+    padding: 26px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .paso-numero {
+    font-family: var(--display);
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--azulejo);
+  }
+  .paso p { font-size: 15.5px; color: var(--suave); }
+  .paso .ejemplo {
+    font-size: 14.5px;
+    color: var(--tinta);
+    background: var(--azulejo-claro);
+    border-radius: 8px;
+    padding: 9px 12px;
+    margin-top: 3px;
+  }
+
+  /* ---------------- Canales ---------------- */
+
+  .canales {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+    margin-top: 34px;
+  }
+  @media (min-width: 700px) { .canales { grid-template-columns: repeat(3, 1fr); } }
+
+  .canal {
+    background: var(--papel);
+    border: 1px solid var(--linea);
+    border-radius: 13px;
+    padding: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .canal svg { width: 24px; height: 24px; color: var(--azulejo); }
+  .canal p { font-size: 15px; color: var(--suave); }
+
+  /* ---------------- Configurar ---------------- */
+
+  .configurar {
+    background: var(--papel);
+    border: 1px solid var(--linea);
+    border-radius: 16px;
+    padding: clamp(26px, 4vw, 40px);
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 28px;
+    align-items: center;
+  }
+  @media (min-width: 820px) { .configurar { grid-template-columns: 1fr 1fr; } }
+
+  .ajustes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 13px; }
+  .ajustes li { display: flex; gap: 11px; align-items: baseline; font-size: 15.5px; color: var(--suave); }
+  .ajustes strong { color: var(--tinta); font-weight: 600; }
+  .marca-item { color: var(--azulejo); flex: none; font-weight: 700; }
+
+  /* ---------------- Honestidad ---------------- */
+
+  .limites {
+    background: var(--mostaza-fondo);
+    border: 1px solid color-mix(in srgb, var(--mostaza) 28%, transparent);
+    border-radius: 16px;
+    padding: clamp(26px, 4vw, 38px);
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .limites h2 { font-size: clamp(22px, 3vw, 28px); }
+  .limites-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 13px; }
+  .limites-lista li { font-size: 15.5px; color: var(--suave); max-width: 70ch; }
+  .limites-lista strong { color: var(--mostaza); font-weight: 600; }
+
+  /* ---------------- Cierre ---------------- */
+
+  .cierre {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+    max-width: 58ch;
+  }
+  .cierre p { color: var(--suave); }
+
+  .pie {
+    border-top: 1px solid var(--linea);
+    padding-block: 26px 40px;
+    font-size: 13.5px;
+    color: var(--tenue);
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  :focus-visible { outline: 2px solid var(--azulejo); outline-offset: 2px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="envoltura">
+  <header class="barra">
+    <div class="marca">
+      <span class="marca-signo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="7" width="18" height="13" rx="4" />
+          <path d="M12 7V3.5" />
+          <circle cx="12" cy="2.6" r="1.2" fill="currentColor" stroke="none" />
+          <path d="M8.6 12.4v1.6M15.4 12.4v1.6" />
+          <path d="M9.6 16.6h4.8" />
+        </svg>
+      </span>
+      <strong>PymeBot</strong>
+    </div>
+    <span class="estado">En desarrollo · buscando negocios para probarlo</span>
+  </header>
+
+  <section class="portada">
+    <div class="argumento">
+      <span class="rotulo">Para negocios que contestan lo mismo todos los días</span>
+      <h1>Tus clientes preguntan siempre lo mismo.</h1>
+      <p>
+        Horarios, precios, dónde estás, si haces delivery, si atiendes el domingo.
+        <strong>PymeBot las responde por ti</strong>, al instante y a cualquier hora, con la
+        información que tú cargas. No inventa nada: si no sabe algo, lo dice y deriva a una
+        persona.
+      </p>
+
+      <div class="preguntas-tipicas" aria-label="Preguntas que recibe una pyme todos los días">
+        <span class="pregunta-tipica">¿a qué hora abren?</span>
+        <span class="pregunta-tipica">¿cuánto sale?</span>
+        <span class="pregunta-tipica">¿hacen delivery?</span>
+        <span class="pregunta-tipica">¿atienden los lunes?</span>
+        <span class="pregunta-tipica">¿aceptan tarjeta?</span>
+        <span class="pregunta-tipica">¿puedo ir con mi perro?</span>
+      </div>
+
+      <div class="acciones">
+        <a class="boton primario" href="panel.html" target="_blank" rel="noopener">
+          Ver cómo se configura
+        </a>
+        <a class="boton secundario" href="chat/dona-elba.html" target="_blank" rel="noopener">
+          Abrirlo en el teléfono
+        </a>
+      </div>
+    </div>
+
+    <div class="demo">
+      <p class="demo-nota"><span class="punto-vivo" aria-hidden="true"></span> Pruébalo aquí mismo</p>
+
+      <div class="ventana">
+        <div class="ventana-cabecera">
+          <span class="marca-signo" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="7" width="18" height="13" rx="4" />
+              <path d="M12 7V3.5" />
+              <circle cx="12" cy="2.6" r="1.2" fill="currentColor" stroke="none" />
+              <path d="M8.6 12.4v1.6M15.4 12.4v1.6" />
+              <path d="M9.6 16.6h4.8" />
+            </svg>
+          </span>
+          <span>
+            <strong id="nombre-negocio">Negocio</strong>
+            <span id="rubro-negocio"></span>
+          </span>
+        </div>
+
+        <div class="hilo" id="hilo" aria-live="polite" aria-label="Conversación de ejemplo"></div>
+
+        <div class="sugerencias" id="sugerencias"></div>
+
+        <form class="escribir" id="escribir" autocomplete="off">
+          <input class="campo" id="campo" type="text" placeholder="Escribe tu pregunta…" maxlength="300" aria-label="Tu pregunta" enterkeyhint="send" />
+          <button class="enviar" id="enviar" type="submit" aria-label="Enviar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M4 12h15M13 6l6 6-6 6" />
+            </svg>
+          </button>
+        </form>
+      </div>
+
+      <p class="demo-nota">
+        Es el bot de una cocinería de ejemplo, con 27 temas cargados.
+      </p>
+    </div>
+  </section>
+
+  <section>
+    <div class="encabezado-seccion">
+      <span class="rotulo">Cómo funciona</span>
+      <h2>Tres pasos, y ninguno es programar.</h2>
+    </div>
+
+    <ol class="pasos">
+      <li class="paso">
+        <span class="paso-numero">Paso 1</span>
+        <h3>Cargas tus preguntas</h3>
+        <p>
+          Escribes lo que te preguntan y lo que quieres responder. En un formulario, como
+          quien llena una libreta.
+        </p>
+        <span class="ejemplo">«horario, abren, a qué hora» → «Atendemos de 10 a 20.»</span>
+      </li>
+      <li class="paso">
+        <span class="paso-numero">Paso 2</span>
+        <h3>Compartes tu link</h3>
+        <p>
+          Cada negocio tiene su propia dirección. La pegas donde ya estás: tu estado de
+          WhatsApp, tu Instagram, tu ficha de Google.
+        </p>
+        <span class="ejemplo">tusitio.cl/c/tu-negocio</span>
+      </li>
+      <li class="paso">
+        <span class="paso-numero">Paso 3</span>
+        <h3>El bot responde solo</h3>
+        <p>
+          A las once de la noche, un domingo, y a cinco personas a la vez. Siempre con lo
+          que tú escribiste.
+        </p>
+        <span class="ejemplo">Tú cambias un precio y aplica al instante.</span>
+      </li>
+    </ol>
+  </section>
+
+  <section>
+    <div class="encabezado-seccion">
+      <span class="rotulo">Cómo llega tu cliente</span>
+      <h2>No instala nada ni crea una cuenta.</h2>
+      <p>Abre un link y escribe. Eso es todo lo que tiene que hacer.</p>
+    </div>
+
+    <div class="canales">
+      <div class="canal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7" />
+          <path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7" />
+        </svg>
+        <h3>Un link</h3>
+        <p>
+          Lo mandas por WhatsApp, lo pones en tu Instagram o como respuesta automática
+          cuando te escriben fuera de horario.
+        </p>
+      </div>
+      <div class="canal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="3" width="7" height="7" rx="1.5" />
+          <rect x="14" y="3" width="7" height="7" rx="1.5" />
+          <rect x="3" y="14" width="7" height="7" rx="1.5" />
+          <path d="M14 14h3v3h-3zM20 14v3M14 20h3M20 20h1" />
+        </svg>
+        <h3>Un código QR</h3>
+        <p>
+          Lo imprimes y lo dejas en el mesón, la vitrina o la mesa. El cliente lo escanea con
+          la cámara y se abre el chat.
+        </p>
+      </div>
+      <div class="canal">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2.5" y="4" width="19" height="14" rx="2" />
+          <path d="M2.5 8h19M6 20h12" />
+        </svg>
+        <h3>Tu página web</h3>
+        <p>
+          Si ya tienes sitio, se agrega una burbuja de chat en la esquina pegando una sola
+          línea.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="configurar">
+      <div class="encabezado-seccion">
+        <span class="rotulo">Tú mandas</span>
+        <h2>Todo lo dice el bot porque tú lo escribiste.</h2>
+        <p>
+          Ninguna respuesta sale de otra parte. Si quieres cambiar un precio o el horario de
+          verano, lo editas y aplica en la siguiente pregunta.
+        </p>
+        <div class="acciones">
+          <a class="boton primario" href="panel.html" target="_blank" rel="noopener">
+            Entrar al panel de ejemplo
+          </a>
+        </div>
+      </div>
+
+      <ul class="ajustes">
+        <li><span class="marca-item" aria-hidden="true">→</span><span><strong>Las preguntas y sus respuestas.</strong> Agrega, edita o borra cuando quieras.</span></li>
+        <li><span class="marca-item" aria-hidden="true">→</span><span><strong>Cómo saluda</strong> y qué dice cuando no entiende algo.</span></li>
+        <li><span class="marca-item" aria-hidden="true">→</span><span><strong>Cuándo derivar a una persona</strong>, con tu teléfono o tu WhatsApp.</span></li>
+        <li><span class="marca-item" aria-hidden="true">→</span><span><strong>Pausar el bot</strong> si te vas de vacaciones, con un mensaje tuyo.</span></li>
+        <li><span class="marca-item" aria-hidden="true">→</span><span><strong>Qué tan seguro debe estar</strong> antes de responder. Si lo ves confundirse, lo subes.</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="limites">
+      <span class="rotulo" style="color: var(--mostaza)">Seamos claros</span>
+      <h2>Lo que todavía no hace.</h2>
+      <ul class="limites-lista">
+        <li>
+          <strong>No contesta dentro de WhatsApp.</strong> El link se comparte por WhatsApp, que
+          no es lo mismo: tu cliente abre el chat en el navegador. Responder dentro de WhatsApp
+          exige un trámite con Meta que estamos evaluando.
+        </li>
+        <li>
+          <strong>No agenda horas ni toma reservas.</strong> Puede decir cómo reservar y dejar tu
+          número, pero no bloquea la agenda.
+        </li>
+        <li>
+          <strong>Entiende preguntas simples.</strong> Responde bien lo que se pregunta de forma
+          directa. Con frases muy enredadas o con faltas de ortografía todavía se equivoca.
+        </li>
+        <li>
+          <strong>Se equivoca a veces, pero nunca inventa.</strong> Cuando no está seguro, lo dice
+          y te deriva. Preferimos eso a que le dé un dato falso a tu cliente.
+        </li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="cierre">
+      <span class="rotulo">Probarlo</span>
+      <h2>Estamos buscando negocios para probarlo de verdad.</h2>
+      <p>
+        Si tienes un local y te interesa, lo dejamos andando con la información de tu negocio
+        y lo pruebas con tus clientes. Queremos ver dónde falla.
+      </p>
+      <div class="acciones">
+        <a class="boton primario" href="mailto:CAMBIA-ESTO@tucorreo.cl?subject=Quiero%20probar%20PymeBot">
+          Escríbenos
+        </a>
+        <a class="boton secundario" href="chat/dona-elba.html" target="_blank" rel="noopener">
+          Ver el chat en el teléfono
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <footer class="pie">
+    <span>
+      PymeBot está en desarrollo. El bot de esta página es real y funciona; la
+      <strong>Cocinería Doña Elba</strong> es un negocio de ejemplo, creado para mostrarlo.
+    </span>
+    <span>Todavía no tenemos clientes: por eso estamos buscando los primeros.</span>
+  </footer>
+</div>
+
+<script>
+  /* ====================================================================
+     Motor de PymeBot — generado desde src/bot/ por scripts/build-landing.js.
+     El bot de esta página es el mismo que corre en el producto.
+     ==================================================================== */
+
+  /**
+ * Utilidades de texto.
+ *
+ * El objetivo es que "¿Cuánto CUESTA?" y "cuanto cuesta" sean lo mismo para el motor.
+ * En español esto significa: minúsculas, sin acentos, sin signos de puntuación
+ * (incluidos ¿ ¡) y sin espacios sobrantes.
+ */
+
+/** Pasa un texto a su forma canónica comparable. */
+function normalize(text) {
+  if (typeof text !== 'string') return '';
+  return text
+    .toLowerCase()
+    // La ñ es una letra propia del español, no una n con acento: se protege antes de
+    // que NFD la descomponga, o 'año' se convertiría en 'ano'.
+    .replace(/ñ/g, '\u0001')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // quita los acentos ya separados por NFD
+    .replace(/\u0001/g, 'ñ')
+    .replace(/[^a-z0-9ñ\s]/g, ' ') // ¿ ? ! . , y emojis se vuelven espacio
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Forma usada solo para COMPARAR, no para mostrar.
+ *
+ * Añade a la normalización el plegado de la ñ. La ñ se conserva en `normalize` porque es
+ * una letra propia del español, pero al comparar tiene que dar igual cómo se escribió:
+ * el dueño del negocio escribe la palabra clave "cumpleanos" y el cliente pregunta por
+ * "cumpleaños". Confundir "año" con "ano" es un riesgo teórico; que no coincidan las
+ * palabras clave escritas sin ñ es un fallo que ocurre todos los días.
+ */
+function fold(text) {
+  return normalize(text).replace(/ñ/g, 'n');
+}
+
+/** Divide un texto normalizado en palabras. */
+function tokenize(text) {
+  const normalized = normalize(text);
+  return normalized ? normalized.split(' ') : [];
+}
+
+/**
+ * Compara dos palabras tolerando el plural del español.
+ * "horarios" debe encontrar la palabra clave "horario", y "precio" la clave "precios".
+ */
+function wordsMatch(rawA, rawB) {
+  const a = rawA.replace(/ñ/g, 'n');
+  const b = rawB.replace(/ñ/g, 'n');
+  if (a === b) return true;
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  if (short.length < 3) return false; // evita que "la"/"las" cuenten como coincidencia
+  return long === short + 's' || long === short + 'es';
+}
+
+/**
+ * Motor de intenciones.
+ *
+ * Estrategia deliberadamente simple: cada intención declara palabras clave y una
+ * respuesta. Se puntúa cuántas palabras clave aparecen en el mensaje y gana la
+ * intención con mayor puntaje, siempre que supere un umbral mínimo de confianza.
+ *
+ * Es determinista, se testea con facilidad y no depende de ningún servicio externo.
+ */
+
+
+/**
+ * Puntaje mínimo por defecto para aceptar una intención. Debajo de esto, respondemos el
+ * respaldo. Cada negocio puede subirlo o bajarlo desde su panel: subirlo hace que el bot
+ * responda menos pero se equivoque menos, bajarlo al revés.
+ */
+const CONFIDENCE_THRESHOLD = 1;
+
+/** El umbral que corresponde a este negocio. */
+function thresholdFor(business) {
+  const propio = business && Number(business.confidenceThreshold);
+  return Number.isFinite(propio) && propio > 0 ? propio : CONFIDENCE_THRESHOLD;
+}
+
+/**
+ * Puntúa una palabra clave contra el mensaje del usuario.
+ * Las claves de varias palabras ("cuanto cuesta") valen más que las de una sola,
+ * porque son mucho más específicas.
+ */
+function scoreKeyword(keyword, messageTokens, paddedMessage) {
+  // `fold` en vez de `normalize`: comparar tiene que ser indiferente a cómo se escribió la ñ.
+  const normalizedKeyword = fold(keyword);
+  if (!normalizedKeyword) return 0;
+
+  const keywordWords = normalizedKeyword.split(' ');
+
+  if (keywordWords.length > 1) {
+    return paddedMessage.includes(` ${normalizedKeyword} `) ? keywordWords.length * 1.5 : 0;
+  }
+
+  const found = messageTokens.some((token) => wordsMatch(token, normalizedKeyword));
+  if (!found) return 0;
+
+  // Una palabra larga ("transferencia") es mejor señal que una corta ("hora").
+  return normalizedKeyword.length >= 6 ? 1.5 : 1;
+}
+
+/** Puntúa una intención completa. */
+function scoreIntent(intent, messageTokens, paddedMessage) {
+  let score = 0;
+  for (const keyword of intent.keywords || []) {
+    score += scoreKeyword(keyword, messageTokens, paddedMessage);
+  }
+  return score;
+}
+
+/**
+ * Busca la mejor intención para un mensaje.
+ * @returns {{intent: object|null, score: number}}
+ */
+function matchIntent(message, business) {
+  const messageTokens = tokenize(message);
+  if (messageTokens.length === 0) return { intent: null, score: 0 };
+
+  const paddedMessage = ` ${fold(message)} `;
+
+  let best = null;
+  let bestScore = 0;
+
+  for (const intent of business.intents || []) {
+    const score = scoreIntent(intent, messageTokens, paddedMessage);
+    if (score > bestScore) {
+      best = intent;
+      bestScore = score;
+    }
+  }
+
+  if (bestScore < thresholdFor(business)) return { intent: null, score: bestScore };
+  return { intent: best, score: bestScore };
+}
+
+/** Arma el mensaje de "no entendí" con la lista de temas que el negocio sí cubre. */
+function buildFallback(business) {
+  const topics = (business.topics || []).map((topic) => `• ${topic}`).join('\n');
+  const parts = [business.fallback];
+  if (topics) parts.push(topics);
+  if (business.handoff) parts.push(business.handoff);
+  return parts.filter(Boolean).join('\n');
+}
+
+/**
+ * Genera la respuesta a un mensaje.
+ *
+ * `session` aporta el mínimo de contexto conversacional del MVP: saber si el bot ya
+ * saludó, para no repetir el saludo largo en cada "hola".
+ *
+ * @returns {{reply: string, intent: string, score: number, matched: boolean}}
+ */
+function respond(message, business, session = null) {
+  // Bot pausado: no se intenta entender nada, se responde lo que el dueño dejó escrito.
+  if (business && business.active === false) {
+    return {
+      reply: business.pausedMessage || 'En este momento no estamos atendiendo por aquí.',
+      intent: 'pausado',
+      score: 0,
+      matched: false,
+    };
+  }
+
+  const normalized = normalize(message);
+
+  if (!normalized) {
+    // Sin texto real. Distinguimos dos casos que se ven iguales para el motor:
+    // un mensaje realmente vacío, y uno que sí traía contenido (solo emojis o signos)
+    // pero que la normalización dejó sin palabras. Decirle "no recibí nada" a quien
+    // acaba de escribir 👍 es confuso, así que ese caso va al fallback normal.
+    const escribioAlgo = typeof message === 'string' && message.trim() !== '';
+    if (escribioAlgo) {
+      return { reply: buildFallback(business), intent: 'fallback', score: 0, matched: false };
+    }
+    return {
+      reply: 'No recibí ningún mensaje. ¿Me cuentas en qué te puedo ayudar?',
+      intent: 'vacio',
+      score: 0,
+      matched: false,
+    };
+  }
+
+  const { intent, score } = matchIntent(message, business);
+
+  if (!intent) {
+    return { reply: buildFallback(business), intent: 'fallback', score, matched: false };
+  }
+
+  let reply = intent.answer;
+
+  // Único comportamiento contextual del MVP: no repetir el saludo largo.
+  if (intent.id === 'saludo' && session && session.greeted) {
+    reply = business.greetingRepeat || reply;
+  }
+
+  return { reply, intent: intent.id, score, matched: true };
+}
+
+  const NEGOCIO = {
+  "name": "Cocinería Doña Elba",
+  "tagline": "Cocina chilena casera en el Barrio Puerto, Valparaíso",
+  "greeting": "¡Hola! 👋 Soy el asistente de la Cocinería Doña Elba. Puedo ayudarte con la carta, el menú del día, reservas, delivery, horarios y cómo llegar. ¿Qué necesitas saber?",
+  "greetingRepeat": "¡Aquí sigo! ¿En qué más te ayudo?",
+  "fallback": "Perdona, no estoy seguro de haber entendido eso. Estos son los temas que manejo:",
+  "handoff": "Si prefieres hablar con alguien del local, llámanos al +56 32 234 5678 o escríbenos por WhatsApp al +56 9 6543 2100.",
+  "topics": [
+    "Horarios",
+    "Menú del día",
+    "La carta",
+    "Reservar una mesa",
+    "Delivery y retiro",
+    "Cómo llegar",
+    "Opciones sin gluten o veganas"
+  ],
+  "active": true,
+  "confidenceThreshold": 1,
+  "pausedMessage": "En este momento no estamos atendiendo por aquí. Escríbenos directamente y te respondemos a la brevedad.",
+  "ownerId": null,
+  "intents": [
+    {
+      "id": "saludo",
+      "keywords": [
+        "hola",
+        "buenas",
+        "buenos dias",
+        "buenas tardes",
+        "buenas noches",
+        "hey",
+        "que tal",
+        "alo"
+      ],
+      "answer": "¡Hola! 👋 Cuéntame, ¿qué necesitas saber?"
+    },
+    {
+      "id": "horarios",
+      "keywords": [
+        "horario",
+        "abren",
+        "cierran",
+        "abierto",
+        "cerrado",
+        "atienden",
+        "a que hora",
+        "hasta que hora",
+        "siguen abiertos",
+        "estan abiertos",
+        "feriado",
+        "lunes",
+        "domingo",
+        "trabajan",
+        "fiestas patrias",
+        "18 de septiembre",
+        "festivo"
+      ],
+      "answer": "Atendemos de martes a sábado de 12:30 a 16:00 y de 19:30 a 23:00, y los domingos solo almuerzo, de 12:30 a 17:00. Los lunes cerramos. 🕒"
+    },
+    {
+      "id": "menu_del_dia",
+      "keywords": [
+        "menu del dia",
+        "menu",
+        "almuerzo del dia",
+        "ejecutivo",
+        "colacion",
+        "que hay hoy",
+        "plato del dia",
+        "hoy"
+      ],
+      "answer": "El menú del día cuesta $9.900 e incluye entrada, plato de fondo, postre y bebida o jugo natural. Se sirve de martes a viernes al almuerzo. Hoy: crema de zapallo, cazuela de vacuno y leche asada. 🍲"
+    },
+    {
+      "id": "carta",
+      "keywords": [
+        "carta",
+        "platos",
+        "que tienen",
+        "que venden",
+        "que sirven",
+        "comida",
+        "especialidad",
+        "recomiendan",
+        "rico",
+        "pastel de choclo",
+        "cazuela",
+        "charquican",
+        "plateada",
+        "empanada",
+        "humitas",
+        "postre",
+        "leche asada",
+        "mote con huesillo"
+      ],
+      "answer": "Nuestra carta es cocina chilena casera: pastel de choclo, cazuela de vacuno o de ave, charquicán, plateada al jugo, congrio frito, chupe de jaibas y empanadas de pino. De postre, leche asada y mote con huesillo. 🍽️"
+    },
+    {
+      "id": "pescados_mariscos",
+      "keywords": [
+        "pescado",
+        "mariscos",
+        "congrio",
+        "reineta",
+        "machas",
+        "jaiba",
+        "ceviche",
+        "caldillo",
+        "fresco"
+      ],
+      "answer": "Trabajamos con pescado fresco de la caleta Portales, así que la disponibilidad cambia cada día. Casi siempre tenemos congrio, reineta, chupe de jaibas y machas a la parmesana. 🐟"
+    },
+    {
+      "id": "precios",
+      "keywords": [
+        "precio",
+        "precios",
+        "cuanto cuesta",
+        "cuanto vale",
+        "cuanto sale",
+        "valor",
+        "caro",
+        "barato",
+        "cuanto cobran"
+      ],
+      "answer": "Los platos de fondo van de $8.500 a $14.900, las entradas de $4.500 a $7.900 y los postres $3.500. El menú del día cuesta $9.900. 💵"
+    },
+    {
+      "id": "reservas",
+      "keywords": [
+        "reservar",
+        "reserva",
+        "reservacion",
+        "apartar",
+        "mesa",
+        "tomar hora",
+        "tienen lugar",
+        "hay espacio",
+        "cupo"
+      ],
+      "answer": "Tomamos reservas para grupos de 4 personas o más, por WhatsApp al +56 9 6543 2100. Para grupos menores no hace falta: llega y te acomodamos. 📅"
+    },
+    {
+      "id": "espera",
+      "keywords": [
+        "fila",
+        "cola",
+        "esperar",
+        "cuanto se demoran",
+        "lleno",
+        "muy lleno",
+        "demora"
+      ],
+      "answer": "Los sábados y domingos entre las 13:30 y las 15:00 suele haber espera de 15 a 30 minutos. Si vienes antes de las 13:00 casi siempre hay mesa al tiro. ⏱️"
+    },
+    {
+      "id": "delivery",
+      "keywords": [
+        "delivery",
+        "despacho",
+        "domicilio",
+        "reparto",
+        "envian",
+        "llevan a",
+        "pedidosya",
+        "uber eats",
+        "rappi",
+        "pedidos ya",
+        "despachan"
+      ],
+      "answer": "Hacemos delivery propio en Valparaíso plano y cerros cercanos, con un costo de $2.500. Pedidos por WhatsApp al +56 9 6543 2100. También estamos en PedidosYa. 🛵"
+    },
+    {
+      "id": "para_llevar",
+      "keywords": [
+        "para llevar",
+        "retirar",
+        "retiro",
+        "takeaway",
+        "pasar a buscar",
+        "llevar"
+      ],
+      "answer": "Sí, puedes pedir para llevar. Encárgalo por WhatsApp y lo dejamos listo para que lo pases a buscar, normalmente en 20 minutos. 🥡"
+    },
+    {
+      "id": "vegetariano",
+      "keywords": [
+        "vegetariano",
+        "vegetariana",
+        "vegano",
+        "vegana",
+        "sin carne",
+        "verduras",
+        "no come carne",
+        "come carne",
+        "carne",
+        "sin gluten ni carne"
+      ],
+      "answer": "Tenemos charquicán vegetariano, porotos granados, ensalada chilena y humitas. La versión vegana del charquicán y de los porotos se prepara sin problema, solo avísale al mesero. 🥬"
+    },
+    {
+      "id": "sin_gluten",
+      "keywords": [
+        "sin gluten",
+        "celiaco",
+        "celiaca",
+        "gluten",
+        "tacc"
+      ],
+      "answer": "Varios platos son naturalmente sin gluten: cazuela, charquicán, porotos granados y los pescados a la plancha. No tenemos cocina separada, así que si tu celiaquía es estricta conviene que lo converses con el mesero. 🌾"
+    },
+    {
+      "id": "alergias",
+      "keywords": [
+        "alergia",
+        "alergico",
+        "alergica",
+        "frutos secos",
+        "mani",
+        "lactosa",
+        "intolerante"
+      ],
+      "answer": "Cuéntanos tu alergia al llegar y la cocina adapta el plato o te recomienda uno seguro. Trabajamos con maní, frutos secos y lácteos en la misma cocina, así que preferimos avisarte. ⚠️"
+    },
+    {
+      "id": "bebidas",
+      "keywords": [
+        "bebida",
+        "bebidas",
+        "vino",
+        "cerveza",
+        "pisco",
+        "trago",
+        "jugo",
+        "borgona",
+        "terremoto",
+        "alcohol",
+        "carta de vinos",
+        "carta de vino",
+        "vinos",
+        "tomar"
+      ],
+      "answer": "Tenemos carta de vinos chilenos por copa y botella, cervezas artesanales de Valparaíso, borgoña, terremoto y jugos naturales. 🍷"
+    },
+    {
+      "id": "ubicacion",
+      "keywords": [
+        "donde estan",
+        "direccion",
+        "ubicacion",
+        "como llegar",
+        "queda",
+        "ubicados",
+        "cerca de",
+        "micro",
+        "metro"
+      ],
+      "answer": "Estamos en Calle Serrano 512, Barrio Puerto, Valparaíso, a dos cuadras de la Plaza Sotomayor. El metro más cercano es Puerto, a 5 minutos caminando. 📍"
+    },
+    {
+      "id": "estacionamiento",
+      "keywords": [
+        "estacionamiento",
+        "estacionar",
+        "aparcar",
+        "auto",
+        "parking",
+        "donde dejo el auto"
+      ],
+      "answer": "No tenemos estacionamiento propio, pero hay uno pagado en Blanco 720, a una cuadra, que cobra $1.500 la hora. 🅿️"
+    },
+    {
+      "id": "terraza",
+      "keywords": [
+        "terraza",
+        "afuera",
+        "aire libre",
+        "patio",
+        "adentro",
+        "vista"
+      ],
+      "answer": "Tenemos una terraza techada de 6 mesas con vista al puerto. No se puede reservar, se ocupa por orden de llegada. 🌤️"
+    },
+    {
+      "id": "mascotas",
+      "keywords": [
+        "mascota",
+        "mascotas",
+        "perro",
+        "perrito",
+        "gato",
+        "petfriendly",
+        "pet friendly"
+      ],
+      "answer": "¡Sí! Somos pet friendly en la terraza. Tenemos bebederos y tu perro entra sin problema. 🐕"
+    },
+    {
+      "id": "ninos",
+      "keywords": [
+        "niños",
+        "nino",
+        "guagua",
+        "familia",
+        "silla de bebe",
+        "coche",
+        "infantil",
+        "porcion chica",
+        "bebe",
+        "silla para bebe",
+        "cabritos"
+      ],
+      "answer": "Somos un local familiar: tenemos sillas para bebé, espacio para coche y medias porciones a mitad de precio para los niños. 👧"
+    },
+    {
+      "id": "accesibilidad",
+      "keywords": [
+        "silla de ruedas",
+        "accesible",
+        "accesibilidad",
+        "rampa",
+        "movilidad reducida",
+        "escalera"
+      ],
+      "answer": "El salón principal y el baño están a nivel de calle, sin escalones, y hay una mesa adaptada para silla de ruedas. La terraza sí tiene dos peldaños. ♿"
+    },
+    {
+      "id": "pagos",
+      "keywords": [
+        "pagar",
+        "pagos",
+        "efectivo",
+        "tarjeta",
+        "debito",
+        "credito",
+        "transferencia",
+        "aceptan",
+        "redcompra",
+        "cuotas",
+        "dividir la cuenta",
+        "dividir",
+        "cuenta",
+        "boleta",
+        "propina"
+      ],
+      "answer": "Aceptamos efectivo, débito, crédito y transferencia. No dividimos la cuenta en más de tres pagos, para no hacer esperar a la mesa siguiente. 💳"
+    },
+    {
+      "id": "eventos",
+      "keywords": [
+        "evento",
+        "eventos",
+        "cumpleanos",
+        "celebracion",
+        "grupo grande",
+        "grupos",
+        "empresa",
+        "matrimonio",
+        "arriendan",
+        "privado",
+        "cumpleaños",
+        "caben",
+        "cabemos",
+        "cuantas personas",
+        "capacidad",
+        "reunion"
+      ],
+      "answer": "Recibimos grupos de hasta 30 personas y arrendamos el salón completo para eventos privados fuera del horario normal. Escríbenos al +56 9 6543 2100 y te enviamos las alternativas. 🎉"
+    },
+    {
+      "id": "wifi",
+      "keywords": [
+        "wifi",
+        "wifi gratis",
+        "internet",
+        "clave",
+        "señal"
+      ],
+      "answer": "Sí, tenemos wifi gratis para clientes. La clave está en la pizarra de la entrada. 📶"
+    },
+    {
+      "id": "contacto",
+      "keywords": [
+        "telefono",
+        "contacto",
+        "whatsapp",
+        "correo",
+        "instagram",
+        "redes",
+        "llamar",
+        "numero"
+      ],
+      "answer": "Teléfono +56 32 234 5678, WhatsApp +56 9 6543 2100 y en Instagram nos encuentras como @cocineriadonaelba. 📞"
+    },
+    {
+      "id": "agradecimiento",
+      "keywords": [
+        "gracias",
+        "muchas gracias",
+        "genial",
+        "perfecto",
+        "buenisimo",
+        "excelente",
+        "bacan"
+      ],
+      "answer": "¡De nada! 😊 ¿Necesitas algo más?"
+    },
+    {
+      "id": "cierre",
+      "keywords": [
+        "no",
+        "nada",
+        "nada mas",
+        "no gracias",
+        "ok",
+        "listo",
+        "vale",
+        "eso es todo",
+        "asi esta bien"
+      ],
+      "answer": "¡Perfecto! Te esperamos por acá. 😊"
+    },
+    {
+      "id": "despedida",
+      "keywords": [
+        "chao",
+        "adios",
+        "hasta luego",
+        "nos vemos",
+        "bye",
+        "me voy"
+      ],
+      "answer": "¡Hasta pronto! Que tengas un buen día. 👋"
+    }
+  ]
+};
+
+  /* ==================================================================== */
+
+  const hiloEl = document.getElementById("hilo");
+  const sugerenciasEl = document.getElementById("sugerencias");
+  const formEl = document.getElementById("escribir");
+  const campoEl = document.getElementById("campo");
+  const enviarEl = document.getElementById("enviar");
+
+  const sesion = { greeted: false };
+
+  function burbuja(texto, quien) {
+    const el = document.createElement("div");
+    el.className = "burbuja " + quien;
+    el.textContent = texto;
+    hiloEl.appendChild(el);
+    hiloEl.scrollTop = hiloEl.scrollHeight;
+    return el;
+  }
+
+  function pensando() {
+    const el = document.createElement("div");
+    el.className = "burbuja bot pensando";
+    el.innerHTML = "<i></i><i></i><i></i>";
+    hiloEl.appendChild(el);
+    hiloEl.scrollTop = hiloEl.scrollHeight;
+    return el;
+  }
+
+  function preguntar(texto) {
+    const mensaje = String(texto || "").trim();
+    if (!mensaje) return;
+
+    burbuja(mensaje, "cliente");
+    campoEl.value = "";
+    enviarEl.disabled = true;
+
+    const espera = pensando();
+
+    setTimeout(function () {
+      const resultado = respond(mensaje, NEGOCIO, sesion);
+      espera.remove();
+      burbuja(resultado.reply, "bot");
+      if (resultado.intent === "saludo") sesion.greeted = true;
+      enviarEl.disabled = false;
+      campoEl.focus();
+    }, 280);
+  }
+
+  formEl.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+    preguntar(campoEl.value);
+  });
+
+  document.getElementById("nombre-negocio").textContent = NEGOCIO.name;
+  document.getElementById("rubro-negocio").textContent = NEGOCIO.tagline || "";
+
+  // La página abre con una conversación ya empezada: quien llega ve el bot respondiendo,
+  // no una ventana vacía esperando que escriba.
+  const EJEMPLO = "¿puedo ir con mi perro?";
+  burbuja(NEGOCIO.greeting, "bot");
+  burbuja(EJEMPLO, "cliente");
+  burbuja(respond(EJEMPLO, NEGOCIO).reply, "bot");
+  // Arriba del todo: lo primero que se ve es el saludo, no el final de la conversación.
+  hiloEl.scrollTop = 0;
+
+  (NEGOCIO.topics || []).forEach(function (tema) {
+    const boton = document.createElement("button");
+    boton.className = "sugerencia";
+    boton.type = "button";
+    boton.textContent = tema;
+    boton.addEventListener("click", function () {
+      preguntar(tema);
+    });
+    sugerenciasEl.appendChild(boton);
+  });
+</script>

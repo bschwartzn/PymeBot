@@ -1,0 +1,3411 @@
+<title>PymeBot para tu negocio</title>
+<link
+  rel="icon"
+  href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🛠%3C/text%3E%3C/svg%3E"
+/>
+
+<style>
+:root {
+  --bg: #eef1f6;
+  --panel: #ffffff;
+  --ink: #1c2430;
+  --muted: #6b7789;
+  --brand: #2f6bff;
+  --soft: #f1f4f9;
+  --border: #dfe4ec;
+  --error: #b02a2a;
+  --error-bg: #fdecec;
+  --warn: #8a5a12;
+  --warn-bg: #fdf4e3;
+  --ok: #1a6f4b;
+  --ok-bg: #e8f5ee;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-size: 15px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 24px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.logo {
+  width: 40px; height: 40px; border-radius: 11px;
+  background: var(--soft); display: grid; place-items: center; font-size: 20px;
+}
+.brand h1 { margin: 0; font-size: 16px; }
+.brand p { margin: 1px 0 0; font-size: 13px; color: var(--muted); }
+.link { color: var(--brand); text-decoration: none; font-size: 14px; }
+.link:hover { text-decoration: underline; }
+
+.layout {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 20px;
+  padding: 20px 24px 40px;
+  align-items: start;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* ---------- Lista ---------- */
+
+.sidebar {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px;
+  position: sticky;
+  top: 20px;
+}
+.sidebar-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.sidebar-head h2 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+
+.lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.lista button {
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 11px;
+  cursor: pointer;
+}
+.lista button:hover { background: var(--soft); }
+.lista button[aria-current="true"] { background: var(--brand); color: #fff; }
+.lista .cuenta { display: block; font-size: 12px; opacity: .7; margin-top: 1px; }
+
+/* ---------- Editor ---------- */
+
+.editor { min-width: 0; }
+
+.banner {
+  background: var(--warn-bg);
+  color: var(--warn);
+  border: 1px solid color-mix(in srgb, var(--warn) 25%, transparent);
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  margin-bottom: 16px;
+}
+
+.form, .vacio {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+.vacio { color: var(--muted); text-align: center; padding: 50px 20px; }
+.vacio p { margin: 0; }
+
+.form-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 16px; flex-wrap: wrap; margin-bottom: 4px;
+}
+.form-head h2 { margin: 0; font-size: 19px; }
+.slug { font-size: 12.5px; color: var(--muted); }
+.form-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+.bloque {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 18px 0 0;
+  padding: 18px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.bloque legend {
+  font-size: 13px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--muted); padding: 0; margin-bottom: 4px; float: left; width: 100%;
+}
+
+label { display: flex; flex-direction: column; gap: 5px; font-size: 13.5px; color: var(--muted); }
+.ayuda { font-weight: 400; font-size: 12.5px; color: var(--muted); opacity: .85; }
+
+/* Cubre text, email, password y cualquier otro campo de escritura: listar los tipos uno a
+   uno hace que el siguiente que se agregue salga sin estilo. */
+input:not([type="checkbox"]):not([type="range"]), textarea {
+  font-family: inherit;
+  font-size: 14.5px;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 12px;
+  width: 100%;
+  resize: vertical;
+}
+input:focus, textarea:focus { outline: none; border-color: var(--brand); }
+input:focus-visible, textarea:focus-visible { outline: 2px solid var(--brand); outline-offset: 1px; }
+
+/* ---------- Preguntas ---------- */
+
+.intents { display: flex; flex-direction: column; gap: 12px; }
+
+.intent {
+  background: var(--soft);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.intent-head { display: flex; gap: 8px; align-items: center; }
+.intent-id { font-weight: 600; }
+
+/* ---------- Botones ---------- */
+
+.btn, .btn-ghost, .btn-small {
+  font-family: inherit;
+  border-radius: 999px;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+}
+.btn {
+  font-size: 14.5px; font-weight: 600;
+  background: var(--brand); color: #fff; border: 0; padding: 9px 20px;
+}
+.btn:disabled { opacity: .5; cursor: default; }
+.btn-ghost {
+  font-size: 13.5px; color: var(--muted);
+  background: transparent; border: 1px solid var(--border); padding: 8px 14px;
+}
+.btn-ghost:hover { color: var(--brand); border-color: var(--brand); }
+.btn-ghost.danger:hover { color: var(--error); border-color: var(--error); }
+.btn-small {
+  font-size: 13px; color: var(--brand);
+  background: transparent; border: 1px dashed var(--border); padding: 6px 13px;
+  align-self: flex-start;
+}
+.btn-small:hover { border-color: var(--brand); border-style: solid; }
+.btn-icon {
+  font-family: inherit; font-size: 14px; color: var(--muted);
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 8px; width: 32px; height: 32px; flex: none; cursor: pointer;
+}
+.btn-icon:hover { color: var(--error); border-color: var(--error); }
+
+/* ---------- Mensajes ---------- */
+
+.mensajes { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+.mensajes:empty { display: none; }
+
+.msg { border-radius: 9px; padding: 10px 13px; font-size: 13.5px; }
+.msg.error { background: var(--error-bg); color: var(--error); }
+.msg.warn { background: var(--warn-bg); color: var(--warn); }
+.msg.ok { background: var(--ok-bg); color: var(--ok); }
+.msg ul { margin: 6px 0 0; padding-left: 18px; }
+.msg li + li { margin-top: 3px; }
+
+:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+
+@media (max-width: 760px) {
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; }
+}
+
+/* ==================== Acceso (entrar / crear cuenta) ==================== */
+
+/*
+ * El navegador oculta [hidden] con `display: none`, pero eso viene de su hoja de estilos y
+ * cualquier `display` nuestro le gana. Sin esta regla, .acceso { display: grid } dejaba el
+ * formulario de acceso encima del panel después de entrar.
+ */
+[hidden] {
+  display: none !important;
+}
+
+.acceso {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+
+.acceso-caja {
+  width: min(400px, 100%);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 28px 26px;
+}
+
+.acceso-marca { text-align: center; margin-bottom: 20px; }
+.acceso-marca .logo { width: 52px; height: 52px; font-size: 26px; margin: 0 auto 10px; }
+.acceso-marca h1 { margin: 0; font-size: 21px; }
+.acceso-marca p { margin: 3px 0 0; font-size: 13.5px; color: var(--muted); }
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: var(--soft);
+  border-radius: 999px;
+  padding: 4px;
+  margin-bottom: 20px;
+}
+.tab {
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  padding: 8px;
+  cursor: pointer;
+}
+.tab[aria-selected="true"] { background: var(--panel); color: var(--ink); font-weight: 600; }
+
+.acceso-form { display: flex; flex-direction: column; gap: 14px; }
+.btn.ancho { width: 100%; padding: 11px; }
+
+/* ==================== Estado y secciones ==================== */
+
+.form-titulo { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.pill {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+.pill.activo { background: var(--ok-bg); color: var(--ok); }
+.pill.pausado { background: var(--warn-bg); color: var(--warn); }
+
+.secciones {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+  margin-top: 18px;
+}
+.seccion-tab {
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  padding: 9px 13px;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+.seccion-tab:hover { color: var(--ink); }
+.seccion-tab.activo { color: var(--brand); border-bottom-color: var(--brand); font-weight: 600; }
+
+/* El borde superior lo pone ahora la barra de secciones. */
+.bloque { border-top: 0; margin-top: 0; padding-top: 18px; }
+.bloque-intro { margin: 0 0 4px; }
+
+/* ==================== Ejemplos ==================== */
+
+.ejemplos { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--border); }
+.ejemplos h3 {
+  margin: 0 0 2px; font-size: 13px; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--muted);
+}
+.ejemplos .ayuda { display: block; margin-bottom: 8px; }
+
+/* ==================== Comportamiento ==================== */
+
+.switch-label { flex-direction: row; align-items: center; gap: 9px; font-size: 15px; color: var(--ink); }
+.switch-label input { width: 18px; height: 18px; accent-color: var(--brand); cursor: pointer; }
+.switch .ayuda { margin: 6px 0 0 27px; display: block; }
+
+input[type="range"] { width: 100%; accent-color: var(--brand); cursor: pointer; }
+.umbral { font-size: 13.5px; color: var(--brand); font-weight: 600; }
+
+/* ==================== Compartir ==================== */
+
+.compartir-link { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.compartir-link input {
+  flex: 1;
+  min-width: 200px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 13px;
+  background: var(--soft);
+}
+
+.compartir-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 14px;
+}
+
+.compartir-tarjeta {
+  background: var(--soft);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  align-items: flex-start;
+}
+.compartir-tarjeta h3 { margin: 0; font-size: 14.5px; }
+.compartir-tarjeta .ayuda { margin: 0; }
+.compartir-tarjeta code {
+  font-size: 12.5px;
+  background: var(--panel);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+
+.qr {
+  background: #fff;
+  border-radius: 9px;
+  padding: 10px;
+  align-self: center;
+  line-height: 0;
+}
+.qr svg { width: 150px; height: 150px; display: block; }
+
+.lista-consejos {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13.5px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* ==================== Conversaciones ==================== */
+
+.cifras {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 12px;
+}
+
+.cifra {
+  background: var(--soft);
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  padding: 15px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.cifra b {
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.cifra span { font-size: 12.5px; color: var(--muted); }
+/* La tasa de acierto es la única cifra con semáforo: dice si el bot está sirviendo. */
+.cifra.buena b { color: var(--ok); }
+.cifra.floja b { color: var(--warn); }
+
+.sin-respuesta { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+
+.pendiente {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 10px 13px;
+}
+.pendiente .texto { flex: 1; min-width: 0; font-size: 14.5px; }
+.pendiente .veces {
+  font-size: 12.5px;
+  color: var(--warn);
+  background: var(--warn-bg);
+  border-radius: 999px;
+  padding: 2px 9px;
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+.barras { display: flex; flex-direction: column; gap: 7px; width: 100%; }
+.barra { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.barra .nombre { width: 140px; flex: none; color: var(--muted); }
+/* La pista usa el color del borde, no el de fondo: sobre una tarjeta clara, --soft
+   apenas se distingue del blanco y la barra parecía no existir. */
+.barra .pista { flex: 1; height: 8px; background: var(--border); border-radius: 999px; overflow: hidden; }
+/* display:block es obligatorio: .pista no es flex, así que un <span> se quedaría inline
+   y ni el alto ni el ancho le aplicarían. */
+.barra .relleno { display: block; height: 100%; background: var(--brand); border-radius: 999px; }
+.barra .valor { width: 30px; text-align: right; flex: none; font-variant-numeric: tabular-nums; }
+
+.vacio-seccion { font-size: 14.5px; color: var(--muted); margin: 0; }
+
+/* ==================== Conversaciones completas ==================== */
+
+.conversaciones { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+
+.conversacion {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.conversacion > summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  cursor: pointer;
+  font-size: 14px;
+  list-style: none;
+}
+.conversacion > summary::-webkit-details-marker { display: none; }
+.conversacion > summary::before {
+  content: "▸";
+  color: var(--muted);
+  flex: none;
+  transition: transform .15s;
+}
+.conversacion[open] > summary::before { transform: rotate(90deg); }
+.conversacion > summary:hover { background: var(--soft); }
+
+.conversacion .cuando { flex: 1; min-width: 0; }
+.conversacion .resumen { color: var(--muted); font-size: 13px; }
+.conversacion .marca-canal {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  background: var(--soft);
+  border-radius: 999px;
+  padding: 2px 9px;
+  flex: none;
+}
+.conversacion .fallo {
+  font-size: 11.5px;
+  color: var(--warn);
+  background: var(--warn-bg);
+  border-radius: 999px;
+  padding: 2px 9px;
+  flex: none;
+}
+
+.transcripcion {
+  border-top: 1px solid var(--border);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--soft);
+}
+
+.dicho { max-width: 82%; padding: 9px 13px; border-radius: 14px; font-size: 14.5px; line-height: 1.45; white-space: pre-wrap; }
+.dicho.cliente { align-self: flex-end; background: var(--brand); color: #fff; border-bottom-right-radius: 4px; }
+.dicho.bot { align-self: flex-start; background: var(--panel); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
+/* Marcar dónde falló: es lo que el dueño busca al leer una conversación. */
+.dicho.bot.no-supo { border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); background: var(--warn-bg); }
+
+
+/* ==================== Añadidos propios del demo ==================== */
+
+.aviso-demo {
+  background: #1c2430;
+  color: #e8edf5;
+  font-size: 13.5px;
+  line-height: 1.5;
+  padding: 11px 24px;
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+.aviso-demo strong { color: #fff; }
+.aviso-demo span { color: #a8b4c4; }
+
+/* Cajón de vista previa: el chat del cliente, con el negocio que se está editando. */
+.previsualizar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 100vw);
+  background: var(--panel);
+  border-left: 1px solid var(--border);
+  box-shadow: -8px 0 32px rgba(0, 0, 0, .13);
+  transform: translateX(100%);
+  transition: transform .22s ease;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+}
+.previsualizar.abierto { transform: none; }
+
+.previsualizar-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  flex: none;
+}
+.previsualizar-barra h2 { margin: 0; font-size: 14.5px; }
+.previsualizar-barra p { margin: 1px 0 0; font-size: 12.5px; color: var(--muted); }
+.previsualizar iframe { flex: 1; width: 100%; border: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .previsualizar { transition: none; }
+}
+</style>
+
+<div class="aviso-demo">
+  <strong>Demo de PymeBot.</strong>
+  <span>
+    Es el panel real: lo que edites cambia el bot de verdad, aquí mismo. Los cambios quedan
+    solo en este navegador y el acceso no comprueba la contraseña.
+  </span>
+</div>
+
+<!-- ============================ Acceso ============================ -->
+    <section id="acceso" class="acceso" hidden>
+      <div class="acceso-caja">
+        <div class="acceso-marca">
+          <span class="logo" aria-hidden="true">🤖</span>
+          <h1>PymeBot</h1>
+          <p>El asistente que responde a tus clientes</p>
+        </div>
+
+        <div class="tabs" role="tablist">
+          <button id="tab-entrar" class="tab" type="button" role="tab" aria-selected="true">Entrar</button>
+          <button id="tab-crear" class="tab" type="button" role="tab" aria-selected="false">Crear cuenta</button>
+        </div>
+
+        <form id="form-entrar" class="acceso-form">
+          <label>
+            Correo
+            <input name="email" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Contraseña
+            <input name="password" type="password" autocomplete="current-password" required />
+          </label>
+          <div id="error-entrar" class="msg error" hidden></div>
+          <button class="btn ancho" type="submit">Entrar</button>
+        </form>
+
+        <form id="form-crear" class="acceso-form" hidden>
+          <label>
+            Tu nombre
+            <input name="name" type="text" autocomplete="name" maxlength="80" />
+          </label>
+          <label>
+            Correo
+            <input name="email" type="email" autocomplete="email" required />
+          </label>
+          <label>
+            Contraseña <span class="ayuda">mínimo 8 caracteres</span>
+            <input name="password" type="password" autocomplete="new-password" required minlength="8" />
+          </label>
+          <label>
+            Nombre de tu negocio <span class="ayuda">opcional, lo creamos por ti</span>
+            <input name="businessName" type="text" maxlength="80" placeholder="Panadería La Espiga" />
+          </label>
+          <div id="error-crear" class="msg error" hidden></div>
+          <button class="btn ancho" type="submit">Crear cuenta</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- ============================ Panel ============================ -->
+    <div id="panel" hidden>
+      <header class="topbar">
+        <div class="brand">
+          <span class="logo" aria-hidden="true">🤖</span>
+          <div>
+            <h1>Mi bot</h1>
+            <p id="quien"></p>
+          </div>
+        </div>
+        <button id="salir" class="btn-ghost" type="button">Cerrar sesión</button>
+      </header>
+
+      <main class="layout">
+        <aside class="sidebar">
+          <div class="sidebar-head">
+            <h2>Mis negocios</h2>
+            <button id="nuevo" class="btn-small" type="button">+ Nuevo</button>
+          </div>
+          <ul id="lista" class="lista"></ul>
+
+          <div class="ejemplos">
+            <h3>Partir de un ejemplo</h3>
+            <p class="ayuda">Copia uno a tu cuenta y edítalo.</p>
+            <ul id="ejemplos" class="lista"></ul>
+          </div>
+        </aside>
+
+        <section class="editor">
+          <div id="sin-negocios" class="vacio" hidden>
+            <p>Todavía no tienes ningún negocio.</p>
+            <p class="ayuda">Crea uno con <strong>+ Nuevo</strong> o copia un ejemplo para partir.</p>
+          </div>
+
+          <form id="form" class="form" hidden>
+            <div class="form-head">
+              <div class="form-titulo">
+                <h2 id="titulo">Negocio</h2>
+                <span id="estado" class="pill"></span>
+                <code id="slug-actual" class="slug"></code>
+              </div>
+              <div class="form-actions">
+                <a id="probar" class="btn-ghost" href="#" target="_blank" rel="noopener">Probar el bot ↗</a>
+                <button id="eliminar" class="btn-ghost danger" type="button">Eliminar</button>
+                <button class="btn" type="submit">Guardar</button>
+              </div>
+            </div>
+
+            <div id="mensajes" class="mensajes" aria-live="polite"></div>
+
+            <nav class="secciones" role="tablist">
+              <button class="seccion-tab activo" type="button" data-seccion="identidad">Identidad</button>
+              <button class="seccion-tab" type="button" data-seccion="preguntas">Preguntas</button>
+              <button class="seccion-tab" type="button" data-seccion="mensajes">Mensajes</button>
+              <button class="seccion-tab" type="button" data-seccion="comportamiento">Comportamiento</button>
+              <button class="seccion-tab" type="button" data-seccion="compartir">Compartir</button>
+              <button class="seccion-tab" type="button" data-seccion="conversaciones">Conversaciones</button>
+            </nav>
+
+            <fieldset class="bloque" data-seccion="identidad">
+              <label>
+                Nombre del negocio
+                <input name="name" type="text" maxlength="80" required />
+              </label>
+              <label>
+                Descripción corta
+                <input name="tagline" type="text" maxlength="140" placeholder="Qué haces y dónde estás" />
+              </label>
+              <label>
+                Temas sugeridos <span class="ayuda">uno por línea; aparecen como botones en el chat</span>
+                <textarea name="topics" rows="6"></textarea>
+              </label>
+            </fieldset>
+
+            <fieldset class="bloque" data-seccion="preguntas" hidden>
+              <p class="ayuda bloque-intro">
+                Cada bloque es una pregunta de tus clientes. Las <strong>palabras clave</strong> son las
+                que el bot busca en lo que escriben; la <strong>respuesta</strong> es lo que contesta.
+              </p>
+              <div id="intents" class="intents"></div>
+              <button id="agregar-intent" class="btn-small" type="button">+ Agregar pregunta</button>
+            </fieldset>
+
+            <fieldset class="bloque" data-seccion="mensajes" hidden>
+              <label>
+                Saludo inicial
+                <textarea name="greeting" rows="2" maxlength="1000"></textarea>
+              </label>
+              <label>
+                Saludo cuando ya conversaron
+                <textarea name="greetingRepeat" rows="2" maxlength="1000"></textarea>
+              </label>
+              <label>
+                Qué dice cuando no entiende
+                <textarea name="fallback" rows="2" maxlength="1000"></textarea>
+              </label>
+              <label>
+                Cómo derivar a una persona <span class="ayuda">se muestra junto al mensaje anterior</span>
+                <textarea name="handoff" rows="2" maxlength="1000" placeholder="Opcional"></textarea>
+              </label>
+            </fieldset>
+
+            <fieldset class="bloque" data-seccion="comportamiento" hidden>
+              <div class="switch">
+                <label class="switch-label">
+                  <input name="active" type="checkbox" />
+                  <span>Bot activo</span>
+                </label>
+                <p class="ayuda">
+                  Si lo apagas, el bot deja de responder preguntas y contesta solo el mensaje de abajo.
+                </p>
+              </div>
+
+              <label>
+                Mensaje con el bot apagado
+                <textarea name="pausedMessage" rows="2" maxlength="1000"></textarea>
+              </label>
+
+              <label>
+                Nivel de exigencia
+                <input name="confidenceThreshold" type="range" min="0.5" max="4" step="0.5" />
+                <output id="umbral-valor" class="umbral"></output>
+              </label>
+              <p class="ayuda">
+                Qué tan seguro debe estar el bot antes de responder. Más exigente responde menos, pero
+                se equivoca menos; menos exigente responde casi siempre, arriesgando contestar un tema
+                por otro. Si ves que confunde preguntas, súbelo.
+              </p>
+            </fieldset>
+
+            <fieldset class="bloque" data-seccion="compartir" hidden>
+              <p class="ayuda bloque-intro">
+                Esta es la dirección del chat de tu negocio. Compártela con tus clientes: no
+                necesitan instalar nada ni tener cuenta.
+              </p>
+
+              <div class="compartir-link">
+                <input id="url-publica" type="text" readonly aria-label="Dirección del chat" />
+                <button id="copiar-url" class="btn-ghost" type="button">Copiar</button>
+                <a id="abrir-url" class="btn-ghost" href="#" target="_blank" rel="noopener">Abrir ↗</a>
+              </div>
+
+              <div id="aviso-local" class="msg warn" hidden>
+                <strong>Esta dirección solo existe en tu computador.</strong>
+                Un teléfono no puede abrirla, así que el QR de abajo no se podrá escanear.
+                <span id="sugerencia-red"></span>
+                <button id="usar-red" class="btn-ghost" type="button" hidden>
+                  Usar la dirección de mi red
+                </button>
+              </div>
+
+              <div class="compartir-grid">
+                <div class="compartir-tarjeta">
+                  <h3>Código QR</h3>
+                  <p class="ayuda">
+                    Imprímelo y déjalo en el mesón, la vitrina o la mesa. Quien lo escanee con la
+                    cámara del teléfono abre el chat.
+                  </p>
+                  <div class="qr" id="qr"></div>
+                  <a id="descargar-qr" class="btn-ghost" href="#" download>Descargar QR</a>
+                </div>
+
+                <div class="compartir-tarjeta">
+                  <h3>Dónde ponerlo</h3>
+                  <ul class="lista-consejos">
+                    <li>En tu estado de WhatsApp y en la bio de Instagram.</li>
+                    <li>En tu ficha de Google, como enlace del negocio.</li>
+                    <li>Como respuesta automática cuando te escriben fuera de horario.</li>
+                    <li>Impreso en el QR, en el mesón o la mesa.</li>
+                  </ul>
+                  <a id="compartir-whatsapp" class="btn-ghost" href="#" target="_blank" rel="noopener">
+                    Compartir por WhatsApp
+                  </a>
+                </div>
+              </div>
+
+              <div class="compartir-tarjeta">
+                <h3>¿Tienes página web?</h3>
+                <p class="ayuda">
+                  Pega esta línea antes de <code>&lt;/body&gt;</code> y aparecerá una burbuja de chat
+                  en la esquina de tu sitio.
+                </p>
+                <div class="compartir-link">
+                  <input id="codigo-embed" type="text" readonly aria-label="Código para tu web" />
+                  <button id="copiar-embed" class="btn-ghost" type="button">Copiar</button>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset class="bloque" data-seccion="conversaciones" hidden>
+              <p class="ayuda bloque-intro">
+                Lo que preguntaron tus clientes en los últimos 14 días.
+              </p>
+
+              <div class="cifras" id="cifras"></div>
+
+              <div class="compartir-tarjeta">
+                <h3>Preguntas que tu bot no supo responder</h3>
+                <p class="ayuda">
+                  Cada una es una respuesta que te falta cargar. Agrégala y el bot dejará de
+                  fallar en esa pregunta.
+                </p>
+                <div id="sin-respuesta" class="sin-respuesta"></div>
+              </div>
+
+              <div class="compartir-tarjeta">
+                <h3>Los temas que más te preguntan</h3>
+                <div id="mas-preguntados" class="barras"></div>
+              </div>
+
+              <div class="compartir-tarjeta">
+                <h3>Todas las conversaciones</h3>
+                <p class="ayuda">
+                  Lo que te escribieron tus clientes, tal cual. Haz clic en una para leerla
+                  completa.
+                </p>
+                <div id="conversaciones" class="conversaciones"></div>
+              </div>
+            </fieldset>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <template id="plantilla-intent">
+      <div class="intent">
+        <div class="intent-head">
+          <input class="intent-id" type="text" placeholder="identificador (ej: horarios)" />
+          <button class="btn-icon" type="button" title="Quitar esta pregunta">✕</button>
+        </div>
+        <label>
+          Palabras clave <span class="ayuda">separadas por coma</span>
+          <input class="intent-keywords" type="text" placeholder="horario, abren, a que hora" />
+        </label>
+        <label>
+          Respuesta
+          <textarea class="intent-answer" rows="3" maxlength="1000"></textarea>
+        </label>
+      </div>
+    </template>
+
+<aside class="previsualizar" id="previsualizar" aria-hidden="true">
+  <div class="previsualizar-barra">
+    <div>
+      <h2>Así lo ve tu cliente</h2>
+      <p>Con los cambios que tienes sin guardar</p>
+    </div>
+    <button class="btn-ghost" id="cerrar-preview" type="button">Cerrar</button>
+  </div>
+  <iframe id="marco-preview" title="Vista previa del chat"></iframe>
+</aside>
+
+<script>
+  /* ===================================================================
+     Validación y motor: tomados tal cual de src/. No son una copia.
+     =================================================================== */
+
+  /**
+ * Validación de la información de un negocio.
+ *
+ * Quien edita esto no es un programador, así que:
+ *   - los ERRORES impiden guardar y explican en castellano qué falta,
+ *   - las ADVERTENCIAS sí dejan guardar, pero avisan de lo que suele hacer que el bot
+ *     responda mal (por ejemplo, dos intenciones que compiten por la misma palabra).
+ */
+
+
+/** Textos que el negocio puede omitir; se rellenan con algo razonable. */
+const DEFAULTS = {
+  tagline: '',
+  greeting: '¡Hola! 👋 ¿En qué te puedo ayudar?',
+  greetingRepeat: '¡Aquí sigo! ¿En qué más te ayudo?',
+  fallback: 'Perdona, no estoy seguro de haber entendido eso. Puedo ayudarte con estos temas:',
+  handoff: '',
+  topics: [],
+  /** Con el bot pausado, el chat responde el mensaje de pausa en vez de intentar entender. */
+  active: true,
+  /**
+   * Qué tan seguro tiene que estar el motor para responder, en vez de caer en el respaldo.
+   * Más alto = responde menos, pero se equivoca menos. Más bajo = responde más, arriesgando
+   * contestar un tema por otro.
+   */
+  confidenceThreshold: 1,
+  pausedMessage: 'En este momento no estamos atendiendo por aquí. Escríbenos directamente y te respondemos a la brevedad.',
+};
+
+/** Rango aceptado para el umbral de confianza. Fuera de esto el bot se vuelve inútil. */
+const THRESHOLD = { min: 0.5, max: 6 };
+
+const MAX = { name: 80, tagline: 140, texto: 1000, keyword: 60, intents: 100, keywords: 40 };
+
+/**
+ * Artículos, preposiciones y conjunciones. Como palabra clave no distinguen nada: harían
+ * que la intención compita en casi cualquier frase. Deliberadamente NO incluye palabras
+ * como "no" u "ok", que sí son señales útiles para cerrar una conversación.
+ */
+const PALABRAS_VACIAS = new Set(
+  ('el la los las un una unos unas de del al y o u en con por para que se lo su sus mi mis tu tus ' +
+    'este esta esto ese esa eso es son era ser hay muy mas mas tambien pero como cuando donde')
+    .split(' '),
+);
+
+const esTexto = (v) => typeof v === 'string' && v.trim() !== '';
+
+/** Convierte un nombre en un identificador usable como nombre de archivo y en la URL. */
+function slugify(text) {
+  const base = normalize(text).replace(/ñ/g, 'n').replace(/\s+/g, '-').replace(/-+/g, '-');
+  return base.slice(0, 40).replace(/^-|-$/g, '');
+}
+
+/** Solo aceptamos slugs así: evita que una ruta se escape del directorio de datos. */
+function isValidSlug(slug) {
+  return typeof slug === 'string' && /^[a-z0-9][a-z0-9-]{0,39}$/.test(slug);
+}
+
+function validarIntenciones(intents, errors, warnings) {
+  if (!Array.isArray(intents) || intents.length === 0) {
+    errors.push({ campo: 'intents', mensaje: 'El negocio necesita al menos una pregunta configurada.' });
+    return;
+  }
+  if (intents.length > MAX.intents) {
+    errors.push({ campo: 'intents', mensaje: `No se pueden configurar más de ${MAX.intents} preguntas.` });
+    return;
+  }
+
+  const idsVistos = new Set();
+  /** palabra clave normalizada → ids de intención que la usan */
+  const duenoDeClave = new Map();
+
+  intents.forEach((intent, i) => {
+    const donde = `intents[${i}]`;
+    const etiqueta = esTexto(intent && intent.id) ? `"${intent.id}"` : `número ${i + 1}`;
+
+    if (!intent || typeof intent !== 'object') {
+      errors.push({ campo: donde, mensaje: `La pregunta ${etiqueta} no tiene el formato correcto.` });
+      return;
+    }
+
+    if (!esTexto(intent.id)) {
+      errors.push({ campo: `${donde}.id`, mensaje: `La pregunta ${etiqueta} necesita un identificador.` });
+    } else if (idsVistos.has(intent.id)) {
+      errors.push({ campo: `${donde}.id`, mensaje: `El identificador "${intent.id}" está repetido.` });
+    } else {
+      idsVistos.add(intent.id);
+    }
+
+    if (!esTexto(intent.answer)) {
+      errors.push({ campo: `${donde}.answer`, mensaje: `La pregunta ${etiqueta} no tiene respuesta.` });
+    } else if (intent.answer.length > MAX.texto) {
+      errors.push({
+        campo: `${donde}.answer`,
+        mensaje: `La respuesta de ${etiqueta} supera los ${MAX.texto} caracteres.`,
+      });
+    }
+
+    if (!Array.isArray(intent.keywords) || intent.keywords.filter(esTexto).length === 0) {
+      errors.push({
+        campo: `${donde}.keywords`,
+        mensaje: `La pregunta ${etiqueta} necesita al menos una palabra clave.`,
+      });
+      return;
+    }
+    if (intent.keywords.length > MAX.keywords) {
+      errors.push({
+        campo: `${donde}.keywords`,
+        mensaje: `La pregunta ${etiqueta} tiene demasiadas palabras clave (máximo ${MAX.keywords}).`,
+      });
+      return;
+    }
+
+    const clavesDeEsta = new Set();
+    for (const keyword of intent.keywords) {
+      if (!esTexto(keyword)) continue;
+      if (keyword.length > MAX.keyword) {
+        errors.push({
+          campo: `${donde}.keywords`,
+          mensaje: `La palabra clave "${keyword.slice(0, 30)}…" de ${etiqueta} es demasiado larga.`,
+        });
+        continue;
+      }
+
+      const clave = normalize(keyword);
+      if (!clave) {
+        warnings.push({
+          campo: `${donde}.keywords`,
+          mensaje: `La palabra clave "${keyword}" de ${etiqueta} no tiene letras ni números, así que nunca va a coincidir.`,
+        });
+        continue;
+      }
+
+      if (clavesDeEsta.has(clave)) {
+        warnings.push({
+          campo: `${donde}.keywords`,
+          mensaje: `${etiqueta} repite la palabra clave "${keyword}".`,
+        });
+        continue; // ya avisamos por esta palabra en su primera aparición
+      }
+      clavesDeEsta.add(clave);
+
+      // Una palabra vacía como clave hace que la intención coincida con casi cualquier frase.
+      if (PALABRAS_VACIAS.has(clave)) {
+        warnings.push({
+          campo: `${donde}.keywords`,
+          mensaje: `"${keyword}" aparece en casi cualquier frase, así que ${etiqueta} va a responder cuando no corresponde. Usa una palabra propia del tema.`,
+        });
+      }
+
+      if (!duenoDeClave.has(clave)) duenoDeClave.set(clave, []);
+      const duenos = duenoDeClave.get(clave);
+      if (!duenos.includes(intent.id)) duenos.push(intent.id);
+    }
+  });
+
+  // El motivo más común de que el bot responda otra cosa: dos preguntas compiten por la misma palabra.
+  for (const [clave, duenos] of duenoDeClave) {
+    if (duenos.length > 1) {
+      warnings.push({
+        campo: 'intents',
+        mensaje: `La palabra "${clave}" está en varias preguntas (${duenos.join(', ')}). El bot tendrá que adivinar cuál responder.`,
+      });
+    }
+  }
+}
+
+/**
+ * Valida y normaliza un negocio.
+ * @returns {{ok: boolean, errors: Array, warnings: Array, business: object|null}}
+ */
+function validateBusiness(raw) {
+  const errors = [];
+  const warnings = [];
+
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    return {
+      ok: false,
+      errors: [{ campo: '', mensaje: 'La información del negocio no tiene el formato correcto.' }],
+      warnings,
+      business: null,
+    };
+  }
+
+  if (!esTexto(raw.name)) {
+    errors.push({ campo: 'name', mensaje: 'El negocio necesita un nombre.' });
+  } else if (raw.name.length > MAX.name) {
+    errors.push({ campo: 'name', mensaje: `El nombre supera los ${MAX.name} caracteres.` });
+  }
+
+  for (const campo of ['tagline', 'greeting', 'greetingRepeat', 'fallback', 'handoff']) {
+    const valor = raw[campo];
+    if (valor === undefined || valor === null || valor === '') continue;
+    if (typeof valor !== 'string') {
+      errors.push({ campo, mensaje: `El campo "${campo}" debe ser texto.` });
+    } else if (valor.length > (campo === 'tagline' ? MAX.tagline : MAX.texto)) {
+      errors.push({ campo, mensaje: `El campo "${campo}" es demasiado largo.` });
+    }
+  }
+
+  if (raw.active !== undefined && typeof raw.active !== 'boolean') {
+    errors.push({ campo: 'active', mensaje: 'El estado del bot debe ser activo o pausado.' });
+  }
+
+  if (raw.confidenceThreshold !== undefined) {
+    const valor = Number(raw.confidenceThreshold);
+    if (!Number.isFinite(valor) || valor < THRESHOLD.min || valor > THRESHOLD.max) {
+      errors.push({
+        campo: 'confidenceThreshold',
+        mensaje: `El nivel de exigencia debe estar entre ${THRESHOLD.min} y ${THRESHOLD.max}.`,
+      });
+    }
+  }
+
+  if (raw.pausedMessage !== undefined && raw.pausedMessage !== null && raw.pausedMessage !== '') {
+    if (typeof raw.pausedMessage !== 'string' || raw.pausedMessage.length > MAX.texto) {
+      errors.push({ campo: 'pausedMessage', mensaje: 'El mensaje de pausa no es válido.' });
+    }
+  }
+
+  if (raw.ownerId !== undefined && raw.ownerId !== null && typeof raw.ownerId !== 'string') {
+    errors.push({ campo: 'ownerId', mensaje: 'El dueño del negocio no es válido.' });
+  }
+
+  if (raw.topics !== undefined) {
+    if (!Array.isArray(raw.topics)) {
+      errors.push({ campo: 'topics', mensaje: 'Los temas sugeridos deben ser una lista.' });
+    } else if (raw.topics.some((t) => !esTexto(t))) {
+      errors.push({ campo: 'topics', mensaje: 'Hay un tema sugerido vacío.' });
+    }
+  }
+
+  validarIntenciones(raw.intents, errors, warnings);
+
+  if (errors.length === 0 && (!Array.isArray(raw.topics) || raw.topics.length === 0)) {
+    warnings.push({
+      campo: 'topics',
+      mensaje: 'Sin temas sugeridos, cuando el bot no entienda no podrá ofrecer alternativas.',
+    });
+  }
+
+  if (errors.length > 0) return { ok: false, errors, warnings, business: null };
+
+  const business = {
+    name: raw.name.trim(),
+    ...DEFAULTS,
+    ...Object.fromEntries(
+      ['tagline', 'greeting', 'greetingRepeat', 'fallback', 'handoff', 'pausedMessage']
+        .filter((c) => esTexto(raw[c]))
+        .map((c) => [c, raw[c].trim()]),
+    ),
+    // Un negocio sin dueño es una demo: se puede leer, no editar.
+    ownerId: typeof raw.ownerId === 'string' && raw.ownerId ? raw.ownerId : null,
+    active: raw.active === undefined ? DEFAULTS.active : Boolean(raw.active),
+    confidenceThreshold:
+      raw.confidenceThreshold === undefined ? DEFAULTS.confidenceThreshold : Number(raw.confidenceThreshold),
+    topics: Array.isArray(raw.topics) ? raw.topics.map((t) => t.trim()) : [],
+    intents: raw.intents.map((intent) => ({
+      id: intent.id.trim(),
+      keywords: intent.keywords.filter(esTexto).map((k) => k.trim()),
+      answer: intent.answer.trim(),
+    })),
+  };
+
+  return { ok: true, errors, warnings, business };
+}
+
+  /**
+ * Utilidades de texto.
+ *
+ * El objetivo es que "¿Cuánto CUESTA?" y "cuanto cuesta" sean lo mismo para el motor.
+ * En español esto significa: minúsculas, sin acentos, sin signos de puntuación
+ * (incluidos ¿ ¡) y sin espacios sobrantes.
+ */
+
+/** Pasa un texto a su forma canónica comparable. */
+function normalize(text) {
+  if (typeof text !== 'string') return '';
+  return text
+    .toLowerCase()
+    // La ñ es una letra propia del español, no una n con acento: se protege antes de
+    // que NFD la descomponga, o 'año' se convertiría en 'ano'.
+    .replace(/ñ/g, '\u0001')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // quita los acentos ya separados por NFD
+    .replace(/\u0001/g, 'ñ')
+    .replace(/[^a-z0-9ñ\s]/g, ' ') // ¿ ? ! . , y emojis se vuelven espacio
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Forma usada solo para COMPARAR, no para mostrar.
+ *
+ * Añade a la normalización el plegado de la ñ. La ñ se conserva en `normalize` porque es
+ * una letra propia del español, pero al comparar tiene que dar igual cómo se escribió:
+ * el dueño del negocio escribe la palabra clave "cumpleanos" y el cliente pregunta por
+ * "cumpleaños". Confundir "año" con "ano" es un riesgo teórico; que no coincidan las
+ * palabras clave escritas sin ñ es un fallo que ocurre todos los días.
+ */
+function fold(text) {
+  return normalize(text).replace(/ñ/g, 'n');
+}
+
+/** Divide un texto normalizado en palabras. */
+function tokenize(text) {
+  const normalized = normalize(text);
+  return normalized ? normalized.split(' ') : [];
+}
+
+/**
+ * Compara dos palabras tolerando el plural del español.
+ * "horarios" debe encontrar la palabra clave "horario", y "precio" la clave "precios".
+ */
+function wordsMatch(rawA, rawB) {
+  const a = rawA.replace(/ñ/g, 'n');
+  const b = rawB.replace(/ñ/g, 'n');
+  if (a === b) return true;
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  if (short.length < 3) return false; // evita que "la"/"las" cuenten como coincidencia
+  return long === short + 's' || long === short + 'es';
+}
+
+/**
+ * Motor de intenciones.
+ *
+ * Estrategia deliberadamente simple: cada intención declara palabras clave y una
+ * respuesta. Se puntúa cuántas palabras clave aparecen en el mensaje y gana la
+ * intención con mayor puntaje, siempre que supere un umbral mínimo de confianza.
+ *
+ * Es determinista, se testea con facilidad y no depende de ningún servicio externo.
+ */
+
+
+/**
+ * Puntaje mínimo por defecto para aceptar una intención. Debajo de esto, respondemos el
+ * respaldo. Cada negocio puede subirlo o bajarlo desde su panel: subirlo hace que el bot
+ * responda menos pero se equivoque menos, bajarlo al revés.
+ */
+const CONFIDENCE_THRESHOLD = 1;
+
+/** El umbral que corresponde a este negocio. */
+function thresholdFor(business) {
+  const propio = business && Number(business.confidenceThreshold);
+  return Number.isFinite(propio) && propio > 0 ? propio : CONFIDENCE_THRESHOLD;
+}
+
+/**
+ * Puntúa una palabra clave contra el mensaje del usuario.
+ * Las claves de varias palabras ("cuanto cuesta") valen más que las de una sola,
+ * porque son mucho más específicas.
+ */
+function scoreKeyword(keyword, messageTokens, paddedMessage) {
+  // `fold` en vez de `normalize`: comparar tiene que ser indiferente a cómo se escribió la ñ.
+  const normalizedKeyword = fold(keyword);
+  if (!normalizedKeyword) return 0;
+
+  const keywordWords = normalizedKeyword.split(' ');
+
+  if (keywordWords.length > 1) {
+    return paddedMessage.includes(` ${normalizedKeyword} `) ? keywordWords.length * 1.5 : 0;
+  }
+
+  const found = messageTokens.some((token) => wordsMatch(token, normalizedKeyword));
+  if (!found) return 0;
+
+  // Una palabra larga ("transferencia") es mejor señal que una corta ("hora").
+  return normalizedKeyword.length >= 6 ? 1.5 : 1;
+}
+
+/** Puntúa una intención completa. */
+function scoreIntent(intent, messageTokens, paddedMessage) {
+  let score = 0;
+  for (const keyword of intent.keywords || []) {
+    score += scoreKeyword(keyword, messageTokens, paddedMessage);
+  }
+  return score;
+}
+
+/**
+ * Busca la mejor intención para un mensaje.
+ * @returns {{intent: object|null, score: number}}
+ */
+function matchIntent(message, business) {
+  const messageTokens = tokenize(message);
+  if (messageTokens.length === 0) return { intent: null, score: 0 };
+
+  const paddedMessage = ` ${fold(message)} `;
+
+  let best = null;
+  let bestScore = 0;
+
+  for (const intent of business.intents || []) {
+    const score = scoreIntent(intent, messageTokens, paddedMessage);
+    if (score > bestScore) {
+      best = intent;
+      bestScore = score;
+    }
+  }
+
+  if (bestScore < thresholdFor(business)) return { intent: null, score: bestScore };
+  return { intent: best, score: bestScore };
+}
+
+/** Arma el mensaje de "no entendí" con la lista de temas que el negocio sí cubre. */
+function buildFallback(business) {
+  const topics = (business.topics || []).map((topic) => `• ${topic}`).join('\n');
+  const parts = [business.fallback];
+  if (topics) parts.push(topics);
+  if (business.handoff) parts.push(business.handoff);
+  return parts.filter(Boolean).join('\n');
+}
+
+/**
+ * Genera la respuesta a un mensaje.
+ *
+ * `session` aporta el mínimo de contexto conversacional del MVP: saber si el bot ya
+ * saludó, para no repetir el saludo largo en cada "hola".
+ *
+ * @returns {{reply: string, intent: string, score: number, matched: boolean}}
+ */
+function respond(message, business, session = null) {
+  // Bot pausado: no se intenta entender nada, se responde lo que el dueño dejó escrito.
+  if (business && business.active === false) {
+    return {
+      reply: business.pausedMessage || 'En este momento no estamos atendiendo por aquí.',
+      intent: 'pausado',
+      score: 0,
+      matched: false,
+    };
+  }
+
+  const normalized = normalize(message);
+
+  if (!normalized) {
+    // Sin texto real. Distinguimos dos casos que se ven iguales para el motor:
+    // un mensaje realmente vacío, y uno que sí traía contenido (solo emojis o signos)
+    // pero que la normalización dejó sin palabras. Decirle "no recibí nada" a quien
+    // acaba de escribir 👍 es confuso, así que ese caso va al fallback normal.
+    const escribioAlgo = typeof message === 'string' && message.trim() !== '';
+    if (escribioAlgo) {
+      return { reply: buildFallback(business), intent: 'fallback', score: 0, matched: false };
+    }
+    return {
+      reply: 'No recibí ningún mensaje. ¿Me cuentas en qué te puedo ayudar?',
+      intent: 'vacio',
+      score: 0,
+      matched: false,
+    };
+  }
+
+  const { intent, score } = matchIntent(message, business);
+
+  if (!intent) {
+    return { reply: buildFallback(business), intent: 'fallback', score, matched: false };
+  }
+
+  let reply = intent.answer;
+
+  // Único comportamiento contextual del MVP: no repetir el saludo largo.
+  if (intent.id === 'saludo' && session && session.greeted) {
+    reply = business.greetingRepeat || reply;
+  }
+
+  return { reply, intent: intent.id, score, matched: true };
+}
+
+  /**
+ * Qué preguntan los clientes, y qué no supo responder el bot.
+ *
+ * La métrica que de verdad le sirve al dueño no es cuántos mensajes recibió: es la lista
+ * de preguntas que su bot NO supo contestar. Cada una es una respuesta que le falta
+ * configurar, y arreglarla es trabajo de dos minutos.
+ */
+
+
+const DIAS_POR_DEFECTO = 14;
+
+function diaDe(iso) {
+  return String(iso).slice(0, 10);
+}
+
+/** Agrupa preguntas parecidas para no repetir veinte veces la misma. */
+function agrupar(registros, clave) {
+  const grupos = new Map();
+
+  for (const registro of registros) {
+    const k = clave(registro);
+    if (!k) continue;
+
+    if (!grupos.has(k)) grupos.set(k, { clave: k, veces: 0, ejemplo: registro.pregunta, ultima: registro.at });
+    const grupo = grupos.get(k);
+    grupo.veces += 1;
+    if (registro.at > grupo.ultima) {
+      grupo.ultima = registro.at;
+      grupo.ejemplo = registro.pregunta;
+    }
+  }
+
+  return [...grupos.values()].sort((a, b) => b.veces - a.veces || (a.clave < b.clave ? -1 : 1));
+}
+
+/**
+ * Resume la actividad de un negocio.
+ * @param {Array} registros lo que devuelve ConversationLog.leer
+ */
+function resumir(registros, { dias = DIAS_POR_DEFECTO, ahora = Date.now() } = {}) {
+  const desde = new Date(ahora - dias * 24 * 60 * 60 * 1000).toISOString();
+  const recientes = registros.filter((r) => r.at >= desde);
+
+  const conversaciones = new Set(recientes.map((r) => r.conversationId));
+  const sinRespuesta = recientes.filter((r) => r.matched === false && r.intent !== 'pausado');
+
+  // Los días se rellenan aunque no haya tráfico: un hueco en el gráfico también informa.
+  const porDia = [];
+  for (let i = dias - 1; i >= 0; i -= 1) {
+    const dia = diaDe(new Date(ahora - i * 24 * 60 * 60 * 1000).toISOString());
+    porDia.push({ dia, mensajes: recientes.filter((r) => diaDe(r.at) === dia).length });
+  }
+
+  return {
+    dias,
+    mensajes: recientes.length,
+    conversaciones: conversaciones.size,
+    mensajesPorConversacion: conversaciones.size
+      ? Number((recientes.length / conversaciones.size).toFixed(1))
+      : 0,
+
+    // El número que le importa al dueño: cuánto NO supo responder su bot.
+    sinRespuesta: sinRespuesta.length,
+    tasaDeAcierto: recientes.length
+      ? Number((((recientes.length - sinRespuesta.length) / recientes.length) * 100).toFixed(1))
+      : null,
+
+    porDia,
+
+    /** Las preguntas que el bot no supo responder, agrupadas y de mayor a menor. */
+    preguntasSinRespuesta: agrupar(sinRespuesta, (r) => normalize(r.pregunta)).slice(0, 25),
+
+    /** De qué temas preguntan más, entre los que sí sabe responder. */
+    temasMasPreguntados: agrupar(
+      recientes.filter((r) => r.matched),
+      (r) => r.intent,
+    ).slice(0, 12),
+
+    canales: agrupar(recientes, (r) => r.channel || 'web'),
+  };
+}
+
+/**
+ * Reconstruye las conversaciones a partir del registro plano.
+ *
+ * El registro guarda un intercambio por línea; aquí se juntan los de una misma
+ * conversación para poder LEERLAS, no solo contarlas. Ver qué le dijo un cliente de verdad
+ * al bot vale más que cualquier cifra: es donde se descubre que la respuesta era correcta
+ * pero sonaba seca, o que la persona preguntó tres veces lo mismo de distinta forma.
+ */
+function conversaciones(registros, { limite = 50 } = {}) {
+  const porId = new Map();
+
+  for (const registro of registros) {
+    const id = registro.conversationId || 'sin-id';
+
+    if (!porId.has(id)) {
+      porId.set(id, {
+        id,
+        canal: registro.channel || 'web',
+        inicio: registro.at,
+        fin: registro.at,
+        mensajes: [],
+        sinRespuesta: 0,
+      });
+    }
+
+    const conversacion = porId.get(id);
+    conversacion.fin = registro.at;
+    conversacion.mensajes.push({
+      at: registro.at,
+      pregunta: registro.pregunta,
+      respuesta: registro.respuesta,
+      intent: registro.intent,
+      matched: registro.matched,
+    });
+    if (registro.matched === false && registro.intent !== 'pausado') conversacion.sinRespuesta += 1;
+  }
+
+  // Las más recientes primero: es lo que el dueño quiere mirar al entrar.
+  return [...porId.values()].sort((a, b) => (a.fin < b.fin ? 1 : -1)).slice(0, limite);
+}
+
+  /* ===================================================================
+     El servidor, sustituido por el navegador.
+
+     Implementa los mismos endpoints que src/server.js sobre localStorage.
+     El panel llama a fetch() sin saber que no hay nadie al otro lado.
+     =================================================================== */
+
+  var EJEMPLOS = [
+  {
+    "slug": "bella-vista",
+    "name": "Peluquería Bella Vista",
+    "tagline": "Corte, color y barbería en el centro de Valparaíso",
+    "greeting": "¡Hola! 👋 Soy el asistente de Peluquería Bella Vista. Puedo ayudarte con horarios, precios, servicios y cómo llegar. ¿Qué necesitas saber?",
+    "greetingRepeat": "¡Aquí sigo! ¿En qué más te ayudo?",
+    "fallback": "Perdona, no estoy seguro de haber entendido eso. Puedo ayudarte con estos temas:",
+    "handoff": "Si prefieres, escríbenos directamente al +56 9 1234 5678 y te atiende una persona del equipo.",
+    "topics": [
+      "Horarios de atención",
+      "Precios",
+      "Servicios",
+      "Cómo llegar",
+      "Reservar una hora",
+      "Formas de pago"
+    ],
+    "intents": [
+      {
+        "id": "saludo",
+        "keywords": [
+          "hola",
+          "buenas",
+          "buenos dias",
+          "buenas tardes",
+          "buenas noches",
+          "hey",
+          "que tal"
+        ],
+        "answer": "¡Hola! 👋 Cuéntame, ¿qué necesitas saber?"
+      },
+      {
+        "id": "horarios",
+        "keywords": [
+          "horario",
+          "horarios",
+          "hora de atencion",
+          "abren",
+          "cierran",
+          "abierto",
+          "cerrado",
+          "atienden",
+          "a que hora",
+          "domingo",
+          "sabado",
+          "fin de semana"
+        ],
+        "answer": "Atendemos de lunes a viernes de 10:00 a 20:00 y los sábados de 10:00 a 17:00. Los domingos permanecemos cerrados. 🕒"
+      },
+      {
+        "id": "precios",
+        "keywords": [
+          "precio",
+          "precios",
+          "cuanto cuesta",
+          "cuanto vale",
+          "valor",
+          "tarifa",
+          "cobran",
+          "cuanto sale",
+          "caro",
+          "barato"
+        ],
+        "answer": "Nuestros precios son: corte de dama $12.000 · corte de varón $9.000 · barba $6.000 · color desde $25.000 · peinado desde $15.000. 💇"
+      },
+      {
+        "id": "servicios",
+        "keywords": [
+          "servicio",
+          "servicios",
+          "que hacen",
+          "ofrecen",
+          "corte",
+          "color",
+          "tinte",
+          "barba",
+          "peinado",
+          "manicure",
+          "trabajos",
+          "cortar",
+          "cortarme",
+          "pelo",
+          "cabello",
+          "mechas",
+          "tratamiento",
+          "uñas"
+        ],
+        "answer": "Ofrecemos corte de dama y varón, barbería, coloración y mechas, peinados para eventos, tratamientos capilares y manicure. ✂️"
+      },
+      {
+        "id": "ubicacion",
+        "keywords": [
+          "donde estan",
+          "direccion",
+          "ubicacion",
+          "como llegar",
+          "lugar",
+          "local",
+          "mapa",
+          "queda"
+        ],
+        "answer": "Estamos en Av. Brasil 1234, local 3, Valparaíso, a una cuadra de la Plaza Victoria. 📍"
+      },
+      {
+        "id": "reservas",
+        "keywords": [
+          "reservar",
+          "reserva",
+          "agendar",
+          "cita",
+          "hora",
+          "turno",
+          "pedir hora",
+          "disponibilidad"
+        ],
+        "answer": "Puedes reservar tu hora llamando o escribiendo por WhatsApp al +56 9 1234 5678. ¡Pronto podrás agendar directamente por aquí! 📅"
+      },
+      {
+        "id": "pagos",
+        "keywords": [
+          "pago",
+          "pagos",
+          "pagar",
+          "efectivo",
+          "tarjeta",
+          "debito",
+          "credito",
+          "transferencia",
+          "aceptan"
+        ],
+        "answer": "Aceptamos efectivo, tarjetas de débito y crédito, y transferencia bancaria. 💳"
+      },
+      {
+        "id": "contacto",
+        "keywords": [
+          "telefono",
+          "contacto",
+          "whatsapp",
+          "correo",
+          "email",
+          "llamar",
+          "numero"
+        ],
+        "answer": "Puedes contactarnos al +56 9 1234 5678 o escribirnos a hola@bellavista.cl. 📞"
+      },
+      {
+        "id": "agradecimiento",
+        "keywords": [
+          "gracias",
+          "muchas gracias",
+          "genial",
+          "perfecto",
+          "buenisimo",
+          "excelente"
+        ],
+        "answer": "¡De nada! 😊 ¿Necesitas algo más?"
+      },
+      {
+        "id": "cierre",
+        "keywords": [
+          "no",
+          "nada",
+          "nada mas",
+          "ninguna",
+          "ok",
+          "listo",
+          "vale",
+          "eso es todo",
+          "estoy bien",
+          "no gracias",
+          "no nada",
+          "asi esta bien"
+        ],
+        "answer": "¡Perfecto! Si te surge cualquier otra duda, aquí estaré. 😊"
+      },
+      {
+        "id": "despedida",
+        "keywords": [
+          "chao",
+          "adios",
+          "hasta luego",
+          "nos vemos",
+          "bye",
+          "me voy"
+        ],
+        "answer": "¡Hasta pronto! Que tengas un excelente día. 👋"
+      }
+    ]
+  },
+  {
+    "slug": "dona-elba",
+    "name": "Cocinería Doña Elba",
+    "tagline": "Cocina chilena casera en el Barrio Puerto, Valparaíso",
+    "greeting": "¡Hola! 👋 Soy el asistente de la Cocinería Doña Elba. Puedo ayudarte con la carta, el menú del día, reservas, delivery, horarios y cómo llegar. ¿Qué necesitas saber?",
+    "greetingRepeat": "¡Aquí sigo! ¿En qué más te ayudo?",
+    "fallback": "Perdona, no estoy seguro de haber entendido eso. Estos son los temas que manejo:",
+    "handoff": "Si prefieres hablar con alguien del local, llámanos al +56 32 234 5678 o escríbenos por WhatsApp al +56 9 6543 2100.",
+    "topics": [
+      "Horarios",
+      "Menú del día",
+      "La carta",
+      "Reservar una mesa",
+      "Delivery y retiro",
+      "Cómo llegar",
+      "Opciones sin gluten o veganas"
+    ],
+    "intents": [
+      {
+        "id": "saludo",
+        "keywords": [
+          "hola",
+          "buenas",
+          "buenos dias",
+          "buenas tardes",
+          "buenas noches",
+          "hey",
+          "que tal",
+          "alo"
+        ],
+        "answer": "¡Hola! 👋 Cuéntame, ¿qué necesitas saber?"
+      },
+      {
+        "id": "horarios",
+        "keywords": [
+          "horario",
+          "abren",
+          "cierran",
+          "abierto",
+          "cerrado",
+          "atienden",
+          "a que hora",
+          "hasta que hora",
+          "siguen abiertos",
+          "estan abiertos",
+          "feriado",
+          "lunes",
+          "domingo",
+          "trabajan",
+          "fiestas patrias",
+          "18 de septiembre",
+          "festivo"
+        ],
+        "answer": "Atendemos de martes a sábado de 12:30 a 16:00 y de 19:30 a 23:00, y los domingos solo almuerzo, de 12:30 a 17:00. Los lunes cerramos. 🕒"
+      },
+      {
+        "id": "menu_del_dia",
+        "keywords": [
+          "menu del dia",
+          "menu",
+          "almuerzo del dia",
+          "ejecutivo",
+          "colacion",
+          "que hay hoy",
+          "plato del dia",
+          "hoy"
+        ],
+        "answer": "El menú del día cuesta $9.900 e incluye entrada, plato de fondo, postre y bebida o jugo natural. Se sirve de martes a viernes al almuerzo. Hoy: crema de zapallo, cazuela de vacuno y leche asada. 🍲"
+      },
+      {
+        "id": "carta",
+        "keywords": [
+          "carta",
+          "platos",
+          "que tienen",
+          "que venden",
+          "que sirven",
+          "comida",
+          "especialidad",
+          "recomiendan",
+          "rico",
+          "pastel de choclo",
+          "cazuela",
+          "charquican",
+          "plateada",
+          "empanada",
+          "humitas",
+          "postre",
+          "leche asada",
+          "mote con huesillo"
+        ],
+        "answer": "Nuestra carta es cocina chilena casera: pastel de choclo, cazuela de vacuno o de ave, charquicán, plateada al jugo, congrio frito, chupe de jaibas y empanadas de pino. De postre, leche asada y mote con huesillo. 🍽️"
+      },
+      {
+        "id": "pescados_mariscos",
+        "keywords": [
+          "pescado",
+          "mariscos",
+          "congrio",
+          "reineta",
+          "machas",
+          "jaiba",
+          "ceviche",
+          "caldillo",
+          "fresco"
+        ],
+        "answer": "Trabajamos con pescado fresco de la caleta Portales, así que la disponibilidad cambia cada día. Casi siempre tenemos congrio, reineta, chupe de jaibas y machas a la parmesana. 🐟"
+      },
+      {
+        "id": "precios",
+        "keywords": [
+          "precio",
+          "precios",
+          "cuanto cuesta",
+          "cuanto vale",
+          "cuanto sale",
+          "valor",
+          "caro",
+          "barato",
+          "cuanto cobran"
+        ],
+        "answer": "Los platos de fondo van de $8.500 a $14.900, las entradas de $4.500 a $7.900 y los postres $3.500. El menú del día cuesta $9.900. 💵"
+      },
+      {
+        "id": "reservas",
+        "keywords": [
+          "reservar",
+          "reserva",
+          "reservacion",
+          "apartar",
+          "mesa",
+          "tomar hora",
+          "tienen lugar",
+          "hay espacio",
+          "cupo"
+        ],
+        "answer": "Tomamos reservas para grupos de 4 personas o más, por WhatsApp al +56 9 6543 2100. Para grupos menores no hace falta: llega y te acomodamos. 📅"
+      },
+      {
+        "id": "espera",
+        "keywords": [
+          "fila",
+          "cola",
+          "esperar",
+          "cuanto se demoran",
+          "lleno",
+          "muy lleno",
+          "demora"
+        ],
+        "answer": "Los sábados y domingos entre las 13:30 y las 15:00 suele haber espera de 15 a 30 minutos. Si vienes antes de las 13:00 casi siempre hay mesa al tiro. ⏱️"
+      },
+      {
+        "id": "delivery",
+        "keywords": [
+          "delivery",
+          "despacho",
+          "domicilio",
+          "reparto",
+          "envian",
+          "llevan a",
+          "pedidosya",
+          "uber eats",
+          "rappi",
+          "pedidos ya",
+          "despachan"
+        ],
+        "answer": "Hacemos delivery propio en Valparaíso plano y cerros cercanos, con un costo de $2.500. Pedidos por WhatsApp al +56 9 6543 2100. También estamos en PedidosYa. 🛵"
+      },
+      {
+        "id": "para_llevar",
+        "keywords": [
+          "para llevar",
+          "retirar",
+          "retiro",
+          "takeaway",
+          "pasar a buscar",
+          "llevar"
+        ],
+        "answer": "Sí, puedes pedir para llevar. Encárgalo por WhatsApp y lo dejamos listo para que lo pases a buscar, normalmente en 20 minutos. 🥡"
+      },
+      {
+        "id": "vegetariano",
+        "keywords": [
+          "vegetariano",
+          "vegetariana",
+          "vegano",
+          "vegana",
+          "sin carne",
+          "verduras",
+          "no come carne",
+          "come carne",
+          "carne",
+          "sin gluten ni carne"
+        ],
+        "answer": "Tenemos charquicán vegetariano, porotos granados, ensalada chilena y humitas. La versión vegana del charquicán y de los porotos se prepara sin problema, solo avísale al mesero. 🥬"
+      },
+      {
+        "id": "sin_gluten",
+        "keywords": [
+          "sin gluten",
+          "celiaco",
+          "celiaca",
+          "gluten",
+          "tacc"
+        ],
+        "answer": "Varios platos son naturalmente sin gluten: cazuela, charquicán, porotos granados y los pescados a la plancha. No tenemos cocina separada, así que si tu celiaquía es estricta conviene que lo converses con el mesero. 🌾"
+      },
+      {
+        "id": "alergias",
+        "keywords": [
+          "alergia",
+          "alergico",
+          "alergica",
+          "frutos secos",
+          "mani",
+          "lactosa",
+          "intolerante"
+        ],
+        "answer": "Cuéntanos tu alergia al llegar y la cocina adapta el plato o te recomienda uno seguro. Trabajamos con maní, frutos secos y lácteos en la misma cocina, así que preferimos avisarte. ⚠️"
+      },
+      {
+        "id": "bebidas",
+        "keywords": [
+          "bebida",
+          "bebidas",
+          "vino",
+          "cerveza",
+          "pisco",
+          "trago",
+          "jugo",
+          "borgona",
+          "terremoto",
+          "alcohol",
+          "carta de vinos",
+          "carta de vino",
+          "vinos",
+          "tomar"
+        ],
+        "answer": "Tenemos carta de vinos chilenos por copa y botella, cervezas artesanales de Valparaíso, borgoña, terremoto y jugos naturales. 🍷"
+      },
+      {
+        "id": "ubicacion",
+        "keywords": [
+          "donde estan",
+          "direccion",
+          "ubicacion",
+          "como llegar",
+          "queda",
+          "ubicados",
+          "cerca de",
+          "micro",
+          "metro"
+        ],
+        "answer": "Estamos en Calle Serrano 512, Barrio Puerto, Valparaíso, a dos cuadras de la Plaza Sotomayor. El metro más cercano es Puerto, a 5 minutos caminando. 📍"
+      },
+      {
+        "id": "estacionamiento",
+        "keywords": [
+          "estacionamiento",
+          "estacionar",
+          "aparcar",
+          "auto",
+          "parking",
+          "donde dejo el auto"
+        ],
+        "answer": "No tenemos estacionamiento propio, pero hay uno pagado en Blanco 720, a una cuadra, que cobra $1.500 la hora. 🅿️"
+      },
+      {
+        "id": "terraza",
+        "keywords": [
+          "terraza",
+          "afuera",
+          "aire libre",
+          "patio",
+          "adentro",
+          "vista"
+        ],
+        "answer": "Tenemos una terraza techada de 6 mesas con vista al puerto. No se puede reservar, se ocupa por orden de llegada. 🌤️"
+      },
+      {
+        "id": "mascotas",
+        "keywords": [
+          "mascota",
+          "mascotas",
+          "perro",
+          "perrito",
+          "gato",
+          "petfriendly",
+          "pet friendly"
+        ],
+        "answer": "¡Sí! Somos pet friendly en la terraza. Tenemos bebederos y tu perro entra sin problema. 🐕"
+      },
+      {
+        "id": "ninos",
+        "keywords": [
+          "niños",
+          "nino",
+          "guagua",
+          "familia",
+          "silla de bebe",
+          "coche",
+          "infantil",
+          "porcion chica",
+          "bebe",
+          "silla para bebe",
+          "cabritos"
+        ],
+        "answer": "Somos un local familiar: tenemos sillas para bebé, espacio para coche y medias porciones a mitad de precio para los niños. 👧"
+      },
+      {
+        "id": "accesibilidad",
+        "keywords": [
+          "silla de ruedas",
+          "accesible",
+          "accesibilidad",
+          "rampa",
+          "movilidad reducida",
+          "escalera"
+        ],
+        "answer": "El salón principal y el baño están a nivel de calle, sin escalones, y hay una mesa adaptada para silla de ruedas. La terraza sí tiene dos peldaños. ♿"
+      },
+      {
+        "id": "pagos",
+        "keywords": [
+          "pagar",
+          "pagos",
+          "efectivo",
+          "tarjeta",
+          "debito",
+          "credito",
+          "transferencia",
+          "aceptan",
+          "redcompra",
+          "cuotas",
+          "dividir la cuenta",
+          "dividir",
+          "cuenta",
+          "boleta",
+          "propina"
+        ],
+        "answer": "Aceptamos efectivo, débito, crédito y transferencia. No dividimos la cuenta en más de tres pagos, para no hacer esperar a la mesa siguiente. 💳"
+      },
+      {
+        "id": "eventos",
+        "keywords": [
+          "evento",
+          "eventos",
+          "cumpleanos",
+          "celebracion",
+          "grupo grande",
+          "grupos",
+          "empresa",
+          "matrimonio",
+          "arriendan",
+          "privado",
+          "cumpleaños",
+          "caben",
+          "cabemos",
+          "cuantas personas",
+          "capacidad",
+          "reunion"
+        ],
+        "answer": "Recibimos grupos de hasta 30 personas y arrendamos el salón completo para eventos privados fuera del horario normal. Escríbenos al +56 9 6543 2100 y te enviamos las alternativas. 🎉"
+      },
+      {
+        "id": "wifi",
+        "keywords": [
+          "wifi",
+          "wifi gratis",
+          "internet",
+          "clave",
+          "señal"
+        ],
+        "answer": "Sí, tenemos wifi gratis para clientes. La clave está en la pizarra de la entrada. 📶"
+      },
+      {
+        "id": "contacto",
+        "keywords": [
+          "telefono",
+          "contacto",
+          "whatsapp",
+          "correo",
+          "instagram",
+          "redes",
+          "llamar",
+          "numero"
+        ],
+        "answer": "Teléfono +56 32 234 5678, WhatsApp +56 9 6543 2100 y en Instagram nos encuentras como @cocineriadonaelba. 📞"
+      },
+      {
+        "id": "agradecimiento",
+        "keywords": [
+          "gracias",
+          "muchas gracias",
+          "genial",
+          "perfecto",
+          "buenisimo",
+          "excelente",
+          "bacan"
+        ],
+        "answer": "¡De nada! 😊 ¿Necesitas algo más?"
+      },
+      {
+        "id": "cierre",
+        "keywords": [
+          "no",
+          "nada",
+          "nada mas",
+          "no gracias",
+          "ok",
+          "listo",
+          "vale",
+          "eso es todo",
+          "asi esta bien"
+        ],
+        "answer": "¡Perfecto! Te esperamos por acá. 😊"
+      },
+      {
+        "id": "despedida",
+        "keywords": [
+          "chao",
+          "adios",
+          "hasta luego",
+          "nos vemos",
+          "bye",
+          "me voy"
+        ],
+        "answer": "¡Hasta pronto! Que tengas un buen día. 👋"
+      }
+    ]
+  },
+  {
+    "slug": "taller-don-pepe",
+    "name": "Taller Don Pepe",
+    "tagline": "Mecánica general y mantención, Maipú",
+    "greeting": "¡Hola! 👋 Soy el asistente del Taller Don Pepe. Pregúntame por horarios, precios de mantención, qué trabajos hacemos o dónde estamos.",
+    "greetingRepeat": "¡Aquí sigo! ¿Qué más necesitas?",
+    "fallback": "No estoy seguro de haber entendido. Estos son los temas que manejo:",
+    "handoff": "Si prefieres hablar con Don Pepe directamente, llámalo al +56 9 8765 4321.",
+    "topics": [
+      "Horarios",
+      "Precio de la mantención",
+      "Qué trabajos hacemos",
+      "Dónde estamos",
+      "Dejar el auto"
+    ],
+    "intents": [
+      {
+        "id": "saludo",
+        "keywords": [
+          "hola",
+          "buenas",
+          "buenos dias",
+          "buenas tardes",
+          "que tal"
+        ],
+        "answer": "¡Hola! 👋 Cuéntame, ¿qué necesita tu auto?"
+      },
+      {
+        "id": "horarios",
+        "keywords": [
+          "horario",
+          "abren",
+          "cierran",
+          "atienden",
+          "a que hora",
+          "sabado",
+          "domingo"
+        ],
+        "answer": "Atendemos de lunes a viernes de 8:30 a 18:30 y los sábados de 9:00 a 14:00. Domingos cerrado. 🕒"
+      },
+      {
+        "id": "mantencion",
+        "keywords": [
+          "mantencion",
+          "mantenimiento",
+          "cambio de aceite",
+          "aceite",
+          "filtros",
+          "afinamiento"
+        ],
+        "answer": "La mantención de los 10.000 km (aceite, filtro de aceite y filtro de aire) cuesta $65.000 e incluye revisión de frenos y niveles. 🔧"
+      },
+      {
+        "id": "trabajos",
+        "keywords": [
+          "hacen",
+          "trabajos",
+          "reparan",
+          "frenos",
+          "embrague",
+          "suspension",
+          "motor",
+          "scanner",
+          "diagnostico"
+        ],
+        "answer": "Hacemos mantención, frenos, embrague, suspensión, distribución, diagnóstico con scanner y reparación de motor. 🚗"
+      },
+      {
+        "id": "precios",
+        "keywords": [
+          "precio",
+          "cuanto cuesta",
+          "cuanto sale",
+          "cuanto vale",
+          "presupuesto",
+          "cobran"
+        ],
+        "answer": "El diagnóstico con scanner cuesta $20.000 y se descuenta si haces el trabajo con nosotros. Para el resto preparamos un presupuesto sin costo. 💬"
+      },
+      {
+        "id": "ubicacion",
+        "keywords": [
+          "donde estan",
+          "direccion",
+          "ubicacion",
+          "como llegar",
+          "taller",
+          "queda"
+        ],
+        "answer": "Estamos en Camino Melipilla 2450, Maipú, frente al terminal de buses. 📍"
+      },
+      {
+        "id": "dejar_auto",
+        "keywords": [
+          "dejar el auto",
+          "dejarlo",
+          "cuanto demora",
+          "cuanto se demora",
+          "listo",
+          "retirar",
+          "grua"
+        ],
+        "answer": "Si dejas el auto antes de las 10:00, la mantención queda lista el mismo día. Los trabajos mayores toman 2 o 3 días. También tenemos grúa. 🔩"
+      },
+      {
+        "id": "contacto",
+        "keywords": [
+          "telefono",
+          "contacto",
+          "whatsapp",
+          "llamar",
+          "numero",
+          "correo"
+        ],
+        "answer": "Llámanos o escríbenos al +56 9 8765 4321. 📞"
+      },
+      {
+        "id": "agradecimiento",
+        "keywords": [
+          "gracias",
+          "muchas gracias",
+          "genial",
+          "perfecto",
+          "excelente"
+        ],
+        "answer": "¡De nada! 😊 ¿Necesitas algo más?"
+      },
+      {
+        "id": "cierre",
+        "keywords": [
+          "no",
+          "nada",
+          "nada mas",
+          "no gracias",
+          "ok",
+          "listo",
+          "eso es todo"
+        ],
+        "answer": "¡Perfecto! Cualquier cosa, aquí estamos. 😊"
+      },
+      {
+        "id": "despedida",
+        "keywords": [
+          "chao",
+          "adios",
+          "hasta luego",
+          "nos vemos"
+        ],
+        "answer": "¡Hasta pronto! Buen viaje. 👋"
+      }
+    ]
+  }
+];
+  var PLANTILLA_CHAT = "<title>__NOMBRE__</title>\n<meta name=\"description\" content=\"Resolvemos tus dudas al instante.\" />\n\n<style>\n/*\n * La página que ve el cliente final.\n *\n * Se diseña para el teléfono primero: casi todo el tráfico llega desde un link\n * compartido por WhatsApp o desde un QR, y se abre en el navegador del móvil.\n */\n\n:root {\n  --fondo: #f2f4f7;\n  --panel: #ffffff;\n  --texto: #18202b;\n  --suave: #667085;\n  --linea: #e3e8ef;\n  --burbuja: #f2f4f7;\n  --marca: #1f6feb;\n  --marca-texto: #ffffff;\n  --error-bg: #fdecec;\n  --error: #a12a2a;\n}\n\n@media (prefers-color-scheme: dark) {\n  :root {\n    --fondo: #0e1116;\n    --panel: #161b22;\n    --texto: #e6edf3;\n    --suave: #8d97a5;\n    --linea: #262c36;\n    --burbuja: #21262d;\n    --marca: #4d8ef7;\n    --marca-texto: #06142b;\n    --error-bg: #3a1d1d;\n    --error: #f3a7a7;\n  }\n}\n\n* { box-sizing: border-box; }\n\nhtml, body { height: 100%; }\n\nbody {\n  margin: 0;\n  background: var(--fondo);\n  color: var(--texto);\n  font-family: system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif;\n  font-size: 16px;\n  line-height: 1.5;\n  -webkit-font-smoothing: antialiased;\n  display: flex;\n  justify-content: center;\n}\n\n.chat {\n  width: min(640px, 100%);\n  /* dvh en vez de vh: en el móvil la barra del navegador cambia de alto al hacer scroll. */\n  height: 100dvh;\n  background: var(--panel);\n  display: flex;\n  flex-direction: column;\n}\n\n/* ---------- Cabecera ---------- */\n\n.cabecera {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n  padding: 14px 18px;\n  padding-top: max(14px, env(safe-area-inset-top));\n  border-bottom: 1px solid var(--linea);\n  flex: none;\n}\n\n.avatar {\n  width: 42px;\n  height: 42px;\n  flex: none;\n  border-radius: 12px;\n  background: var(--burbuja);\n  color: var(--marca);\n  display: grid;\n  place-items: center;\n}\n.avatar svg { width: 23px; height: 23px; }\n\n.identidad { min-width: 0; }\n.identidad h1 {\n  margin: 0;\n  font-size: 17px;\n  font-weight: 650;\n  letter-spacing: -0.01em;\n}\n.identidad p {\n  margin: 1px 0 0;\n  font-size: 13px;\n  color: var(--suave);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n/* ---------- Conversación ---------- */\n\n.hilo {\n  flex: 1;\n  overflow-y: auto;\n  padding: 18px;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  -webkit-overflow-scrolling: touch;\n}\n\n.burbuja {\n  max-width: 85%;\n  padding: 11px 15px;\n  border-radius: 18px;\n  font-size: 15.5px;\n  line-height: 1.5;\n  white-space: pre-wrap;\n  overflow-wrap: anywhere;\n}\n\n.burbuja.bot {\n  align-self: flex-start;\n  background: var(--burbuja);\n  border-bottom-left-radius: 5px;\n}\n\n.burbuja.cliente {\n  align-self: flex-end;\n  background: var(--marca);\n  color: var(--marca-texto);\n  border-bottom-right-radius: 5px;\n}\n\n.burbuja.aviso {\n  align-self: center;\n  background: var(--error-bg);\n  color: var(--error);\n  font-size: 14px;\n  text-align: center;\n  max-width: 100%;\n}\n\n.escribiendo { display: flex; gap: 4px; align-items: center; padding: 15px; }\n.escribiendo i {\n  width: 6px; height: 6px; border-radius: 50%;\n  background: var(--suave); animation: latir 1.2s infinite;\n}\n.escribiendo i:nth-child(2) { animation-delay: .18s; }\n.escribiendo i:nth-child(3) { animation-delay: .36s; }\n@keyframes latir { 0%,60%,100% { opacity:.25 } 30% { opacity:.9 } }\n\n/* ---------- Atajos ---------- */\n\n.atajos {\n  display: flex;\n  gap: 7px;\n  padding: 0 18px 10px;\n  overflow-x: auto;\n  scrollbar-width: none;\n  flex: none;\n}\n.atajos::-webkit-scrollbar { display: none; }\n.atajos:empty { display: none; }\n\n.atajo {\n  font-family: inherit;\n  font-size: 14px;\n  color: var(--marca);\n  background: transparent;\n  border: 1px solid var(--linea);\n  border-radius: 999px;\n  padding: 7px 14px;\n  white-space: nowrap;\n  cursor: pointer;\n  flex: none;\n}\n.atajo:hover { border-color: var(--marca); }\n\n/* ---------- Escribir ---------- */\n\n.escribir {\n  display: flex;\n  gap: 9px;\n  padding: 12px 18px;\n  padding-bottom: max(12px, env(safe-area-inset-bottom));\n  border-top: 1px solid var(--linea);\n  flex: none;\n}\n\n.campo {\n  flex: 1;\n  min-width: 0;\n  font-family: inherit;\n  /* 16px exactos: menos que eso hace que Safari en iPhone haga zoom al enfocar. */\n  font-size: 16px;\n  color: var(--texto);\n  background: var(--burbuja);\n  border: 1px solid transparent;\n  border-radius: 999px;\n  padding: 12px 18px;\n}\n.campo::placeholder { color: var(--suave); }\n.campo:focus { outline: none; border-color: var(--marca); }\n\n.enviar {\n  width: 46px;\n  height: 46px;\n  flex: none;\n  border: 0;\n  border-radius: 50%;\n  background: var(--marca);\n  color: var(--marca-texto);\n  display: grid;\n  place-items: center;\n  cursor: pointer;\n}\n.enviar svg { width: 21px; height: 21px; }\n.enviar:disabled { opacity: .45; cursor: default; }\n\n:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }\n\n@media (prefers-reduced-motion: reduce) {\n  * { animation: none !important; transition: none !important; }\n}\n\n</style>\n\n<main class=\"chat\">\n  <header class=\"cabecera\">\n    <div class=\"avatar\" aria-hidden=\"true\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n        <rect x=\"3\" y=\"7\" width=\"18\" height=\"13\" rx=\"4\" />\n        <path d=\"M12 7V3.5\" />\n        <circle cx=\"12\" cy=\"2.6\" r=\"1.2\" fill=\"currentColor\" stroke=\"none\" />\n        <path d=\"M8.6 12.4v1.6M15.4 12.4v1.6\" />\n        <path d=\"M9.6 16.6h4.8\" />\n      </svg>\n    </div>\n    <div class=\"identidad\">\n      <h1 id=\"negocio\">__NOMBRE__</h1>\n      <p id=\"rubro\"></p>\n    </div>\n  </header>\n\n  <section class=\"hilo\" id=\"hilo\" aria-live=\"polite\" aria-label=\"Conversación\"></section>\n\n  <div class=\"atajos\" id=\"atajos\"></div>\n\n  <form class=\"escribir\" id=\"escribir\" autocomplete=\"off\">\n    <input\n      class=\"campo\"\n      id=\"campo\"\n      type=\"text\"\n      placeholder=\"Escribe tu pregunta…\"\n      maxlength=\"1000\"\n      aria-label=\"Tu mensaje\"\n      enterkeyhint=\"send\"\n    />\n    <button class=\"enviar\" id=\"enviar\" type=\"submit\" aria-label=\"Enviar\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">\n        <path d=\"M4 12h15M13 6l6 6-6 6\" />\n      </svg>\n    </button>\n  </form>\n</main>\n\n<script>\n  /* ====================================================================\n     Motor de PymeBot — generado desde src/bot/ por scripts/build-chat.js.\n     No editar aquí: se cambia el código fuente y se regenera.\n     ==================================================================== */\n\n  /**\n * Utilidades de texto.\n *\n * El objetivo es que \"¿Cuánto CUESTA?\" y \"cuanto cuesta\" sean lo mismo para el motor.\n * En español esto significa: minúsculas, sin acentos, sin signos de puntuación\n * (incluidos ¿ ¡) y sin espacios sobrantes.\n */\n\n/** Pasa un texto a su forma canónica comparable. */\nfunction normalize(text) {\n  if (typeof text !== 'string') return '';\n  return text\n    .toLowerCase()\n    // La ñ es una letra propia del español, no una n con acento: se protege antes de\n    // que NFD la descomponga, o 'año' se convertiría en 'ano'.\n    .replace(/ñ/g, '\\u0001')\n    .normalize('NFD')\n    .replace(/[\\u0300-\\u036f]/g, '') // quita los acentos ya separados por NFD\n    .replace(/\\u0001/g, 'ñ')\n    .replace(/[^a-z0-9ñ\\s]/g, ' ') // ¿ ? ! . , y emojis se vuelven espacio\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\n/**\n * Forma usada solo para COMPARAR, no para mostrar.\n *\n * Añade a la normalización el plegado de la ñ. La ñ se conserva en `normalize` porque es\n * una letra propia del español, pero al comparar tiene que dar igual cómo se escribió:\n * el dueño del negocio escribe la palabra clave \"cumpleanos\" y el cliente pregunta por\n * \"cumpleaños\". Confundir \"año\" con \"ano\" es un riesgo teórico; que no coincidan las\n * palabras clave escritas sin ñ es un fallo que ocurre todos los días.\n */\nfunction fold(text) {\n  return normalize(text).replace(/ñ/g, 'n');\n}\n\n/** Divide un texto normalizado en palabras. */\nfunction tokenize(text) {\n  const normalized = normalize(text);\n  return normalized ? normalized.split(' ') : [];\n}\n\n/**\n * Compara dos palabras tolerando el plural del español.\n * \"horarios\" debe encontrar la palabra clave \"horario\", y \"precio\" la clave \"precios\".\n */\nfunction wordsMatch(rawA, rawB) {\n  const a = rawA.replace(/ñ/g, 'n');\n  const b = rawB.replace(/ñ/g, 'n');\n  if (a === b) return true;\n  const [short, long] = a.length <= b.length ? [a, b] : [b, a];\n  if (short.length < 3) return false; // evita que \"la\"/\"las\" cuenten como coincidencia\n  return long === short + 's' || long === short + 'es';\n}\n\n/**\n * Motor de intenciones.\n *\n * Estrategia deliberadamente simple: cada intención declara palabras clave y una\n * respuesta. Se puntúa cuántas palabras clave aparecen en el mensaje y gana la\n * intención con mayor puntaje, siempre que supere un umbral mínimo de confianza.\n *\n * Es determinista, se testea con facilidad y no depende de ningún servicio externo.\n */\n\n\n/**\n * Puntaje mínimo por defecto para aceptar una intención. Debajo de esto, respondemos el\n * respaldo. Cada negocio puede subirlo o bajarlo desde su panel: subirlo hace que el bot\n * responda menos pero se equivoque menos, bajarlo al revés.\n */\nconst CONFIDENCE_THRESHOLD = 1;\n\n/** El umbral que corresponde a este negocio. */\nfunction thresholdFor(business) {\n  const propio = business && Number(business.confidenceThreshold);\n  return Number.isFinite(propio) && propio > 0 ? propio : CONFIDENCE_THRESHOLD;\n}\n\n/**\n * Puntúa una palabra clave contra el mensaje del usuario.\n * Las claves de varias palabras (\"cuanto cuesta\") valen más que las de una sola,\n * porque son mucho más específicas.\n */\nfunction scoreKeyword(keyword, messageTokens, paddedMessage) {\n  // `fold` en vez de `normalize`: comparar tiene que ser indiferente a cómo se escribió la ñ.\n  const normalizedKeyword = fold(keyword);\n  if (!normalizedKeyword) return 0;\n\n  const keywordWords = normalizedKeyword.split(' ');\n\n  if (keywordWords.length > 1) {\n    return paddedMessage.includes(` ${normalizedKeyword} `) ? keywordWords.length * 1.5 : 0;\n  }\n\n  const found = messageTokens.some((token) => wordsMatch(token, normalizedKeyword));\n  if (!found) return 0;\n\n  // Una palabra larga (\"transferencia\") es mejor señal que una corta (\"hora\").\n  return normalizedKeyword.length >= 6 ? 1.5 : 1;\n}\n\n/** Puntúa una intención completa. */\nfunction scoreIntent(intent, messageTokens, paddedMessage) {\n  let score = 0;\n  for (const keyword of intent.keywords || []) {\n    score += scoreKeyword(keyword, messageTokens, paddedMessage);\n  }\n  return score;\n}\n\n/**\n * Busca la mejor intención para un mensaje.\n * @returns {{intent: object|null, score: number}}\n */\nfunction matchIntent(message, business) {\n  const messageTokens = tokenize(message);\n  if (messageTokens.length === 0) return { intent: null, score: 0 };\n\n  const paddedMessage = ` ${fold(message)} `;\n\n  let best = null;\n  let bestScore = 0;\n\n  for (const intent of business.intents || []) {\n    const score = scoreIntent(intent, messageTokens, paddedMessage);\n    if (score > bestScore) {\n      best = intent;\n      bestScore = score;\n    }\n  }\n\n  if (bestScore < thresholdFor(business)) return { intent: null, score: bestScore };\n  return { intent: best, score: bestScore };\n}\n\n/** Arma el mensaje de \"no entendí\" con la lista de temas que el negocio sí cubre. */\nfunction buildFallback(business) {\n  const topics = (business.topics || []).map((topic) => `• ${topic}`).join('\\n');\n  const parts = [business.fallback];\n  if (topics) parts.push(topics);\n  if (business.handoff) parts.push(business.handoff);\n  return parts.filter(Boolean).join('\\n');\n}\n\n/**\n * Genera la respuesta a un mensaje.\n *\n * `session` aporta el mínimo de contexto conversacional del MVP: saber si el bot ya\n * saludó, para no repetir el saludo largo en cada \"hola\".\n *\n * @returns {{reply: string, intent: string, score: number, matched: boolean}}\n */\nfunction respond(message, business, session = null) {\n  // Bot pausado: no se intenta entender nada, se responde lo que el dueño dejó escrito.\n  if (business && business.active === false) {\n    return {\n      reply: business.pausedMessage || 'En este momento no estamos atendiendo por aquí.',\n      intent: 'pausado',\n      score: 0,\n      matched: false,\n    };\n  }\n\n  const normalized = normalize(message);\n\n  if (!normalized) {\n    // Sin texto real. Distinguimos dos casos que se ven iguales para el motor:\n    // un mensaje realmente vacío, y uno que sí traía contenido (solo emojis o signos)\n    // pero que la normalización dejó sin palabras. Decirle \"no recibí nada\" a quien\n    // acaba de escribir 👍 es confuso, así que ese caso va al fallback normal.\n    const escribioAlgo = typeof message === 'string' && message.trim() !== '';\n    if (escribioAlgo) {\n      return { reply: buildFallback(business), intent: 'fallback', score: 0, matched: false };\n    }\n    return {\n      reply: 'No recibí ningún mensaje. ¿Me cuentas en qué te puedo ayudar?',\n      intent: 'vacio',\n      score: 0,\n      matched: false,\n    };\n  }\n\n  const { intent, score } = matchIntent(message, business);\n\n  if (!intent) {\n    return { reply: buildFallback(business), intent: 'fallback', score, matched: false };\n  }\n\n  let reply = intent.answer;\n\n  // Único comportamiento contextual del MVP: no repetir el saludo largo.\n  if (intent.id === 'saludo' && session && session.greeted) {\n    reply = business.greetingRepeat || reply;\n  }\n\n  return { reply, intent: intent.id, score, matched: true };\n}\n\n  const NEGOCIO = /*__BUSINESS__*/;\n\n  /* ==================================================================== */\n\n  const hiloEl = document.getElementById(\"hilo\");\n  const atajosEl = document.getElementById(\"atajos\");\n  const formEl = document.getElementById(\"escribir\");\n  const campoEl = document.getElementById(\"campo\");\n  const enviarEl = document.getElementById(\"enviar\");\n\n  // Sin servidor, la sesión es simplemente lo que el motor necesita recordar.\n  const sesion = { greeted: false };\n\n  function burbuja(texto, quien) {\n    const el = document.createElement(\"div\");\n    el.className = \"burbuja \" + quien;\n    el.textContent = texto;\n    hiloEl.appendChild(el);\n    hiloEl.scrollTop = hiloEl.scrollHeight;\n    return el;\n  }\n\n  function escribiendo() {\n    const el = document.createElement(\"div\");\n    el.className = \"burbuja bot escribiendo\";\n    el.innerHTML = \"<i></i><i></i><i></i>\";\n    hiloEl.appendChild(el);\n    hiloEl.scrollTop = hiloEl.scrollHeight;\n    return el;\n  }\n\n  function enviar(texto) {\n    const mensaje = String(texto || \"\").trim();\n    if (!mensaje) return;\n\n    burbuja(mensaje, \"cliente\");\n    campoEl.value = \"\";\n    enviarEl.disabled = true;\n\n    const pensando = escribiendo();\n\n    // Una pausa breve para que se lea como una conversación.\n    setTimeout(function () {\n      const resultado = respond(mensaje, NEGOCIO, sesion);\n      pensando.remove();\n      burbuja(resultado.reply, \"bot\");\n      if (resultado.intent === \"saludo\") sesion.greeted = true;\n      enviarEl.disabled = false;\n      campoEl.focus();\n    }, 300);\n  }\n\n  formEl.addEventListener(\"submit\", function (evento) {\n    evento.preventDefault();\n    enviar(campoEl.value);\n  });\n\n  document.getElementById(\"rubro\").textContent = NEGOCIO.tagline || \"\";\n  burbuja(NEGOCIO.active === false ? NEGOCIO.pausedMessage : NEGOCIO.greeting, \"bot\");\n\n  if (NEGOCIO.active !== false) {\n    (NEGOCIO.topics || []).forEach(function (tema) {\n      const boton = document.createElement(\"button\");\n      boton.className = \"atajo\";\n      boton.type = \"button\";\n      boton.textContent = tema;\n      boton.addEventListener(\"click\", function () {\n        enviar(tema);\n      });\n      atajosEl.appendChild(boton);\n    });\n  }\n<\/script>\n";
+  var QR_MUESTRA = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 27 27\" shape-rendering=\"crispEdges\"><path fill=\"#ffffff\" d=\"M0 0h27v27H0z\"/><path stroke=\"#000000\" d=\"M1 1.5h7m1 0h1m1 0h1m1 0h4m2 0h7M1 2.5h1m5 0h1m1 0h1m1 0h1m1 0h4m2 0h1m5 0h1M1 3.5h1m1 0h3m1 0h1m1 0h4m6 0h1m1 0h3m1 0h1M1 4.5h1m1 0h3m1 0h1m1 0h1m2 0h2m1 0h3m1 0h1m1 0h3m1 0h1M1 5.5h1m1 0h3m1 0h1m1 0h1m2 0h5m2 0h1m1 0h3m1 0h1M1 6.5h1m5 0h1m5 0h4m2 0h1m5 0h1M1 7.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M9 8.5h1m2 0h3m1 0h1M2 9.5h2m1 0h1m1 0h2m1 0h1m1 0h1m2 0h3m1 0h1m1 0h5M1 10.5h1m1 0h2m4 0h1m3 0h1m3 0h4m1 0h1m1 0h2M1 11.5h4m2 0h1m2 0h2m2 0h1m2 0h2m1 0h6M2 12.5h1m2 0h2m1 0h1m8 0h1m2 0h1m3 0h1M5 13.5h1m1 0h2m2 0h1m4 0h4m2 0h1M4 14.5h1m1 0h1m1 0h1m1 0h2m1 0h2m3 0h2m4 0h2M1 15.5h1m1 0h1m1 0h3m3 0h2m1 0h1m3 0h2m3 0h3M2 16.5h1m1 0h1m4 0h2m4 0h2m4 0h2m2 0h1M1 17.5h1m3 0h9m3 0h5m3 0h1M9 18.5h2m1 0h3m1 0h2m3 0h1m1 0h3M1 19.5h7m1 0h2m1 0h1m1 0h4m1 0h1m1 0h2m1 0h2M1 20.5h1m5 0h1m2 0h3m1 0h2m1 0h1m3 0h1m3 0h1M1 21.5h1m1 0h3m1 0h1m1 0h2m1 0h1m4 0h5m3 0h1M1 22.5h1m1 0h3m1 0h1m2 0h1m2 0h1m2 0h2m2 0h2M1 23.5h1m1 0h3m1 0h1m1 0h4m4 0h1m2 0h2m1 0h1m1 0h1M1 24.5h1m5 0h1m1 0h1m1 0h2m1 0h1m1 0h2m1 0h1m1 0h1m2 0h1M1 25.5h7m2 0h3m1 0h1m1 0h2m1 0h2m3 0h2\"/></svg>\n";
+  var URL_CHAT_DEMO = "chat/dona-elba.html";
+
+  var LLAVE = 'pymebot-demo';
+
+  /* ------------------------------------------------------------------
+     El enlace compartible.
+
+     Sin servidor, un link solo puede funcionar si lleva la información del negocio
+     dentro. Va después del # a propósito: esa parte de la URL el navegador NUNCA la
+     envía a ningún servidor, así que los datos del negocio no quedan en registros
+     ajenos. Se comprime con deflate porque un negocio configurado pesa ~8 KB y
+     comprimido baja a ~3,5 KB.
+
+     Prefijo "z" = comprimido; "b" = tal cual, para navegadores sin CompressionStream.
+     ------------------------------------------------------------------ */
+
+  function aBase64Url(bytes) {
+    var binario = '';
+    for (var i = 0; i < bytes.length; i += 1) binario += String.fromCharCode(bytes[i]);
+    return btoa(binario).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+
+  /** La dirección de chat/compartido.html, esté el sitio donde esté. */
+  function baseDelChat() {
+    var aqui = location.href.split('#')[0].split('?')[0];
+    return aqui.replace(/[^/]*$/, '') + 'chat/compartido.html';
+  }
+
+  async function enlaceDelNegocio(negocio) {
+    var bytes = new TextEncoder().encode(JSON.stringify(negocio));
+
+    if (typeof CompressionStream === 'undefined') {
+      return baseDelChat() + '#b' + aBase64Url(bytes);
+    }
+
+    var flujo = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate-raw'));
+    var comprimido = new Uint8Array(await new Response(flujo).arrayBuffer());
+    return baseDelChat() + '#z' + aBase64Url(comprimido);
+  }
+
+  function estadoInicial() {
+    return { usuario: null, negocios: {}, conversaciones: {} };
+  }
+
+  function leerEstado() {
+    try {
+      var crudo = localStorage.getItem(LLAVE);
+      var leido = crudo ? JSON.parse(crudo) : estadoInicial();
+      if (!leido.conversaciones) leido.conversaciones = {};
+      return leido;
+    } catch (err) {
+      // Navegación privada o almacenamiento bloqueado: el demo funciona igual,
+      // simplemente no recuerda nada al recargar.
+      return estadoInicial();
+    }
+  }
+
+  function guardarEstado(estado) {
+    try {
+      localStorage.setItem(LLAVE, JSON.stringify(estado));
+    } catch (err) {
+      /* sin guardar: el demo sigue usable en esta sesión */
+    }
+  }
+
+  var estado = leerEstado();
+
+  function respuesta(status, cuerpo) {
+    return Promise.resolve({
+      ok: status >= 200 && status < 300,
+      status: status,
+      json: function () {
+        return Promise.resolve(cuerpo);
+      },
+      text: function () {
+        return Promise.resolve(typeof cuerpo === 'string' ? cuerpo : JSON.stringify(cuerpo));
+      },
+      headers: { get: function () { return null; } },
+    });
+  }
+
+  function resumen(slug, negocio) {
+    return {
+      slug: slug,
+      name: negocio.name,
+      tagline: negocio.tagline,
+      intents: negocio.intents.length,
+      ownerId: negocio.ownerId,
+      active: negocio.active,
+    };
+  }
+
+  /** Guarda validando con el esquema real, para que los errores sean los de verdad. */
+  function guardarNegocio(slug, crudo) {
+    var resultado = validateBusiness(crudo);
+    if (!resultado.ok) {
+      return respuesta(422, {
+        error: 'La información del negocio tiene errores.',
+        errors: resultado.errors,
+        warnings: resultado.warnings,
+      });
+    }
+    estado.negocios[slug] = resultado.business;
+    guardarEstado(estado);
+    return respuesta(200, { slug: slug, business: resultado.business, warnings: resultado.warnings });
+  }
+
+  function slugLibre(nombre) {
+    var base = slugify(nombre) || 'negocio';
+    var slug = base;
+    var n = 2;
+    while (estado.negocios[slug]) {
+      slug = (base + '-' + n).slice(0, 40);
+      n += 1;
+    }
+    return slug;
+  }
+
+  var NEGOCIO_INICIAL = {
+    tagline: '',
+    topics: ['Horarios', 'Precios', 'Cómo llegar'],
+    intents: [
+      {
+        id: 'horarios',
+        keywords: ['horario', 'abren', 'cierran', 'atienden', 'a que hora'],
+        answer: 'Atendemos de lunes a viernes de 9:00 a 18:00.',
+      },
+      {
+        id: 'ubicacion',
+        keywords: ['donde estan', 'direccion', 'ubicacion', 'como llegar'],
+        answer: 'Estamos en (escribe aquí tu dirección).',
+      },
+    ],
+  };
+
+  window.fetch = function (ruta, opciones) {
+    opciones = opciones || {};
+    var metodo = (opciones.method || 'GET').toUpperCase();
+    var cuerpo = opciones.body ? JSON.parse(opciones.body) : null;
+    var partes = String(ruta).split('?')[0].split('/').filter(Boolean); // ['api','businesses',slug]
+
+    // --- cuentas ---
+    if (ruta === '/api/auth/me') return respuesta(200, { user: estado.usuario });
+
+    if (ruta === '/api/auth/signup' || ruta === '/api/auth/login') {
+      var correo = (cuerpo && cuerpo.email ? String(cuerpo.email) : '').trim().toLowerCase();
+      if (!correo || correo.indexOf('@') === -1) {
+        return respuesta(422, { error: 'Escribe un correo válido.', campo: 'email' });
+      }
+      if (ruta === '/api/auth/signup' && (!cuerpo.password || cuerpo.password.length < 8)) {
+        return respuesta(422, { error: 'La contraseña debe tener al menos 8 caracteres.', campo: 'password' });
+      }
+
+      // El demo NO comprueba la contraseña: no hay dónde guardar un hash con seguridad
+      // en el navegador, y fingirlo daría una impresión equivocada de cómo funciona.
+      estado.usuario = { id: 'demo', email: correo, name: (cuerpo.name || '').trim() || correo.split('@')[0] };
+
+      if (cuerpo.businessName && String(cuerpo.businessName).trim()) {
+        var nombre = String(cuerpo.businessName).trim();
+        var nuevo = slugLibre(nombre);
+        var creado = validateBusiness(
+          Object.assign({}, NEGOCIO_INICIAL, { name: nombre, ownerId: 'demo' }),
+        );
+        if (creado.ok) estado.negocios[nuevo] = creado.business;
+      }
+
+      guardarEstado(estado);
+      return respuesta(ruta.indexOf('signup') !== -1 ? 201 : 200, { user: estado.usuario });
+    }
+
+    if (ruta === '/api/auth/logout') {
+      estado.usuario = null;
+      guardarEstado(estado);
+      return respuesta(200, { ok: true });
+    }
+
+    if (!estado.usuario) return respuesta(401, { error: 'Necesitas iniciar sesión.' });
+
+    // --- ejemplos ---
+    if (ruta === '/api/examples') {
+      return respuesta(200, {
+        examples: EJEMPLOS.map(function (e) {
+          return { slug: e.slug, name: e.name, tagline: e.tagline || '', intents: e.intents.length };
+        }),
+      });
+    }
+
+    if (partes[1] === 'examples' && partes[3] === 'copy' && metodo === 'POST') {
+      var original = null;
+      for (var i = 0; i < EJEMPLOS.length; i += 1) if (EJEMPLOS[i].slug === partes[2]) original = EJEMPLOS[i];
+      if (!original) return respuesta(404, { error: 'Ese ejemplo no existe.' });
+
+      var copia = JSON.parse(JSON.stringify(original));
+      delete copia.slug;
+      copia.name = original.name + ' (mi copia)';
+      copia.ownerId = 'demo';
+      return guardarNegocio(slugLibre(copia.name), copia);
+    }
+
+    // --- negocios ---
+    if (ruta === '/api/businesses' && metodo === 'GET') {
+      var lista = Object.keys(estado.negocios).sort().map(function (slug) {
+        return resumen(slug, estado.negocios[slug]);
+      });
+      return respuesta(200, { businesses: lista });
+    }
+
+    if (ruta === '/api/businesses' && metodo === 'POST') {
+      var comoSeLlama = cuerpo && cuerpo.name ? String(cuerpo.name).trim() : '';
+      if (!comoSeLlama) return respuesta(422, { error: 'El negocio necesita un nombre.' });
+      return guardarNegocio(
+        slugLibre(comoSeLlama),
+        Object.assign({}, NEGOCIO_INICIAL, { name: comoSeLlama, ownerId: 'demo' }),
+      );
+    }
+
+    if (partes[1] === 'businesses' && partes[2]) {
+      var slug = decodeURIComponent(partes[2]);
+      var negocio = estado.negocios[slug];
+      if (!negocio) return respuesta(404, { error: 'Ese negocio no existe.' });
+
+      if (partes[3] === 'share') {
+        // Se calcula de verdad: el enlace lleva el negocio dentro, así que funciona.
+        return enlaceDelNegocio(negocio).then(function (url) {
+          return respuesta(200, {
+            url: url,
+            qr: 'qr-de-muestra',
+            embed:
+              '<iframe src="' + url + '" style="width:100%;max-width:420px;height:600px;border:0;border-radius:16px"' +
+              ' title="Chat de ' + String(negocio.name).replace(/"/g, '') + '"><\/iframe>',
+            whatsapp: 'https://wa.me/?text=' + encodeURIComponent('Resuelve tus dudas por aquí: ' + url),
+          });
+        });
+      }
+
+      if (partes[3] === 'conversations') {
+        return respuesta(200, { conversaciones: conversaciones(estado.conversaciones[slug] || []) });
+      }
+
+      if (partes[3] === 'metrics') {
+        // resumir() es la misma función del servidor: lo que se ve aquí es lo que se vería
+        // en producción, solo que con las conversaciones que probaste tú.
+        return respuesta(200, resumir(estado.conversaciones[slug] || []));
+      }
+
+      if (metodo === 'GET') return respuesta(200, { slug: slug, business: negocio });
+      if (metodo === 'PUT') return guardarNegocio(slug, Object.assign({}, cuerpo, { ownerId: 'demo' }));
+      if (metodo === 'DELETE') {
+        delete estado.negocios[slug];
+        guardarEstado(estado);
+        return respuesta(200, { ok: true });
+      }
+    }
+
+    // El QR se pide como texto; en el demo se devuelve uno de muestra.
+    if (ruta === 'qr-de-muestra') return respuesta(200, QR_MUESTRA);
+
+    return respuesta(404, { error: 'No encontrado.' });
+  };
+
+  /* ===================================================================
+     El panel, tal cual está en public/panel.js.
+     =================================================================== */
+
+  /* Panel del dueño: acceso, negocios y configuración del bot. Sin frameworks. */
+
+const $ = (id) => document.getElementById(id);
+
+const accesoEl = $('acceso');
+const panelEl = $('panel');
+const listaEl = $('lista');
+const ejemplosEl = $('ejemplos');
+const formEl = $('form');
+const sinNegociosEl = $('sin-negocios');
+const tituloEl = $('titulo');
+const estadoEl = $('estado');
+const slugEl = $('slug-actual');
+const mensajesEl = $('mensajes');
+const intentsEl = $('intents');
+const plantillaEl = $('plantilla-intent');
+const probarEl = $('probar');
+const umbralValorEl = $('umbral-valor');
+
+let usuario = null;
+let slugActual = null;
+
+/* ------------------------------------------------------------------ red */
+
+async function api(method, ruta, body) {
+  const res = await fetch(ruta, {
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  const datos = res.status === 204 ? {} : await res.json().catch(() => ({}));
+  return { ok: res.ok, status: res.status, datos };
+}
+
+/* ------------------------------------------------------------- mensajes */
+
+function limpiarMensajes() {
+  mensajesEl.innerHTML = '';
+}
+
+function mostrarMensaje(tipo, titulo, detalles = []) {
+  const caja = document.createElement('div');
+  caja.className = `msg ${tipo}`;
+  caja.appendChild(document.createTextNode(titulo));
+
+  if (detalles.length > 0) {
+    const ul = document.createElement('ul');
+    for (const detalle of detalles) {
+      const li = document.createElement('li');
+      li.textContent = detalle;
+      ul.appendChild(li);
+    }
+    caja.appendChild(ul);
+  }
+
+  mensajesEl.appendChild(caja);
+  caja.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function mostrarErrorAcceso(cajaId, texto) {
+  const caja = $(cajaId);
+  caja.textContent = texto;
+  caja.hidden = !texto;
+}
+
+/* --------------------------------------------------------------- acceso */
+
+function mostrarAcceso() {
+  accesoEl.hidden = false;
+  panelEl.hidden = true;
+}
+
+function mostrarPanel() {
+  accesoEl.hidden = true;
+  panelEl.hidden = false;
+  $('quien').textContent = usuario.name ? `${usuario.name} · ${usuario.email}` : usuario.email;
+}
+
+$('tab-entrar').addEventListener('click', () => cambiarTab(true));
+$('tab-crear').addEventListener('click', () => cambiarTab(false));
+
+function cambiarTab(entrar) {
+  $('tab-entrar').setAttribute('aria-selected', String(entrar));
+  $('tab-crear').setAttribute('aria-selected', String(!entrar));
+  $('form-entrar').hidden = !entrar;
+  $('form-crear').hidden = entrar;
+  mostrarErrorAcceso('error-entrar', '');
+  mostrarErrorAcceso('error-crear', '');
+}
+
+$('form-entrar').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  mostrarErrorAcceso('error-entrar', '');
+
+  const form = event.target;
+  const { ok, datos } = await api('POST', '/api/auth/login', {
+    email: form.email.value,
+    password: form.password.value,
+  });
+
+  if (!ok) {
+    mostrarErrorAcceso('error-entrar', datos.error || 'No se pudo entrar.');
+    return;
+  }
+  usuario = datos.user;
+  await entrarAlPanel();
+});
+
+$('form-crear').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  mostrarErrorAcceso('error-crear', '');
+
+  const form = event.target;
+  const { ok, datos } = await api('POST', '/api/auth/signup', {
+    name: form.name.value,
+    email: form.email.value,
+    password: form.password.value,
+    businessName: form.businessName.value,
+  });
+
+  if (!ok) {
+    mostrarErrorAcceso('error-crear', datos.error || 'No se pudo crear la cuenta.');
+    return;
+  }
+  usuario = datos.user;
+  await entrarAlPanel();
+});
+
+$('salir').addEventListener('click', async () => {
+  await api('POST', '/api/auth/logout');
+  usuario = null;
+  slugActual = null;
+  formEl.hidden = true;
+  mostrarAcceso();
+});
+
+/* -------------------------------------------------------------- listados */
+
+async function cargarLista() {
+  const { datos } = await api('GET', '/api/businesses');
+  const negocios = datos.businesses || [];
+
+  listaEl.innerHTML = '';
+  for (const negocio of negocios) {
+    const li = document.createElement('li');
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.setAttribute('aria-current', String(negocio.slug === slugActual));
+
+    boton.appendChild(document.createTextNode(negocio.name));
+    const cuenta = document.createElement('span');
+    cuenta.className = 'cuenta';
+    cuenta.textContent =
+      `${negocio.intents} ${negocio.intents === 1 ? 'pregunta' : 'preguntas'}` +
+      (negocio.active ? '' : ' · pausado');
+    boton.appendChild(cuenta);
+
+    boton.addEventListener('click', () => abrir(negocio.slug));
+    li.appendChild(boton);
+    listaEl.appendChild(li);
+  }
+
+  sinNegociosEl.hidden = negocios.length > 0;
+  if (negocios.length === 0) formEl.hidden = true;
+
+  return negocios;
+}
+
+async function cargarEjemplos() {
+  const { datos } = await api('GET', '/api/examples');
+  ejemplosEl.innerHTML = '';
+
+  for (const ejemplo of datos.examples || []) {
+    const li = document.createElement('li');
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.textContent = `Copiar “${ejemplo.name}”`;
+    boton.addEventListener('click', async () => {
+      const { ok, datos: copia } = await api('POST', `/api/examples/${ejemplo.slug}/copy`);
+      if (!ok) return;
+      await abrir(copia.slug);
+      mostrarMensaje('ok', 'Ejemplo copiado a tu cuenta. Edítalo con la información de tu negocio.');
+    });
+    li.appendChild(boton);
+    ejemplosEl.appendChild(li);
+  }
+}
+
+/* -------------------------------------------------------------- edición */
+
+function agregarIntent(intent = { id: '', keywords: [], answer: '' }) {
+  const nodo = plantillaEl.content.cloneNode(true);
+  nodo.querySelector('.intent-id').value = intent.id;
+  nodo.querySelector('.intent-keywords').value = (intent.keywords || []).join(', ');
+  nodo.querySelector('.intent-answer').value = intent.answer;
+
+  const bloque = nodo.querySelector('.intent');
+  nodo.querySelector('.btn-icon').addEventListener('click', () => bloque.remove());
+
+  intentsEl.appendChild(nodo);
+  return bloque;
+}
+
+function pintarEstado(activo) {
+  estadoEl.textContent = activo ? 'Activo' : 'Pausado';
+  estadoEl.className = `pill ${activo ? 'activo' : 'pausado'}`;
+}
+
+function pintarUmbral(valor) {
+  const n = Number(valor);
+  const etiqueta = n <= 1 ? 'permisivo' : n <= 2 ? 'equilibrado' : 'exigente';
+  umbralValorEl.textContent = `${n} · ${etiqueta}`;
+}
+
+function pintar(slug, business) {
+  slugActual = slug;
+  formEl.hidden = false;
+  sinNegociosEl.hidden = true;
+  limpiarMensajes();
+
+  tituloEl.textContent = business.name;
+  slugEl.textContent = `/${slug}`;
+  probarEl.href = `/?negocio=${encodeURIComponent(slug)}`;
+
+  formEl.name.value = business.name;
+  formEl.tagline.value = business.tagline || '';
+  formEl.greeting.value = business.greeting || '';
+  formEl.greetingRepeat.value = business.greetingRepeat || '';
+  formEl.fallback.value = business.fallback || '';
+  formEl.handoff.value = business.handoff || '';
+  formEl.pausedMessage.value = business.pausedMessage || '';
+  formEl.topics.value = (business.topics || []).join('\n');
+
+  formEl.active.checked = business.active !== false;
+  formEl.confidenceThreshold.value = business.confidenceThreshold || 1;
+
+  pintarEstado(formEl.active.checked);
+  pintarUmbral(formEl.confidenceThreshold.value);
+
+  intentsEl.innerHTML = '';
+  (business.intents || []).forEach((intent) => agregarIntent(intent));
+}
+
+function leerFormulario() {
+  const intents = [...intentsEl.querySelectorAll('.intent')].map((bloque) => ({
+    id: bloque.querySelector('.intent-id').value.trim(),
+    keywords: bloque
+      .querySelector('.intent-keywords')
+      .value.split(',')
+      .map((k) => k.trim())
+      .filter(Boolean),
+    answer: bloque.querySelector('.intent-answer').value.trim(),
+  }));
+
+  return {
+    name: formEl.name.value.trim(),
+    tagline: formEl.tagline.value.trim(),
+    greeting: formEl.greeting.value.trim(),
+    greetingRepeat: formEl.greetingRepeat.value.trim(),
+    fallback: formEl.fallback.value.trim(),
+    handoff: formEl.handoff.value.trim(),
+    pausedMessage: formEl.pausedMessage.value.trim(),
+    active: formEl.active.checked,
+    confidenceThreshold: Number(formEl.confidenceThreshold.value),
+    topics: formEl.topics.value
+      .split('\n')
+      .map((t) => t.trim())
+      .filter(Boolean),
+    intents,
+  };
+}
+
+/* ------------------------------------------------------------ compartir */
+
+/** Copia al portapapeles y confirma en el propio botón. */
+async function copiar(texto, boton) {
+  const original = boton.textContent;
+  try {
+    await navigator.clipboard.writeText(texto);
+    boton.textContent = '¡Copiado!';
+  } catch (err) {
+    // Sin permiso de portapapeles (o sin HTTPS): al menos dejamos el texto seleccionado.
+    const campo = boton.previousElementSibling;
+    if (campo && campo.select) campo.select();
+    boton.textContent = 'Copia con Ctrl+C';
+  }
+  setTimeout(() => {
+    boton.textContent = original;
+  }, 2000);
+}
+
+/** Pinta la dirección, el QR y el resto de las formas de compartir. */
+async function pintarCompartir(slug, url, rutaQr) {
+  $('url-publica').value = url;
+  $('abrir-url').href = url;
+  $('descargar-qr').href = rutaQr;
+  $('descargar-qr').setAttribute('download', `qr-${slug}.svg`);
+
+  // El QR se pide como texto y se inserta: así se ve en pantalla y se imprime nítido.
+  const res = await fetch(rutaQr);
+  $('qr').innerHTML = res.ok ? await res.text() : '';
+}
+
+async function cargarCompartir(slug) {
+  const { ok, datos } = await api('GET', `/api/businesses/${slug}/share`);
+  if (!ok) return;
+
+  $('codigo-embed').value = datos.embed;
+  $('compartir-whatsapp').href = datos.whatsapp;
+
+  await pintarCompartir(slug, datos.url, datos.qr);
+
+  // Avisar cuando la dirección no sirve para escanear desde un teléfono.
+  const aviso = $('aviso-local');
+  const boton = $('usar-red');
+  aviso.hidden = !datos.soloLocal;
+
+  if (datos.soloLocal) {
+    if (datos.urlEnLaRed) {
+      $('sugerencia-red').textContent =
+        ` Para probar desde tu celular conectado a la misma wifi, usa ${datos.urlEnLaRed}`;
+      boton.hidden = false;
+      boton.onclick = () => {
+        pintarCompartir(slug, datos.urlEnLaRed, datos.qrEnLaRed);
+        aviso.hidden = true;
+      };
+    } else {
+      $('sugerencia-red').textContent =
+        ' Publica PymeBot en un servidor con dirección propia para que el QR funcione.';
+      boton.hidden = true;
+    }
+  }
+}
+
+$('copiar-url').addEventListener('click', (e) => copiar($('url-publica').value, e.target));
+$('copiar-embed').addEventListener('click', (e) => copiar($('codigo-embed').value, e.target));
+
+/* -------------------------------------------------------- conversaciones */
+
+function cifra(contenedor, valor, etiqueta, clase = '') {
+  const caja = document.createElement('div');
+  caja.className = `cifra ${clase}`.trim();
+
+  const b = document.createElement('b');
+  b.textContent = valor;
+  caja.appendChild(b);
+
+  const span = document.createElement('span');
+  span.textContent = etiqueta;
+  caja.appendChild(span);
+
+  contenedor.appendChild(caja);
+}
+
+/** Minúsculas, sin acentos ni signos: la misma forma que usa el bot para comparar. */
+function limpiar(texto) {
+  return String(texto)
+    .toLowerCase()
+    .replace(/ñ/g, '\u0001')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\u0001/g, 'ñ')
+    .replace(/[^a-z0-9ñ\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/** Un identificador que no choque con los que ya existen. */
+function identificadorLibre(texto) {
+  const usados = new Set(
+    [...intentsEl.querySelectorAll('.intent-id')].map((el) => el.value.trim()).filter(Boolean),
+  );
+
+  const base =
+    limpiar(texto)
+      .split(' ')
+      .filter((p) => p.length > 3)
+      .slice(0, 2)
+      .join('_') || 'pregunta';
+
+  if (!usados.has(base)) return base;
+
+  let n = 2;
+  while (usados.has(`${base}_${n}`)) n += 1;
+  return `${base}_${n}`;
+}
+
+/**
+ * Convierte una pregunta sin responder en una pregunta configurada.
+ *
+ * Es el cierre del círculo: el bot falla, tú lo ves aquí, y lo arreglas sin salir de la
+ * pantalla. Se rellenan el identificador y las palabras clave para que solo haya que
+ * escribir la respuesta.
+ */
+function convertirEnPregunta(texto) {
+  document.querySelector('.seccion-tab[data-seccion="preguntas"]').click();
+
+  const bloque = agregarIntent({
+    // Sin signos: "cigarros?" como palabra clave se ve mal y confunde a quien lo edita.
+    id: identificadorLibre(texto),
+    keywords: limpiar(texto)
+      .split(' ')
+      .filter((p) => p.length > 3)
+      .slice(0, 6),
+    answer: '',
+  });
+
+  bloque.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  bloque.querySelector('.intent-answer').focus();
+
+  mostrarMensaje('ok', `Revisa las palabras clave y escribe la respuesta para «${texto}». Después, Guardar.`);
+}
+
+async function cargarConversaciones(slug) {
+  const { ok, datos } = await api('GET', `/api/businesses/${slug}/metrics`);
+  // Sin métricas no se pinta nada, pero tampoco se rompe el resto del panel.
+  if (!ok || !datos || !Array.isArray(datos.preguntasSinRespuesta)) return;
+
+  const cifrasEl = $('cifras');
+  cifrasEl.innerHTML = '';
+  cifra(cifrasEl, datos.conversaciones, 'conversaciones');
+  cifra(cifrasEl, datos.mensajes, 'preguntas recibidas');
+  cifra(
+    cifrasEl,
+    datos.tasaDeAcierto === null ? '—' : `${datos.tasaDeAcierto}%`,
+    'supo responder',
+    datos.tasaDeAcierto === null ? '' : datos.tasaDeAcierto >= 80 ? 'buena' : 'floja',
+  );
+  cifra(cifrasEl, datos.sinRespuesta, 'no supo responder');
+
+  // Preguntas sin respuesta: lo más accionable de toda la pantalla.
+  const pendientesEl = $('sin-respuesta');
+  pendientesEl.innerHTML = '';
+
+  if (datos.preguntasSinRespuesta.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'vacio-seccion';
+    p.textContent =
+      datos.mensajes === 0
+        ? 'Todavía no hay conversaciones. Comparte tu link y vuelve a mirar.'
+        : 'Tu bot respondió todo lo que le preguntaron. 🎉';
+    pendientesEl.appendChild(p);
+  }
+
+  for (const pregunta of datos.preguntasSinRespuesta) {
+    const fila = document.createElement('div');
+    fila.className = 'pendiente';
+
+    const texto = document.createElement('span');
+    texto.className = 'texto';
+    texto.textContent = pregunta.ejemplo;
+    fila.appendChild(texto);
+
+    if (pregunta.veces > 1) {
+      const veces = document.createElement('span');
+      veces.className = 'veces';
+      veces.textContent = `${pregunta.veces} veces`;
+      fila.appendChild(veces);
+    }
+
+    const boton = document.createElement('button');
+    boton.className = 'btn-ghost';
+    boton.type = 'button';
+    boton.textContent = 'Responder esto';
+    boton.addEventListener('click', () => convertirEnPregunta(pregunta.ejemplo));
+    fila.appendChild(boton);
+
+    pendientesEl.appendChild(fila);
+  }
+
+  // Temas más preguntados.
+  const temasEl = $('mas-preguntados');
+  temasEl.innerHTML = '';
+  const tope = Math.max(1, ...datos.temasMasPreguntados.map((t) => t.veces));
+
+  if (datos.temasMasPreguntados.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'vacio-seccion';
+    p.textContent = 'Aún no hay preguntas respondidas que mostrar.';
+    temasEl.appendChild(p);
+  }
+
+  for (const tema of datos.temasMasPreguntados) {
+    const fila = document.createElement('div');
+    fila.className = 'barra';
+
+    const nombre = document.createElement('span');
+    nombre.className = 'nombre';
+    nombre.textContent = tema.clave;
+    fila.appendChild(nombre);
+
+    const pista = document.createElement('span');
+    pista.className = 'pista';
+    const relleno = document.createElement('span');
+    relleno.className = 'relleno';
+    relleno.style.width = `${Math.round((tema.veces / tope) * 100)}%`;
+    pista.appendChild(relleno);
+    fila.appendChild(pista);
+
+    const valor = document.createElement('span');
+    valor.className = 'valor';
+    valor.textContent = tema.veces;
+    fila.appendChild(valor);
+
+    temasEl.appendChild(fila);
+  }
+}
+
+/** "hoy 14:32", "ayer 09:10" o "12 sep 14:32": más legible que una fecha completa. */
+function cuando(iso) {
+  const fecha = new Date(iso);
+  // 24 horas: es como se lee la hora en Chile, y evita el "09:36 p. m." del formato largo.
+  const hora = fecha.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit', hour12: false });
+
+  const hoy = new Date();
+  const mismoDia = (a, b) => a.toDateString() === b.toDateString();
+  if (mismoDia(fecha, hoy)) return `hoy ${hora}`;
+
+  const ayer = new Date(hoy);
+  ayer.setDate(ayer.getDate() - 1);
+  if (mismoDia(fecha, ayer)) return `ayer ${hora}`;
+
+  return `${fecha.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })} ${hora}`;
+}
+
+async function cargarTranscripciones(slug) {
+  const contenedor = $('conversaciones');
+  contenedor.innerHTML = '';
+
+  const { ok, datos } = await api('GET', `/api/businesses/${slug}/conversations`);
+  if (!ok || !datos || !Array.isArray(datos.conversaciones)) return;
+
+  if (datos.conversaciones.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'vacio-seccion';
+    p.textContent = 'Todavía nadie ha conversado con tu bot. Comparte tu link y vuelve a mirar.';
+    contenedor.appendChild(p);
+    return;
+  }
+
+  for (const conversacion of datos.conversaciones) {
+    const caja = document.createElement('details');
+    caja.className = 'conversacion';
+
+    const cabecera = document.createElement('summary');
+
+    const momento = document.createElement('span');
+    momento.className = 'cuando';
+    const n = conversacion.mensajes.length;
+    momento.innerHTML = '';
+    momento.append(
+      cuando(conversacion.inicio),
+      Object.assign(document.createElement('span'), {
+        className: 'resumen',
+        textContent: `  ·  ${n} ${n === 1 ? 'pregunta' : 'preguntas'}`,
+      }),
+    );
+    cabecera.appendChild(momento);
+
+    if (conversacion.sinRespuesta > 0) {
+      const fallo = document.createElement('span');
+      fallo.className = 'fallo';
+      fallo.textContent = `${conversacion.sinRespuesta} sin responder`;
+      cabecera.appendChild(fallo);
+    }
+
+    const canal = document.createElement('span');
+    canal.className = 'marca-canal';
+    canal.textContent = conversacion.canal;
+    cabecera.appendChild(canal);
+
+    caja.appendChild(cabecera);
+
+    const hilo = document.createElement('div');
+    hilo.className = 'transcripcion';
+    for (const mensaje of conversacion.mensajes) {
+      const dijo = document.createElement('div');
+      dijo.className = 'dicho cliente';
+      dijo.textContent = mensaje.pregunta;
+      hilo.appendChild(dijo);
+
+      const contesto = document.createElement('div');
+      contesto.className = `dicho bot${mensaje.matched === false && mensaje.intent !== 'pausado' ? ' no-supo' : ''}`;
+      contesto.textContent = mensaje.respuesta;
+      hilo.appendChild(contesto);
+    }
+    caja.appendChild(hilo);
+
+    contenedor.appendChild(caja);
+  }
+}
+
+/**
+ * Todo lo que se deriva del negocio y queda obsoleto cuando cambia algo.
+ *
+ * Va junto a propósito: el enlace para compartir lleva la información del negocio dentro,
+ * así que si se genera una sola vez al abrir, el dueño edita su bot, comparte el enlace, y
+ * sus clientes reciben la versión vieja sin que nadie se entere.
+ */
+async function refrescar(slug) {
+  await Promise.all([
+    cargarLista(),
+    cargarCompartir(slug),
+    cargarConversaciones(slug),
+    cargarTranscripciones(slug),
+  ]);
+}
+
+async function abrir(slug) {
+  const { ok, datos } = await api('GET', `/api/businesses/${slug}`);
+  if (!ok) {
+    mostrarMensaje('error', 'No se pudo abrir ese negocio.');
+    return;
+  }
+  pintar(slug, datos.business);
+  await refrescar(slug);
+}
+
+/* -------------------------------------------------------------- guardar */
+
+formEl.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  limpiarMensajes();
+
+  const boton = formEl.querySelector('.btn');
+  boton.disabled = true;
+
+  try {
+    const { ok, status, datos } = await api('PUT', `/api/businesses/${slugActual}`, leerFormulario());
+
+    if (status === 401) {
+      usuario = null;
+      mostrarAcceso();
+      return;
+    }
+    if (!ok) {
+      mostrarMensaje(
+        'error',
+        'No se pudo guardar. Corrige esto:',
+        (datos.errors || [{ mensaje: datos.error }]).map((e) => e.mensaje),
+      );
+      return;
+    }
+
+    mostrarMensaje(
+      'ok',
+      datos.business.active
+        ? 'Guardado. El bot ya responde con esta información.'
+        : 'Guardado. Ojo: el bot está pausado, así que no responde preguntas.',
+    );
+    if (datos.warnings && datos.warnings.length > 0) {
+      mostrarMensaje(
+        'warn',
+        'Se guardó, pero revisa esto porque puede hacer que el bot responda mal:',
+        datos.warnings.map((w) => w.mensaje),
+      );
+    }
+
+    tituloEl.textContent = datos.business.name;
+    pintarEstado(datos.business.active);
+    // Incluye regenerar el enlace: si no, seguiría entregando el bot de antes de guardar.
+    await refrescar(slugActual);
+  } catch (err) {
+    mostrarMensaje('error', 'No se pudo conectar con el servidor.');
+  } finally {
+    boton.disabled = false;
+  }
+});
+
+/* ------------------------------------------------------ crear y eliminar */
+
+$('agregar-intent').addEventListener('click', () => {
+  const bloque = agregarIntent();
+  bloque.querySelector('.intent-id').focus();
+});
+
+$('nuevo').addEventListener('click', async () => {
+  const nombre = prompt('¿Cómo se llama el negocio?');
+  if (!nombre || !nombre.trim()) return;
+
+  const { ok, datos } = await api('POST', '/api/businesses', { name: nombre.trim() });
+  if (!ok) {
+    mostrarMensaje('error', 'No se pudo crear.', (datos.errors || []).map((e) => e.mensaje));
+    return;
+  }
+
+  await abrir(datos.slug);
+  mostrarMensaje('ok', 'Negocio creado. Edita las preguntas de ejemplo y agrega las tuyas.');
+});
+
+$('eliminar').addEventListener('click', async () => {
+  if (!slugActual) return;
+  if (!confirm(`¿Eliminar "${tituloEl.textContent}"? No se puede deshacer.`)) return;
+
+  await api('DELETE', `/api/businesses/${slugActual}`);
+
+  slugActual = null;
+  formEl.hidden = true;
+  limpiarMensajes();
+  const negocios = await cargarLista();
+  if (negocios.length > 0) abrir(negocios[0].slug);
+});
+
+/* ------------------------------------------------------------ secciones */
+
+for (const tab of document.querySelectorAll('.seccion-tab')) {
+  tab.addEventListener('click', () => {
+    for (const otro of document.querySelectorAll('.seccion-tab')) otro.classList.remove('activo');
+    tab.classList.add('activo');
+
+    for (const bloque of formEl.querySelectorAll('.bloque')) {
+      bloque.hidden = bloque.dataset.seccion !== tab.dataset.seccion;
+    }
+  });
+}
+
+formEl.active.addEventListener('change', () => pintarEstado(formEl.active.checked));
+formEl.confidenceThreshold.addEventListener('input', () => pintarUmbral(formEl.confidenceThreshold.value));
+
+/* --------------------------------------------------------------- inicio */
+
+async function entrarAlPanel() {
+  mostrarPanel();
+  await cargarEjemplos();
+  const negocios = await cargarLista();
+  if (negocios.length > 0) await abrir(negocios[0].slug);
+}
+
+(async () => {
+  const { datos } = await api('GET', '/api/auth/me');
+  if (datos.user) {
+    usuario = datos.user;
+    await entrarAlPanel();
+  } else {
+    mostrarAcceso();
+  }
+})();
+
+
+  /* ===================================================================
+     Añadidos del demo: vista previa del chat y avisos.
+     =================================================================== */
+
+  (function () {
+    var cajon = document.getElementById('previsualizar');
+    /** Cada apertura de la vista previa es una conversación distinta. */
+    var idDeLaPrueba = null;
+
+    /** Arma el chat del cliente con lo que hay AHORA en el formulario, sin guardar. */
+    function chatConLoQueHayEnPantalla() {
+      var editado = leerFormulario();
+      var validado = validateBusiness(editado);
+      var negocio = validado.ok ? validado.business : estado.negocios[slugActual];
+      if (!negocio) return '';
+
+      return PLANTILLA_CHAT
+        .replace('/*__BUSINESS__*/', function () { return JSON.stringify(negocio); })
+        .replace(/__NOMBRE__/g, function () { return String(negocio.name).replace(/[<>&"]/g, ''); });
+    }
+
+    function abrirPreview() {
+      var html = chatConLoQueHayEnPantalla();
+      if (!html) return;
+      idDeLaPrueba = 'prueba-' + Date.now();
+
+      // Cada apertura estrena un iframe. Reutilizarlo no sirve: document.open() no limpia
+      // el ámbito global, así que al reescribir chocan las constantes del motor
+      // ("Identifier 'CONFIDENCE_THRESHOLD' has already been declared").
+      var anterior = document.getElementById('marco-preview');
+      var marco = document.createElement('iframe');
+      marco.id = 'marco-preview';
+      marco.title = 'Vista previa del chat';
+      anterior.replaceWith(marco);
+
+      // Se escribe el documento en vez de usar src: así la vista previa refleja los
+      // cambios sin guardar, y los estilos del chat no tocan los del panel.
+      var doc = marco.contentDocument;
+      doc.open();
+      doc.write(html);
+      doc.close();
+
+      /*
+       * Lo que pruebes en la vista previa cuenta como conversación.
+       *
+       * No es un adorno: hace que la pestaña Conversaciones muestre datos REALES —los
+       * tuyos— en vez de cifras inventadas. Se envuelve `respond` dentro del iframe, que
+       * es del mismo origen, para no tocar la plantilla del chat que comparte el producto.
+       */
+      var ventana = marco.contentWindow;
+      var original = ventana.respond;
+      ventana.respond = function (texto) {
+        var r = original.apply(this, arguments);
+        if (!estado.conversaciones[slugActual]) estado.conversaciones[slugActual] = [];
+        estado.conversaciones[slugActual].push({
+          at: new Date().toISOString(),
+          conversationId: idDeLaPrueba,
+          channel: 'web',
+          pregunta: texto,
+          // La respuesta también: sin ella, la transcripción muestra al cliente hablando
+          // solo, que es justo lo que se quiere leer.
+          respuesta: r.reply,
+          intent: r.intent,
+          matched: r.matched,
+        });
+        guardarEstado(estado);
+        return r;
+      };
+
+      cajon.classList.add('abierto');
+      cajon.setAttribute('aria-hidden', 'false');
+    }
+
+    function cerrarPreview() {
+      cajon.classList.remove('abierto');
+      cajon.setAttribute('aria-hidden', 'true');
+      // Al volver al panel, las cifras Y las conversaciones reflejan lo que se probó.
+      if (slugActual) {
+        cargarConversaciones(slugActual);
+        cargarTranscripciones(slugActual);
+      }
+    }
+
+    document.getElementById('cerrar-preview').addEventListener('click', cerrarPreview);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') cerrarPreview();
+    });
+
+    // "Probar el bot" abre la vista previa en vez de navegar a una dirección que no existe.
+    var probar = document.getElementById('probar');
+    probar.addEventListener('click', function (e) {
+      e.preventDefault();
+      abrirPreview();
+    });
+    probar.removeAttribute('target');
+    probar.textContent = 'Probar el bot →';
+
+    // En el demo no hay un QR real que descargar ni una dirección que abrir.
+    // Se oculta en vez de quitarlo: panel.js le asigna propiedades y quitarlo lo
+    // haría fallar, dejando la pestaña Compartir a medio llenar.
+    document.getElementById('descargar-qr').hidden = true;
+
+    /*
+     * Decir en pantalla qué es este QR.
+     *
+     * En el demo no puede apuntar al negocio que se edita: los negocios viven en el
+     * localStorage de este navegador, así que un teléfono abriría uno vacío. Apunta a un
+     * chat publicado de verdad, para que se pueda escanear y se vea funcionar.
+     */
+    // Decir qué es este enlace: funciona de verdad, pero lleva el negocio dentro.
+    var cajaLink = document.getElementById('url-publica').closest('.bloque');
+    if (cajaLink) {
+      var notaLink = document.createElement('p');
+      notaLink.className = 'ayuda';
+      notaLink.innerHTML =
+        '<strong>Este enlace funciona de verdad:</strong> ábrelo en tu teléfono o mándalo por ' +
+        'WhatsApp. Lleva la información de tu negocio dentro, así que es largo, y si cambias ' +
+        'algo tendrás que volver a compartirlo. Con PymeBot instalado en un servidor el enlace ' +
+        'es corto y las conversaciones de tus clientes te llegan aquí.';
+      document.getElementById('url-publica').parentElement.after(notaLink);
+    }
+
+    var tarjetaQr = document.getElementById('qr').closest('.compartir-tarjeta');
+    if (tarjetaQr) {
+      var nota = document.createElement('p');
+      nota.className = 'ayuda';
+      nota.innerHTML =
+        '<strong>En el demo este QR es un ejemplo:</strong> escanéalo y abre un chat de ' +
+        'demostración que funciona. No puede llevar tu negocio dentro como el enlace de ' +
+        'arriba: un QR admite ~2.900 caracteres y un negocio configurado ocupa más.';
+      tarjetaQr.appendChild(nota);
+
+      var abrirChat = document.createElement('a');
+      abrirChat.className = 'btn-ghost';
+      abrirChat.href = URL_CHAT_DEMO;
+      abrirChat.target = '_blank';
+      abrirChat.rel = 'noopener';
+      abrirChat.textContent = 'Abrir ese chat ↗';
+      tarjetaQr.appendChild(abrirChat);
+    }
+    document.getElementById('abrir-url').addEventListener('click', function (e) {
+      e.preventDefault();
+      abrirPreview();
+    });
+    document.getElementById('abrir-url').textContent = 'Ver el chat';
+  })();
+</script>
