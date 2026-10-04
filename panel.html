@@ -1,3 +1,7 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>PymeBot para tu negocio</title>
 <link
   rel="icon"
@@ -518,6 +522,79 @@ input[type="range"] { width: 100%; accent-color: var(--brand); cursor: pointer; 
 .dicho.bot { align-self: flex-start; background: var(--panel); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
 /* Marcar dónde falló: es lo que el dueño busca al leer una conversación. */
 .dicho.bot.no-supo { border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); background: var(--warn-bg); }
+.dicho.agente { align-self: flex-start; background: var(--panel); border: 1.5px solid var(--brand); border-bottom-left-radius: 4px; }
+.dicho.agente::before { content: "Tú"; display: block; font-size: 11.5px; font-weight: 600; color: var(--brand); }
+.dicho.sistema { align-self: center; max-width: 100%; padding: 2px 8px; font-size: 12.5px; color: var(--muted); text-align: center; }
+
+/* ==================== Atención en vivo ==================== */
+
+.bandeja {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.bandeja-head { display: flex; align-items: center; gap: 10px; }
+.bandeja-head h2 { margin: 0; font-size: 16px; }
+.bandeja-probar { margin-left: auto; }
+.bandeja > .ayuda { margin: 0; }
+
+.pill.atencion { background: var(--warn-bg); color: var(--warn); }
+.pill.humano { background: var(--brand); color: #fff; }
+.pill.bot { background: var(--soft); color: var(--muted); }
+
+.bandeja-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 250px; overflow-y: auto; }
+.bandeja-lista button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--soft);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  padding: 9px 12px;
+  cursor: pointer;
+}
+.bandeja-lista button:hover { border-color: var(--brand); }
+.bandeja-lista button[aria-current="true"] { border-color: var(--brand); box-shadow: 0 0 0 1px var(--brand); }
+/* Quien espera respuesta de una persona se tiene que ver de lejos. */
+.bandeja-lista button.espera { background: var(--warn-bg); border-color: color-mix(in srgb, var(--warn) 50%, var(--border)); }
+.bandeja-lista .negocio { flex: none; font-weight: 600; }
+.bandeja-lista .canal {
+  flex: none;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+.bandeja-lista .ultimo { flex: 1; min-width: 0; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.bandeja-lista .cuando-fue { flex: none; font-size: 12.5px; color: var(--muted); }
+/* En el teléfono no cabe todo en una fila: el último mensaje baja a la suya. */
+@media (max-width: 560px) {
+  .bandeja-lista button { flex-wrap: wrap; }
+  .bandeja-lista .ultimo { order: 9; flex-basis: 100%; }
+  .bandeja-head { flex-wrap: wrap; }
+}
+
+.bandeja-detalle { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.bandeja-detalle-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 14px; }
+/* Base de 220px: si no caben título y botón en una fila, el botón baja en vez de aplastar el nombre. */
+.bandeja-detalle-head .titulo { flex: 1 1 220px; min-width: 0; display: flex; align-items: center; gap: 8px; }
+.bandeja-detalle .transcripcion { max-height: 340px; overflow-y: auto; }
+.bandeja-responder { display: flex; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); }
+.bandeja-responder input { flex: 1; min-width: 0; }
 
 
 /* ==================== Añadidos propios del demo ==================== */
@@ -659,6 +736,36 @@ input[type="range"] { width: 100%; accent-color: var(--brand); cursor: pointer; 
         </aside>
 
         <section class="editor">
+          <section id="bandeja" class="bandeja" aria-labelledby="bandeja-titulo">
+            <div class="bandeja-head">
+              <h2 id="bandeja-titulo">Atención en vivo</h2>
+              <span id="bandeja-pendientes" class="pill atencion" hidden></span>
+              <a class="link bandeja-probar" href="chat/dona-elba.html" target="_blank" rel="noopener">Abrir un chat de prueba ↗</a>
+            </div>
+            <p class="ayuda">
+              Las conversaciones de tus clientes. Cuando alguien pide hablar con una persona,
+              el bot deja de responder y la conversación se marca aquí. Contéstale y, al
+              terminar, devuélvesela al bot.
+            </p>
+            <ul id="bandeja-lista" class="bandeja-lista"></ul>
+
+            <div id="bandeja-detalle" class="bandeja-detalle" hidden>
+              <div class="bandeja-detalle-head">
+                <div class="titulo">
+                  <strong id="detalle-negocio"></strong>
+                  <span id="detalle-modo" class="pill"></span>
+                </div>
+                <button id="detalle-tomar" class="btn-ghost" type="button">Tomar la conversación</button>
+                <button id="detalle-devolver" class="btn-ghost" type="button">Devolver al bot</button>
+              </div>
+              <div id="detalle-hilo" class="transcripcion" aria-live="polite"></div>
+              <form id="detalle-responder" class="bandeja-responder" autocomplete="off">
+                <input id="detalle-texto" type="text" maxlength="1000" placeholder="Escribe tu respuesta al cliente…" aria-label="Tu respuesta" />
+                <button class="btn" type="submit">Enviar</button>
+              </form>
+            </div>
+          </section>
+
           <div id="sin-negocios" class="vacio" hidden>
             <p>Todavía no tienes ningún negocio.</p>
             <p class="ayuda">Crea uno con <strong>+ Nuevo</strong> o copia un ejemplo para partir.</p>
@@ -882,6 +989,7 @@ input[type="range"] { width: 100%; accent-color: var(--brand); cursor: pointer; 
   <iframe id="marco-preview" title="Vista previa del chat"></iframe>
 </aside>
 
+<script src="conversaciones.js"></script>
 <script>
   /* ===================================================================
      Validación y motor: tomados tal cual de src/. No son una copia.
@@ -2257,7 +2365,7 @@ function conversaciones(registros, { limite = 50 } = {}) {
     ]
   }
 ];
-  var PLANTILLA_CHAT = "<title>__NOMBRE__</title>\n<meta name=\"description\" content=\"Resolvemos tus dudas al instante.\" />\n\n<style>\n/*\n * La página que ve el cliente final.\n *\n * Se diseña para el teléfono primero: casi todo el tráfico llega desde un link\n * compartido por WhatsApp o desde un QR, y se abre en el navegador del móvil.\n */\n\n:root {\n  --fondo: #f2f4f7;\n  --panel: #ffffff;\n  --texto: #18202b;\n  --suave: #667085;\n  --linea: #e3e8ef;\n  --burbuja: #f2f4f7;\n  --marca: #1f6feb;\n  --marca-texto: #ffffff;\n  --error-bg: #fdecec;\n  --error: #a12a2a;\n}\n\n@media (prefers-color-scheme: dark) {\n  :root {\n    --fondo: #0e1116;\n    --panel: #161b22;\n    --texto: #e6edf3;\n    --suave: #8d97a5;\n    --linea: #262c36;\n    --burbuja: #21262d;\n    --marca: #4d8ef7;\n    --marca-texto: #06142b;\n    --error-bg: #3a1d1d;\n    --error: #f3a7a7;\n  }\n}\n\n* { box-sizing: border-box; }\n\nhtml, body { height: 100%; }\n\nbody {\n  margin: 0;\n  background: var(--fondo);\n  color: var(--texto);\n  font-family: system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif;\n  font-size: 16px;\n  line-height: 1.5;\n  -webkit-font-smoothing: antialiased;\n  display: flex;\n  justify-content: center;\n}\n\n.chat {\n  width: min(640px, 100%);\n  /* dvh en vez de vh: en el móvil la barra del navegador cambia de alto al hacer scroll. */\n  height: 100dvh;\n  background: var(--panel);\n  display: flex;\n  flex-direction: column;\n}\n\n/* ---------- Cabecera ---------- */\n\n.cabecera {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n  padding: 14px 18px;\n  padding-top: max(14px, env(safe-area-inset-top));\n  border-bottom: 1px solid var(--linea);\n  flex: none;\n}\n\n.avatar {\n  width: 42px;\n  height: 42px;\n  flex: none;\n  border-radius: 12px;\n  background: var(--burbuja);\n  color: var(--marca);\n  display: grid;\n  place-items: center;\n}\n.avatar svg { width: 23px; height: 23px; }\n\n.identidad { min-width: 0; }\n.identidad h1 {\n  margin: 0;\n  font-size: 17px;\n  font-weight: 650;\n  letter-spacing: -0.01em;\n}\n.identidad p {\n  margin: 1px 0 0;\n  font-size: 13px;\n  color: var(--suave);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n/* ---------- Conversación ---------- */\n\n.hilo {\n  flex: 1;\n  overflow-y: auto;\n  padding: 18px;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  -webkit-overflow-scrolling: touch;\n}\n\n.burbuja {\n  max-width: 85%;\n  padding: 11px 15px;\n  border-radius: 18px;\n  font-size: 15.5px;\n  line-height: 1.5;\n  white-space: pre-wrap;\n  overflow-wrap: anywhere;\n}\n\n.burbuja.bot {\n  align-self: flex-start;\n  background: var(--burbuja);\n  border-bottom-left-radius: 5px;\n}\n\n.burbuja.cliente {\n  align-self: flex-end;\n  background: var(--marca);\n  color: var(--marca-texto);\n  border-bottom-right-radius: 5px;\n}\n\n.burbuja.aviso {\n  align-self: center;\n  background: var(--error-bg);\n  color: var(--error);\n  font-size: 14px;\n  text-align: center;\n  max-width: 100%;\n}\n\n.escribiendo { display: flex; gap: 4px; align-items: center; padding: 15px; }\n.escribiendo i {\n  width: 6px; height: 6px; border-radius: 50%;\n  background: var(--suave); animation: latir 1.2s infinite;\n}\n.escribiendo i:nth-child(2) { animation-delay: .18s; }\n.escribiendo i:nth-child(3) { animation-delay: .36s; }\n@keyframes latir { 0%,60%,100% { opacity:.25 } 30% { opacity:.9 } }\n\n/* ---------- Atajos ---------- */\n\n.atajos {\n  display: flex;\n  gap: 7px;\n  padding: 0 18px 10px;\n  overflow-x: auto;\n  scrollbar-width: none;\n  flex: none;\n}\n.atajos::-webkit-scrollbar { display: none; }\n.atajos:empty { display: none; }\n\n.atajo {\n  font-family: inherit;\n  font-size: 14px;\n  color: var(--marca);\n  background: transparent;\n  border: 1px solid var(--linea);\n  border-radius: 999px;\n  padding: 7px 14px;\n  white-space: nowrap;\n  cursor: pointer;\n  flex: none;\n}\n.atajo:hover { border-color: var(--marca); }\n\n/* ---------- Escribir ---------- */\n\n.escribir {\n  display: flex;\n  gap: 9px;\n  padding: 12px 18px;\n  padding-bottom: max(12px, env(safe-area-inset-bottom));\n  border-top: 1px solid var(--linea);\n  flex: none;\n}\n\n.campo {\n  flex: 1;\n  min-width: 0;\n  font-family: inherit;\n  /* 16px exactos: menos que eso hace que Safari en iPhone haga zoom al enfocar. */\n  font-size: 16px;\n  color: var(--texto);\n  background: var(--burbuja);\n  border: 1px solid transparent;\n  border-radius: 999px;\n  padding: 12px 18px;\n}\n.campo::placeholder { color: var(--suave); }\n.campo:focus { outline: none; border-color: var(--marca); }\n\n.enviar {\n  width: 46px;\n  height: 46px;\n  flex: none;\n  border: 0;\n  border-radius: 50%;\n  background: var(--marca);\n  color: var(--marca-texto);\n  display: grid;\n  place-items: center;\n  cursor: pointer;\n}\n.enviar svg { width: 21px; height: 21px; }\n.enviar:disabled { opacity: .45; cursor: default; }\n\n:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }\n\n@media (prefers-reduced-motion: reduce) {\n  * { animation: none !important; transition: none !important; }\n}\n\n</style>\n\n<main class=\"chat\">\n  <header class=\"cabecera\">\n    <div class=\"avatar\" aria-hidden=\"true\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n        <rect x=\"3\" y=\"7\" width=\"18\" height=\"13\" rx=\"4\" />\n        <path d=\"M12 7V3.5\" />\n        <circle cx=\"12\" cy=\"2.6\" r=\"1.2\" fill=\"currentColor\" stroke=\"none\" />\n        <path d=\"M8.6 12.4v1.6M15.4 12.4v1.6\" />\n        <path d=\"M9.6 16.6h4.8\" />\n      </svg>\n    </div>\n    <div class=\"identidad\">\n      <h1 id=\"negocio\">__NOMBRE__</h1>\n      <p id=\"rubro\"></p>\n    </div>\n  </header>\n\n  <section class=\"hilo\" id=\"hilo\" aria-live=\"polite\" aria-label=\"Conversación\"></section>\n\n  <div class=\"atajos\" id=\"atajos\"></div>\n\n  <form class=\"escribir\" id=\"escribir\" autocomplete=\"off\">\n    <input\n      class=\"campo\"\n      id=\"campo\"\n      type=\"text\"\n      placeholder=\"Escribe tu pregunta…\"\n      maxlength=\"1000\"\n      aria-label=\"Tu mensaje\"\n      enterkeyhint=\"send\"\n    />\n    <button class=\"enviar\" id=\"enviar\" type=\"submit\" aria-label=\"Enviar\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">\n        <path d=\"M4 12h15M13 6l6 6-6 6\" />\n      </svg>\n    </button>\n  </form>\n</main>\n\n<script>\n  /* ====================================================================\n     Motor de PymeBot — generado desde src/bot/ por scripts/build-chat.js.\n     No editar aquí: se cambia el código fuente y se regenera.\n     ==================================================================== */\n\n  /**\n * Utilidades de texto.\n *\n * El objetivo es que \"¿Cuánto CUESTA?\" y \"cuanto cuesta\" sean lo mismo para el motor.\n * En español esto significa: minúsculas, sin acentos, sin signos de puntuación\n * (incluidos ¿ ¡) y sin espacios sobrantes.\n */\n\n/** Pasa un texto a su forma canónica comparable. */\nfunction normalize(text) {\n  if (typeof text !== 'string') return '';\n  return text\n    .toLowerCase()\n    // La ñ es una letra propia del español, no una n con acento: se protege antes de\n    // que NFD la descomponga, o 'año' se convertiría en 'ano'.\n    .replace(/ñ/g, '\\u0001')\n    .normalize('NFD')\n    .replace(/[\\u0300-\\u036f]/g, '') // quita los acentos ya separados por NFD\n    .replace(/\\u0001/g, 'ñ')\n    .replace(/[^a-z0-9ñ\\s]/g, ' ') // ¿ ? ! . , y emojis se vuelven espacio\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\n/**\n * Forma usada solo para COMPARAR, no para mostrar.\n *\n * Añade a la normalización el plegado de la ñ. La ñ se conserva en `normalize` porque es\n * una letra propia del español, pero al comparar tiene que dar igual cómo se escribió:\n * el dueño del negocio escribe la palabra clave \"cumpleanos\" y el cliente pregunta por\n * \"cumpleaños\". Confundir \"año\" con \"ano\" es un riesgo teórico; que no coincidan las\n * palabras clave escritas sin ñ es un fallo que ocurre todos los días.\n */\nfunction fold(text) {\n  return normalize(text).replace(/ñ/g, 'n');\n}\n\n/** Divide un texto normalizado en palabras. */\nfunction tokenize(text) {\n  const normalized = normalize(text);\n  return normalized ? normalized.split(' ') : [];\n}\n\n/**\n * Compara dos palabras tolerando el plural del español.\n * \"horarios\" debe encontrar la palabra clave \"horario\", y \"precio\" la clave \"precios\".\n */\nfunction wordsMatch(rawA, rawB) {\n  const a = rawA.replace(/ñ/g, 'n');\n  const b = rawB.replace(/ñ/g, 'n');\n  if (a === b) return true;\n  const [short, long] = a.length <= b.length ? [a, b] : [b, a];\n  if (short.length < 3) return false; // evita que \"la\"/\"las\" cuenten como coincidencia\n  return long === short + 's' || long === short + 'es';\n}\n\n/**\n * Motor de intenciones.\n *\n * Estrategia deliberadamente simple: cada intención declara palabras clave y una\n * respuesta. Se puntúa cuántas palabras clave aparecen en el mensaje y gana la\n * intención con mayor puntaje, siempre que supere un umbral mínimo de confianza.\n *\n * Es determinista, se testea con facilidad y no depende de ningún servicio externo.\n */\n\n\n/**\n * Puntaje mínimo por defecto para aceptar una intención. Debajo de esto, respondemos el\n * respaldo. Cada negocio puede subirlo o bajarlo desde su panel: subirlo hace que el bot\n * responda menos pero se equivoque menos, bajarlo al revés.\n */\nconst CONFIDENCE_THRESHOLD = 1;\n\n/** El umbral que corresponde a este negocio. */\nfunction thresholdFor(business) {\n  const propio = business && Number(business.confidenceThreshold);\n  return Number.isFinite(propio) && propio > 0 ? propio : CONFIDENCE_THRESHOLD;\n}\n\n/**\n * Puntúa una palabra clave contra el mensaje del usuario.\n * Las claves de varias palabras (\"cuanto cuesta\") valen más que las de una sola,\n * porque son mucho más específicas.\n */\nfunction scoreKeyword(keyword, messageTokens, paddedMessage) {\n  // `fold` en vez de `normalize`: comparar tiene que ser indiferente a cómo se escribió la ñ.\n  const normalizedKeyword = fold(keyword);\n  if (!normalizedKeyword) return 0;\n\n  const keywordWords = normalizedKeyword.split(' ');\n\n  if (keywordWords.length > 1) {\n    return paddedMessage.includes(` ${normalizedKeyword} `) ? keywordWords.length * 1.5 : 0;\n  }\n\n  const found = messageTokens.some((token) => wordsMatch(token, normalizedKeyword));\n  if (!found) return 0;\n\n  // Una palabra larga (\"transferencia\") es mejor señal que una corta (\"hora\").\n  return normalizedKeyword.length >= 6 ? 1.5 : 1;\n}\n\n/** Puntúa una intención completa. */\nfunction scoreIntent(intent, messageTokens, paddedMessage) {\n  let score = 0;\n  for (const keyword of intent.keywords || []) {\n    score += scoreKeyword(keyword, messageTokens, paddedMessage);\n  }\n  return score;\n}\n\n/**\n * Busca la mejor intención para un mensaje.\n * @returns {{intent: object|null, score: number}}\n */\nfunction matchIntent(message, business) {\n  const messageTokens = tokenize(message);\n  if (messageTokens.length === 0) return { intent: null, score: 0 };\n\n  const paddedMessage = ` ${fold(message)} `;\n\n  let best = null;\n  let bestScore = 0;\n\n  for (const intent of business.intents || []) {\n    const score = scoreIntent(intent, messageTokens, paddedMessage);\n    if (score > bestScore) {\n      best = intent;\n      bestScore = score;\n    }\n  }\n\n  if (bestScore < thresholdFor(business)) return { intent: null, score: bestScore };\n  return { intent: best, score: bestScore };\n}\n\n/** Arma el mensaje de \"no entendí\" con la lista de temas que el negocio sí cubre. */\nfunction buildFallback(business) {\n  const topics = (business.topics || []).map((topic) => `• ${topic}`).join('\\n');\n  const parts = [business.fallback];\n  if (topics) parts.push(topics);\n  if (business.handoff) parts.push(business.handoff);\n  return parts.filter(Boolean).join('\\n');\n}\n\n/**\n * Genera la respuesta a un mensaje.\n *\n * `session` aporta el mínimo de contexto conversacional del MVP: saber si el bot ya\n * saludó, para no repetir el saludo largo en cada \"hola\".\n *\n * @returns {{reply: string, intent: string, score: number, matched: boolean}}\n */\nfunction respond(message, business, session = null) {\n  // Bot pausado: no se intenta entender nada, se responde lo que el dueño dejó escrito.\n  if (business && business.active === false) {\n    return {\n      reply: business.pausedMessage || 'En este momento no estamos atendiendo por aquí.',\n      intent: 'pausado',\n      score: 0,\n      matched: false,\n    };\n  }\n\n  const normalized = normalize(message);\n\n  if (!normalized) {\n    // Sin texto real. Distinguimos dos casos que se ven iguales para el motor:\n    // un mensaje realmente vacío, y uno que sí traía contenido (solo emojis o signos)\n    // pero que la normalización dejó sin palabras. Decirle \"no recibí nada\" a quien\n    // acaba de escribir 👍 es confuso, así que ese caso va al fallback normal.\n    const escribioAlgo = typeof message === 'string' && message.trim() !== '';\n    if (escribioAlgo) {\n      return { reply: buildFallback(business), intent: 'fallback', score: 0, matched: false };\n    }\n    return {\n      reply: 'No recibí ningún mensaje. ¿Me cuentas en qué te puedo ayudar?',\n      intent: 'vacio',\n      score: 0,\n      matched: false,\n    };\n  }\n\n  const { intent, score } = matchIntent(message, business);\n\n  if (!intent) {\n    return { reply: buildFallback(business), intent: 'fallback', score, matched: false };\n  }\n\n  let reply = intent.answer;\n\n  // Único comportamiento contextual del MVP: no repetir el saludo largo.\n  if (intent.id === 'saludo' && session && session.greeted) {\n    reply = business.greetingRepeat || reply;\n  }\n\n  return { reply, intent: intent.id, score, matched: true };\n}\n\n  const NEGOCIO = /*__BUSINESS__*/;\n\n  /* ==================================================================== */\n\n  const hiloEl = document.getElementById(\"hilo\");\n  const atajosEl = document.getElementById(\"atajos\");\n  const formEl = document.getElementById(\"escribir\");\n  const campoEl = document.getElementById(\"campo\");\n  const enviarEl = document.getElementById(\"enviar\");\n\n  // Sin servidor, la sesión es simplemente lo que el motor necesita recordar.\n  const sesion = { greeted: false };\n\n  function burbuja(texto, quien) {\n    const el = document.createElement(\"div\");\n    el.className = \"burbuja \" + quien;\n    el.textContent = texto;\n    hiloEl.appendChild(el);\n    hiloEl.scrollTop = hiloEl.scrollHeight;\n    return el;\n  }\n\n  function escribiendo() {\n    const el = document.createElement(\"div\");\n    el.className = \"burbuja bot escribiendo\";\n    el.innerHTML = \"<i></i><i></i><i></i>\";\n    hiloEl.appendChild(el);\n    hiloEl.scrollTop = hiloEl.scrollHeight;\n    return el;\n  }\n\n  function enviar(texto) {\n    const mensaje = String(texto || \"\").trim();\n    if (!mensaje) return;\n\n    burbuja(mensaje, \"cliente\");\n    campoEl.value = \"\";\n    enviarEl.disabled = true;\n\n    const pensando = escribiendo();\n\n    // Una pausa breve para que se lea como una conversación.\n    setTimeout(function () {\n      const resultado = respond(mensaje, NEGOCIO, sesion);\n      pensando.remove();\n      burbuja(resultado.reply, \"bot\");\n      if (resultado.intent === \"saludo\") sesion.greeted = true;\n      enviarEl.disabled = false;\n      campoEl.focus();\n    }, 300);\n  }\n\n  formEl.addEventListener(\"submit\", function (evento) {\n    evento.preventDefault();\n    enviar(campoEl.value);\n  });\n\n  document.getElementById(\"rubro\").textContent = NEGOCIO.tagline || \"\";\n  burbuja(NEGOCIO.active === false ? NEGOCIO.pausedMessage : NEGOCIO.greeting, \"bot\");\n\n  if (NEGOCIO.active !== false) {\n    (NEGOCIO.topics || []).forEach(function (tema) {\n      const boton = document.createElement(\"button\");\n      boton.className = \"atajo\";\n      boton.type = \"button\";\n      boton.textContent = tema;\n      boton.addEventListener(\"click\", function () {\n        enviar(tema);\n      });\n      atajosEl.appendChild(boton);\n    });\n  }\n<\/script>\n";
+  var PLANTILLA_CHAT = "<!doctype html>\n<html lang=\"es\">\n<meta charset=\"utf-8\" />\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n<title>__NOMBRE__<\/title>\n<meta name=\"description\" content=\"Resolvemos tus dudas al instante.\" />\n\n<style>\n/*\n * La página que ve el cliente final.\n *\n * Se diseña para el teléfono primero: casi todo el tráfico llega desde un link\n * compartido por WhatsApp o desde un QR, y se abre en el navegador del móvil.\n */\n\n:root {\n  --fondo: #f2f4f7;\n  --panel: #ffffff;\n  --texto: #18202b;\n  --suave: #667085;\n  --linea: #e3e8ef;\n  --burbuja: #f2f4f7;\n  --marca: #1f6feb;\n  --marca-texto: #ffffff;\n  --error-bg: #fdecec;\n  --error: #a12a2a;\n}\n\n@media (prefers-color-scheme: dark) {\n  :root {\n    --fondo: #0e1116;\n    --panel: #161b22;\n    --texto: #e6edf3;\n    --suave: #8d97a5;\n    --linea: #262c36;\n    --burbuja: #21262d;\n    --marca: #4d8ef7;\n    --marca-texto: #06142b;\n    --error-bg: #3a1d1d;\n    --error: #f3a7a7;\n  }\n}\n\n* { box-sizing: border-box; }\n\nhtml, body { height: 100%; }\n\nbody {\n  margin: 0;\n  background: var(--fondo);\n  color: var(--texto);\n  font-family: system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif;\n  font-size: 16px;\n  line-height: 1.5;\n  -webkit-font-smoothing: antialiased;\n  display: flex;\n  justify-content: center;\n}\n\n.chat {\n  width: min(640px, 100%);\n  /* dvh en vez de vh: en el móvil la barra del navegador cambia de alto al hacer scroll. */\n  height: 100dvh;\n  background: var(--panel);\n  display: flex;\n  flex-direction: column;\n}\n\n/* ---------- Cabecera ---------- */\n\n.cabecera {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n  padding: 14px 18px;\n  padding-top: max(14px, env(safe-area-inset-top));\n  border-bottom: 1px solid var(--linea);\n  flex: none;\n}\n\n.avatar {\n  width: 42px;\n  height: 42px;\n  flex: none;\n  border-radius: 12px;\n  background: var(--burbuja);\n  color: var(--marca);\n  display: grid;\n  place-items: center;\n}\n.avatar svg { width: 23px; height: 23px; }\n\n.identidad { min-width: 0; }\n.identidad h1 {\n  margin: 0;\n  font-size: 17px;\n  font-weight: 650;\n  letter-spacing: -0.01em;\n}\n.identidad p {\n  margin: 1px 0 0;\n  font-size: 13px;\n  color: var(--suave);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n/* ---------- Conversación ---------- */\n\n.hilo {\n  flex: 1;\n  overflow-y: auto;\n  padding: 18px;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  -webkit-overflow-scrolling: touch;\n}\n\n.burbuja {\n  max-width: 85%;\n  padding: 11px 15px;\n  border-radius: 18px;\n  font-size: 15.5px;\n  line-height: 1.5;\n  white-space: pre-wrap;\n  overflow-wrap: anywhere;\n}\n\n.burbuja.bot {\n  align-self: flex-start;\n  background: var(--burbuja);\n  border-bottom-left-radius: 5px;\n}\n\n.burbuja.cliente {\n  align-self: flex-end;\n  background: var(--marca);\n  color: var(--marca-texto);\n  border-bottom-right-radius: 5px;\n}\n\n.burbuja.aviso {\n  align-self: center;\n  background: var(--error-bg);\n  color: var(--error);\n  font-size: 14px;\n  text-align: center;\n  max-width: 100%;\n}\n\n.escribiendo { display: flex; gap: 4px; align-items: center; padding: 15px; }\n.escribiendo i {\n  width: 6px; height: 6px; border-radius: 50%;\n  background: var(--suave); animation: latir 1.2s infinite;\n}\n.escribiendo i:nth-child(2) { animation-delay: .18s; }\n.escribiendo i:nth-child(3) { animation-delay: .36s; }\n@keyframes latir { 0%,60%,100% { opacity:.25 } 30% { opacity:.9 } }\n\n/* ---------- Atajos ---------- */\n\n.atajos {\n  display: flex;\n  gap: 7px;\n  padding: 0 18px 10px;\n  overflow-x: auto;\n  scrollbar-width: none;\n  flex: none;\n}\n.atajos::-webkit-scrollbar { display: none; }\n.atajos:empty { display: none; }\n\n.atajo {\n  font-family: inherit;\n  font-size: 14px;\n  color: var(--marca);\n  background: transparent;\n  border: 1px solid var(--linea);\n  border-radius: 999px;\n  padding: 7px 14px;\n  white-space: nowrap;\n  cursor: pointer;\n  flex: none;\n}\n.atajo:hover { border-color: var(--marca); }\n\n/* ---------- Escribir ---------- */\n\n.escribir {\n  display: flex;\n  gap: 9px;\n  padding: 12px 18px;\n  padding-bottom: max(12px, env(safe-area-inset-bottom));\n  border-top: 1px solid var(--linea);\n  flex: none;\n}\n\n.campo {\n  flex: 1;\n  min-width: 0;\n  font-family: inherit;\n  /* 16px exactos: menos que eso hace que Safari en iPhone haga zoom al enfocar. */\n  font-size: 16px;\n  color: var(--texto);\n  background: var(--burbuja);\n  border: 1px solid transparent;\n  border-radius: 999px;\n  padding: 12px 18px;\n}\n.campo::placeholder { color: var(--suave); }\n.campo:focus { outline: none; border-color: var(--marca); }\n\n.enviar {\n  width: 46px;\n  height: 46px;\n  flex: none;\n  border: 0;\n  border-radius: 50%;\n  background: var(--marca);\n  color: var(--marca-texto);\n  display: grid;\n  place-items: center;\n  cursor: pointer;\n}\n.enviar svg { width: 21px; height: 21px; }\n.enviar:disabled { opacity: .45; cursor: default; }\n\n:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }\n\n@media (prefers-reduced-motion: reduce) {\n  * { animation: none !important; transition: none !important; }\n}\n\n<\/style>\n\n<main class=\"chat\">\n  <header class=\"cabecera\">\n    <div class=\"avatar\" aria-hidden=\"true\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n        <rect x=\"3\" y=\"7\" width=\"18\" height=\"13\" rx=\"4\" />\n        <path d=\"M12 7V3.5\" />\n        <circle cx=\"12\" cy=\"2.6\" r=\"1.2\" fill=\"currentColor\" stroke=\"none\" />\n        <path d=\"M8.6 12.4v1.6M15.4 12.4v1.6\" />\n        <path d=\"M9.6 16.6h4.8\" />\n      <\/svg>\n    <\/div>\n    <div class=\"identidad\">\n      <h1 id=\"negocio\">__NOMBRE__<\/h1>\n      <p id=\"rubro\"><\/p>\n    <\/div>\n  <\/header>\n\n  <section class=\"hilo\" id=\"hilo\" aria-live=\"polite\" aria-label=\"Conversación\"><\/section>\n\n  <div class=\"atajos\" id=\"atajos\"><\/div>\n\n  <form class=\"escribir\" id=\"escribir\" autocomplete=\"off\">\n    <input\n      class=\"campo\"\n      id=\"campo\"\n      type=\"text\"\n      placeholder=\"Escribe tu pregunta…\"\n      maxlength=\"1000\"\n      aria-label=\"Tu mensaje\"\n      enterkeyhint=\"send\"\n    />\n    <button class=\"enviar\" id=\"enviar\" type=\"submit\" aria-label=\"Enviar\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">\n        <path d=\"M4 12h15M13 6l6 6-6 6\" />\n      <\/svg>\n    <\/button>\n  <\/form>\n<\/main>\n\n<script src=\"conversaciones.js\"><\/script>\n<script src=\"chat/chat.js\"><\/script>\n<script>\n  /* ====================================================================\n     Motor de PymeBot — generado desde src/bot/ por scripts/build-chat.js.\n     No editar aquí: se cambia el código fuente y se regenera.\n     ==================================================================== */\n\n  /**\n * Utilidades de texto.\n *\n * El objetivo es que \"¿Cuánto CUESTA?\" y \"cuanto cuesta\" sean lo mismo para el motor.\n * En español esto significa: minúsculas, sin acentos, sin signos de puntuación\n * (incluidos ¿ ¡) y sin espacios sobrantes.\n */\n\n/** Pasa un texto a su forma canónica comparable. */\nfunction normalize(text) {\n  if (typeof text !== 'string') return '';\n  return text\n    .toLowerCase()\n    // La ñ es una letra propia del español, no una n con acento: se protege antes de\n    // que NFD la descomponga, o 'año' se convertiría en 'ano'.\n    .replace(/ñ/g, '\\u0001')\n    .normalize('NFD')\n    .replace(/[\\u0300-\\u036f]/g, '') // quita los acentos ya separados por NFD\n    .replace(/\\u0001/g, 'ñ')\n    .replace(/[^a-z0-9ñ\\s]/g, ' ') // ¿ ? ! . , y emojis se vuelven espacio\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\n/**\n * Forma usada solo para COMPARAR, no para mostrar.\n *\n * Añade a la normalización el plegado de la ñ. La ñ se conserva en `normalize` porque es\n * una letra propia del español, pero al comparar tiene que dar igual cómo se escribió:\n * el dueño del negocio escribe la palabra clave \"cumpleanos\" y el cliente pregunta por\n * \"cumpleaños\". Confundir \"año\" con \"ano\" es un riesgo teórico; que no coincidan las\n * palabras clave escritas sin ñ es un fallo que ocurre todos los días.\n */\nfunction fold(text) {\n  return normalize(text).replace(/ñ/g, 'n');\n}\n\n/** Divide un texto normalizado en palabras. */\nfunction tokenize(text) {\n  const normalized = normalize(text);\n  return normalized ? normalized.split(' ') : [];\n}\n\n/**\n * Compara dos palabras tolerando el plural del español.\n * \"horarios\" debe encontrar la palabra clave \"horario\", y \"precio\" la clave \"precios\".\n */\nfunction wordsMatch(rawA, rawB) {\n  const a = rawA.replace(/ñ/g, 'n');\n  const b = rawB.replace(/ñ/g, 'n');\n  if (a === b) return true;\n  const [short, long] = a.length <= b.length ? [a, b] : [b, a];\n  if (short.length < 3) return false; // evita que \"la\"/\"las\" cuenten como coincidencia\n  return long === short + 's' || long === short + 'es';\n}\n\n/**\n * Motor de intenciones.\n *\n * Estrategia deliberadamente simple: cada intención declara palabras clave y una\n * respuesta. Se puntúa cuántas palabras clave aparecen en el mensaje y gana la\n * intención con mayor puntaje, siempre que supere un umbral mínimo de confianza.\n *\n * Es determinista, se testea con facilidad y no depende de ningún servicio externo.\n */\n\n\n/**\n * Puntaje mínimo por defecto para aceptar una intención. Debajo de esto, respondemos el\n * respaldo. Cada negocio puede subirlo o bajarlo desde su panel: subirlo hace que el bot\n * responda menos pero se equivoque menos, bajarlo al revés.\n */\nconst CONFIDENCE_THRESHOLD = 1;\n\n/** El umbral que corresponde a este negocio. */\nfunction thresholdFor(business) {\n  const propio = business && Number(business.confidenceThreshold);\n  return Number.isFinite(propio) && propio > 0 ? propio : CONFIDENCE_THRESHOLD;\n}\n\n/**\n * Puntúa una palabra clave contra el mensaje del usuario.\n * Las claves de varias palabras (\"cuanto cuesta\") valen más que las de una sola,\n * porque son mucho más específicas.\n */\nfunction scoreKeyword(keyword, messageTokens, paddedMessage) {\n  // `fold` en vez de `normalize`: comparar tiene que ser indiferente a cómo se escribió la ñ.\n  const normalizedKeyword = fold(keyword);\n  if (!normalizedKeyword) return 0;\n\n  const keywordWords = normalizedKeyword.split(' ');\n\n  if (keywordWords.length > 1) {\n    return paddedMessage.includes(` ${normalizedKeyword} `) ? keywordWords.length * 1.5 : 0;\n  }\n\n  const found = messageTokens.some((token) => wordsMatch(token, normalizedKeyword));\n  if (!found) return 0;\n\n  // Una palabra larga (\"transferencia\") es mejor señal que una corta (\"hora\").\n  return normalizedKeyword.length >= 6 ? 1.5 : 1;\n}\n\n/** Puntúa una intención completa. */\nfunction scoreIntent(intent, messageTokens, paddedMessage) {\n  let score = 0;\n  for (const keyword of intent.keywords || []) {\n    score += scoreKeyword(keyword, messageTokens, paddedMessage);\n  }\n  return score;\n}\n\n/**\n * Busca la mejor intención para un mensaje.\n * @returns {{intent: object|null, score: number}}\n */\nfunction matchIntent(message, business) {\n  const messageTokens = tokenize(message);\n  if (messageTokens.length === 0) return { intent: null, score: 0 };\n\n  const paddedMessage = ` ${fold(message)} `;\n\n  let best = null;\n  let bestScore = 0;\n\n  for (const intent of business.intents || []) {\n    const score = scoreIntent(intent, messageTokens, paddedMessage);\n    if (score > bestScore) {\n      best = intent;\n      bestScore = score;\n    }\n  }\n\n  if (bestScore < thresholdFor(business)) return { intent: null, score: bestScore };\n  return { intent: best, score: bestScore };\n}\n\n/** Arma el mensaje de \"no entendí\" con la lista de temas que el negocio sí cubre. */\nfunction buildFallback(business) {\n  const topics = (business.topics || []).map((topic) => `• ${topic}`).join('\\n');\n  const parts = [business.fallback];\n  if (topics) parts.push(topics);\n  if (business.handoff) parts.push(business.handoff);\n  return parts.filter(Boolean).join('\\n');\n}\n\n/**\n * Genera la respuesta a un mensaje.\n *\n * `session` aporta el mínimo de contexto conversacional del MVP: saber si el bot ya\n * saludó, para no repetir el saludo largo en cada \"hola\".\n *\n * @returns {{reply: string, intent: string, score: number, matched: boolean}}\n */\nfunction respond(message, business, session = null) {\n  // Bot pausado: no se intenta entender nada, se responde lo que el dueño dejó escrito.\n  if (business && business.active === false) {\n    return {\n      reply: business.pausedMessage || 'En este momento no estamos atendiendo por aquí.',\n      intent: 'pausado',\n      score: 0,\n      matched: false,\n    };\n  }\n\n  const normalized = normalize(message);\n\n  if (!normalized) {\n    // Sin texto real. Distinguimos dos casos que se ven iguales para el motor:\n    // un mensaje realmente vacío, y uno que sí traía contenido (solo emojis o signos)\n    // pero que la normalización dejó sin palabras. Decirle \"no recibí nada\" a quien\n    // acaba de escribir 👍 es confuso, así que ese caso va al fallback normal.\n    const escribioAlgo = typeof message === 'string' && message.trim() !== '';\n    if (escribioAlgo) {\n      return { reply: buildFallback(business), intent: 'fallback', score: 0, matched: false };\n    }\n    return {\n      reply: 'No recibí ningún mensaje. ¿Me cuentas en qué te puedo ayudar?',\n      intent: 'vacio',\n      score: 0,\n      matched: false,\n    };\n  }\n\n  const { intent, score } = matchIntent(message, business);\n\n  if (!intent) {\n    return { reply: buildFallback(business), intent: 'fallback', score, matched: false };\n  }\n\n  let reply = intent.answer;\n\n  // Único comportamiento contextual del MVP: no repetir el saludo largo.\n  if (intent.id === 'saludo' && session && session.greeted) {\n    reply = business.greetingRepeat || reply;\n  }\n\n  return { reply, intent: intent.id, score, matched: true };\n}\n\n  const NEGOCIO = /*__BUSINESS__*/;\n\n  /* ==================================================================== */\n\n  PymeChat.iniciar(NEGOCIO, { prueba: true });\n<\/script>\n";
   var QR_MUESTRA = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 27 27\" shape-rendering=\"crispEdges\"><path fill=\"#ffffff\" d=\"M0 0h27v27H0z\"/><path stroke=\"#000000\" d=\"M1 1.5h7m1 0h1m1 0h1m1 0h4m2 0h7M1 2.5h1m5 0h1m1 0h1m1 0h1m1 0h4m2 0h1m5 0h1M1 3.5h1m1 0h3m1 0h1m1 0h4m6 0h1m1 0h3m1 0h1M1 4.5h1m1 0h3m1 0h1m1 0h1m2 0h2m1 0h3m1 0h1m1 0h3m1 0h1M1 5.5h1m1 0h3m1 0h1m1 0h1m2 0h5m2 0h1m1 0h3m1 0h1M1 6.5h1m5 0h1m5 0h4m2 0h1m5 0h1M1 7.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M9 8.5h1m2 0h3m1 0h1M2 9.5h2m1 0h1m1 0h2m1 0h1m1 0h1m2 0h3m1 0h1m1 0h5M1 10.5h1m1 0h2m4 0h1m3 0h1m3 0h4m1 0h1m1 0h2M1 11.5h4m2 0h1m2 0h2m2 0h1m2 0h2m1 0h6M2 12.5h1m2 0h2m1 0h1m8 0h1m2 0h1m3 0h1M5 13.5h1m1 0h2m2 0h1m4 0h4m2 0h1M4 14.5h1m1 0h1m1 0h1m1 0h2m1 0h2m3 0h2m4 0h2M1 15.5h1m1 0h1m1 0h3m3 0h2m1 0h1m3 0h2m3 0h3M2 16.5h1m1 0h1m4 0h2m4 0h2m4 0h2m2 0h1M1 17.5h1m3 0h9m3 0h5m3 0h1M9 18.5h2m1 0h3m1 0h2m3 0h1m1 0h3M1 19.5h7m1 0h2m1 0h1m1 0h4m1 0h1m1 0h2m1 0h2M1 20.5h1m5 0h1m2 0h3m1 0h2m1 0h1m3 0h1m3 0h1M1 21.5h1m1 0h3m1 0h1m1 0h2m1 0h1m4 0h5m3 0h1M1 22.5h1m1 0h3m1 0h1m2 0h1m2 0h1m2 0h2m2 0h2M1 23.5h1m1 0h3m1 0h1m1 0h4m4 0h1m2 0h2m1 0h1m1 0h1M1 24.5h1m5 0h1m1 0h1m1 0h2m1 0h1m1 0h2m1 0h1m1 0h1m2 0h1M1 25.5h7m2 0h3m1 0h1m1 0h2m1 0h2m3 0h2\"/></svg>\n";
   var URL_CHAT_DEMO = "chat/dona-elba.html";
 
@@ -2510,6 +2618,51 @@ function conversaciones(registros, { limite = 50 } = {}) {
         delete estado.negocios[slug];
         guardarEstado(estado);
         return respuesta(200, { ok: true });
+      }
+    }
+
+    // --- atención en vivo ---
+    // Las conversaciones de los chats con sus mensajes y su modo (bot o persona).
+    var C = window.PymeConversaciones;
+
+    if (ruta === '/api/inbox' && metodo === 'GET') {
+      return respuesta(200, {
+        conversaciones: C.listar().map(function (c) {
+          var visibles = c.mensajes.filter(function (m) { return m.de !== 'sistema'; });
+          var ultimo = visibles[visibles.length - 1];
+          return {
+            id: c.id,
+            negocio: c.negocioNombre,
+            canal: c.canal,
+            modo: c.modo,
+            esperaRespuesta: C.esperaRespuesta(c),
+            actualizada: c.actualizada,
+            ultimo: ultimo ? ultimo.texto : '',
+          };
+        }),
+      });
+    }
+
+    if (partes[1] === 'conversations' && partes[2]) {
+      var idConversacion = decodeURIComponent(partes[2]);
+      if (!C.obtener(idConversacion)) return respuesta(404, { error: 'Esa conversación no existe.' });
+
+      if (!partes[3] && metodo === 'GET') {
+        return respuesta(200, { conversacion: C.obtener(idConversacion) });
+      }
+
+      if (partes[3] === 'messages' && metodo === 'POST') {
+        var texto = cuerpo && cuerpo.texto ? String(cuerpo.texto).trim() : '';
+        if (!texto) return respuesta(422, { error: 'El mensaje está vacío.' });
+        return respuesta(201, { conversacion: C.responderComoAgente(idConversacion, texto.slice(0, 1000)) });
+      }
+
+      if (partes[3] === 'mode' && metodo === 'POST') {
+        var modo = cuerpo && cuerpo.modo;
+        if (modo !== C.BOT && modo !== C.HUMANO) {
+          return respuesta(422, { error: 'El modo debe ser ' + C.BOT + ' o ' + C.HUMANO + '.' });
+        }
+        return respuesta(200, { conversacion: C.cambiarModo(idConversacion, modo, 'agente') });
       }
     }
 
@@ -3242,10 +3395,167 @@ for (const tab of document.querySelectorAll('.seccion-tab')) {
 formEl.active.addEventListener('change', () => pintarEstado(formEl.active.checked));
 formEl.confidenceThreshold.addEventListener('input', () => pintarUmbral(formEl.confidenceThreshold.value));
 
+/* ------------------------------------------------------ atención en vivo */
+
+const bandejaListaEl = $('bandeja-lista');
+const bandejaDetalleEl = $('bandeja-detalle');
+const detalleHiloEl = $('detalle-hilo');
+const detalleTextoEl = $('detalle-texto');
+
+/** La conversación abierta en la bandeja. */
+let abierta = null;
+
+function pintarModo(el, conversacion) {
+  const humano = conversacion.modo === 'HUMAN_ACTIVE';
+  if (conversacion.esperaRespuesta) {
+    el.className = 'pill atencion';
+    el.textContent = 'Espera respuesta';
+  } else {
+    el.className = `pill ${humano ? 'humano' : 'bot'}`;
+    el.textContent = humano ? 'Atiendes tú' : 'Bot';
+  }
+}
+
+async function cargarBandeja() {
+  const { ok, datos } = await api('GET', '/api/inbox');
+  if (!ok) return;
+
+  // Primero las que esperan a una persona, después las que atiende una persona, y luego
+  // el resto por fecha: es el orden en que el dueño tiene que mirarlas.
+  const prioridad = (c) => (c.esperaRespuesta ? 0 : c.modo === 'HUMAN_ACTIVE' ? 1 : 2);
+  const lista = datos.conversaciones
+    .slice()
+    .sort((a, b) => prioridad(a) - prioridad(b) || (a.actualizada < b.actualizada ? 1 : -1));
+
+  const pendientes = lista.filter((c) => c.esperaRespuesta).length;
+  $('bandeja-pendientes').hidden = pendientes === 0;
+  $('bandeja-pendientes').textContent = `${pendientes} ${pendientes === 1 ? 'espera' : 'esperan'} respuesta`;
+
+  bandejaListaEl.innerHTML = '';
+  if (lista.length === 0) {
+    const vacio = document.createElement('li');
+    vacio.className = 'vacio-seccion';
+    vacio.textContent =
+      'Todavía no hay conversaciones. Abre el chat de prueba en otra pestaña, escríbele y ' +
+      'pídele hablar con una persona: la conversación aparecerá aquí para que la respondas.';
+    bandejaListaEl.appendChild(vacio);
+  }
+
+  for (const conversacion of lista) {
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = conversacion.esperaRespuesta ? 'espera' : '';
+    boton.setAttribute('aria-current', String(conversacion.id === abierta));
+
+    const negocio = Object.assign(document.createElement('span'), {
+      className: 'negocio',
+      textContent: conversacion.negocio,
+    });
+    const ultimo = Object.assign(document.createElement('span'), {
+      className: 'ultimo',
+      textContent: conversacion.ultimo,
+    });
+    const momento = Object.assign(document.createElement('span'), {
+      className: 'cuando-fue',
+      textContent: cuando(conversacion.actualizada),
+    });
+    const modo = document.createElement('span');
+    pintarModo(modo, conversacion);
+
+    boton.append(negocio);
+    // Las pruebas del propio dueño (la vista previa) no se confunden con clientes reales.
+    if (conversacion.canal !== 'web') {
+      boton.append(Object.assign(document.createElement('span'), {
+        className: 'canal',
+        textContent: conversacion.canal,
+      }));
+    }
+    boton.append(ultimo, momento, modo);
+    boton.addEventListener('click', () => abrirConversacion(conversacion.id));
+
+    const item = document.createElement('li');
+    item.appendChild(boton);
+    bandejaListaEl.appendChild(item);
+  }
+
+  if (abierta) await pintarConversacion();
+}
+
+async function pintarConversacion() {
+  const { ok, datos } = await api('GET', `/api/conversations/${encodeURIComponent(abierta)}`);
+  if (!ok) {
+    abierta = null;
+    bandejaDetalleEl.hidden = true;
+    return;
+  }
+  const conversacion = datos.conversacion;
+  const humano = conversacion.modo === 'HUMAN_ACTIVE';
+
+  $('detalle-negocio').textContent = conversacion.negocioNombre;
+  pintarModo($('detalle-modo'), {
+    modo: conversacion.modo,
+    esperaRespuesta: window.PymeConversaciones.esperaRespuesta(conversacion),
+  });
+  $('detalle-tomar').hidden = humano;
+  $('detalle-devolver').hidden = !humano;
+
+  // Se repinta entero (son pocos mensajes), pero solo se baja al final si llegó algo
+  // nuevo: así no le salta el scroll al dueño mientras lee más arriba.
+  const habia = detalleHiloEl.childElementCount;
+  detalleHiloEl.innerHTML = '';
+  for (const mensaje of conversacion.mensajes) {
+    const dicho = document.createElement('div');
+    const fallo = mensaje.de === 'bot' && mensaje.matched === false;
+    dicho.className = `dicho ${mensaje.de}${fallo ? ' no-supo' : ''}`;
+    dicho.textContent = mensaje.texto;
+    detalleHiloEl.appendChild(dicho);
+  }
+
+  // Visible antes de mover el scroll: un elemento oculto no tiene alto y no se desplaza.
+  bandejaDetalleEl.hidden = false;
+  if (detalleHiloEl.childElementCount !== habia) detalleHiloEl.scrollTop = detalleHiloEl.scrollHeight;
+}
+
+async function abrirConversacion(id) {
+  abierta = id;
+  detalleHiloEl.innerHTML = '';
+  await cargarBandeja();
+  detalleTextoEl.focus();
+}
+
+async function cambiarModoAbierta(modo) {
+  if (!abierta) return;
+  await api('POST', `/api/conversations/${encodeURIComponent(abierta)}/mode`, { modo });
+  await cargarBandeja();
+}
+
+$('detalle-tomar').addEventListener('click', () => cambiarModoAbierta('HUMAN_ACTIVE'));
+$('detalle-devolver').addEventListener('click', () => cambiarModoAbierta('BOT_ACTIVE'));
+
+$('detalle-responder').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const texto = detalleTextoEl.value.trim();
+  if (!texto || !abierta) return;
+
+  const { ok, datos } = await api('POST', `/api/conversations/${encodeURIComponent(abierta)}/messages`, { texto });
+  if (!ok) {
+    mostrarMensaje('error', datos.error || 'No se pudo enviar la respuesta.');
+    return;
+  }
+  detalleTextoEl.value = '';
+  await cargarBandeja();
+});
+
+// Lo que escriben los clientes en otra pestaña llega aquí sin recargar.
+window.PymeConversaciones.suscribir(() => {
+  if (usuario) cargarBandeja();
+});
+
 /* --------------------------------------------------------------- inicio */
 
 async function entrarAlPanel() {
   mostrarPanel();
+  cargarBandeja();
   await cargarEjemplos();
   const negocios = await cargarLista();
   if (negocios.length > 0) await abrir(negocios[0].slug);
@@ -3312,24 +3622,31 @@ async function entrarAlPanel() {
        * es del mismo origen, para no tocar la plantilla del chat que comparte el producto.
        */
       var ventana = marco.contentWindow;
-      var original = ventana.respond;
-      ventana.respond = function (texto) {
-        var r = original.apply(this, arguments);
-        if (!estado.conversaciones[slugActual]) estado.conversaciones[slugActual] = [];
-        estado.conversaciones[slugActual].push({
-          at: new Date().toISOString(),
-          conversationId: idDeLaPrueba,
-          channel: 'web',
-          pregunta: texto,
-          // La respuesta también: sin ella, la transcripción muestra al cliente hablando
-          // solo, que es justo lo que se quiere leer.
-          respuesta: r.reply,
-          intent: r.intent,
-          matched: r.matched,
-        });
-        guardarEstado(estado);
-        return r;
-      };
+      function registrarRespuestas() {
+        var original = ventana.respond;
+        ventana.respond = function (texto) {
+          var r = original.apply(this, arguments);
+          if (!estado.conversaciones[slugActual]) estado.conversaciones[slugActual] = [];
+          estado.conversaciones[slugActual].push({
+            at: new Date().toISOString(),
+            conversationId: idDeLaPrueba,
+            channel: 'web',
+            pregunta: texto,
+            // La respuesta también: sin ella, la transcripción muestra al cliente hablando
+            // solo, que es justo lo que se quiere leer.
+            respuesta: r.reply,
+            intent: r.intent,
+            matched: r.matched,
+          });
+          guardarEstado(estado);
+          return r;
+        };
+      }
+      // El chat carga sus scripts compartidos (conversaciones.js, chat.js) antes que el
+      // motor, así que `respond` existe recién cuando la página terminó de cargar. Si se
+      // envolviera antes, la declaración del motor pisaría el envoltorio.
+      if (doc.readyState === 'complete') registrarRespuestas();
+      else ventana.addEventListener('load', registrarRespuestas);
 
       cajon.classList.add('abierto');
       cajon.setAttribute('aria-hidden', 'false');

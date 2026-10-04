@@ -1,3 +1,7 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Taller Don Pepe</title>
 <meta name="description" content="Resolvemos tus dudas al instante." />
 
@@ -270,6 +274,8 @@ body {
   </form>
 </main>
 
+<script src="../conversaciones.js"></script>
+<script src="chat.js"></script>
 <script>
   /* ====================================================================
      Motor de PymeBot — generado desde src/bot/ por scripts/build-chat.js.
@@ -634,72 +640,5 @@ function respond(message, business, session = null) {
 
   /* ==================================================================== */
 
-  const hiloEl = document.getElementById("hilo");
-  const atajosEl = document.getElementById("atajos");
-  const formEl = document.getElementById("escribir");
-  const campoEl = document.getElementById("campo");
-  const enviarEl = document.getElementById("enviar");
-
-  // Sin servidor, la sesión es simplemente lo que el motor necesita recordar.
-  const sesion = { greeted: false };
-
-  function burbuja(texto, quien) {
-    const el = document.createElement("div");
-    el.className = "burbuja " + quien;
-    el.textContent = texto;
-    hiloEl.appendChild(el);
-    hiloEl.scrollTop = hiloEl.scrollHeight;
-    return el;
-  }
-
-  function escribiendo() {
-    const el = document.createElement("div");
-    el.className = "burbuja bot escribiendo";
-    el.innerHTML = "<i></i><i></i><i></i>";
-    hiloEl.appendChild(el);
-    hiloEl.scrollTop = hiloEl.scrollHeight;
-    return el;
-  }
-
-  function enviar(texto) {
-    const mensaje = String(texto || "").trim();
-    if (!mensaje) return;
-
-    burbuja(mensaje, "cliente");
-    campoEl.value = "";
-    enviarEl.disabled = true;
-
-    const pensando = escribiendo();
-
-    // Una pausa breve para que se lea como una conversación.
-    setTimeout(function () {
-      const resultado = respond(mensaje, NEGOCIO, sesion);
-      pensando.remove();
-      burbuja(resultado.reply, "bot");
-      if (resultado.intent === "saludo") sesion.greeted = true;
-      enviarEl.disabled = false;
-      campoEl.focus();
-    }, 300);
-  }
-
-  formEl.addEventListener("submit", function (evento) {
-    evento.preventDefault();
-    enviar(campoEl.value);
-  });
-
-  document.getElementById("rubro").textContent = NEGOCIO.tagline || "";
-  burbuja(NEGOCIO.active === false ? NEGOCIO.pausedMessage : NEGOCIO.greeting, "bot");
-
-  if (NEGOCIO.active !== false) {
-    (NEGOCIO.topics || []).forEach(function (tema) {
-      const boton = document.createElement("button");
-      boton.className = "atajo";
-      boton.type = "button";
-      boton.textContent = tema;
-      boton.addEventListener("click", function () {
-        enviar(tema);
-      });
-      atajosEl.appendChild(boton);
-    });
-  }
+  PymeChat.iniciar(NEGOCIO);
 </script>

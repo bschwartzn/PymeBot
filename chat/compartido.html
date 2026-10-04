@@ -1,3 +1,7 @@
+<!doctype html>
+<html lang="es">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Chat</title>
 <meta name="description" content="Resolvemos tus dudas al instante." />
 
@@ -270,6 +274,8 @@ body {
   </form>
 </main>
 
+<script src="../conversaciones.js"></script>
+<script src="chat.js"></script>
 <script>
   /* ====================================================================
      Chat de un negocio que viaja DENTRO del link.
@@ -478,56 +484,11 @@ function respond(message, business, session = null) {
 
   /* ==================================================================== */
 
-  const hiloEl = document.getElementById("hilo");
-  const atajosEl = document.getElementById("atajos");
-  const formEl = document.getElementById("escribir");
-  const campoEl = document.getElementById("campo");
-  const enviarEl = document.getElementById("enviar");
-
-  const sesion = { greeted: false };
   let NEGOCIO = null;
 
-  function burbuja(texto, quien) {
-    const el = document.createElement("div");
-    el.className = "burbuja " + quien;
-    el.textContent = texto;
-    hiloEl.appendChild(el);
-    hiloEl.scrollTop = hiloEl.scrollHeight;
-    return el;
-  }
-
-  function escribiendo() {
-    const el = document.createElement("div");
-    el.className = "burbuja bot escribiendo";
-    el.innerHTML = "<i></i><i></i><i></i>";
-    hiloEl.appendChild(el);
-    hiloEl.scrollTop = hiloEl.scrollHeight;
-    return el;
-  }
-
-  function enviar(texto) {
-    const mensaje = String(texto || "").trim();
-    if (!mensaje || !NEGOCIO) return;
-
-    burbuja(mensaje, "cliente");
-    campoEl.value = "";
-    enviarEl.disabled = true;
-
-    const pensando = escribiendo();
-
-    setTimeout(function () {
-      const resultado = respond(mensaje, NEGOCIO, sesion);
-      pensando.remove();
-      burbuja(resultado.reply, "bot");
-      if (resultado.intent === "saludo") sesion.greeted = true;
-      enviarEl.disabled = false;
-      campoEl.focus();
-    }, 280);
-  }
-
-  formEl.addEventListener("submit", function (evento) {
+  // Hasta que el negocio termine de leerse del link, enviar no debe recargar la página.
+  document.getElementById("escribir").addEventListener("submit", function (evento) {
     evento.preventDefault();
-    enviar(campoEl.value);
   });
 
   /* ---------------------------------------------------------------- link */
@@ -564,9 +525,12 @@ function respond(message, business, session = null) {
 
   function noDisponible(motivo) {
     document.getElementById("negocio").textContent = "Chat no disponible";
-    burbuja(motivo, "aviso");
-    campoEl.disabled = true;
-    enviarEl.disabled = true;
+    const aviso = document.createElement("div");
+    aviso.className = "burbuja aviso";
+    aviso.textContent = motivo;
+    document.getElementById("hilo").appendChild(aviso);
+    document.getElementById("campo").disabled = true;
+    document.getElementById("enviar").disabled = true;
   }
 
   (async function arrancar() {
@@ -581,23 +545,8 @@ function respond(message, business, session = null) {
     }
 
     document.getElementById("negocio").textContent = NEGOCIO.name;
-    document.getElementById("rubro").textContent = NEGOCIO.tagline || "";
     document.title = NEGOCIO.name;
 
-    const pausado = NEGOCIO.active === false;
-    burbuja(pausado ? NEGOCIO.pausedMessage : NEGOCIO.greeting, "bot");
-
-    if (!pausado) {
-      for (const tema of NEGOCIO.topics || []) {
-        const boton = document.createElement("button");
-        boton.className = "atajo";
-        boton.type = "button";
-        boton.textContent = tema;
-        boton.addEventListener("click", function () {
-          enviar(tema);
-        });
-        atajosEl.appendChild(boton);
-      }
-    }
+    PymeChat.iniciar(NEGOCIO);
   })();
 </script>
