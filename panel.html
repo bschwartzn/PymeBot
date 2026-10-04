@@ -896,6 +896,7 @@ input[type="range"] { width: 100%; accent-color: var(--brand); cursor: pointer; 
                     cámara del teléfono abre el chat.
                   </p>
                   <div class="qr" id="qr"></div>
+                  <p class="ayuda" id="nota-qr"></p>
                   <a id="descargar-qr" class="btn-ghost" href="#" download>Descargar QR</a>
                 </div>
 
@@ -990,6 +991,7 @@ input[type="range"] { width: 100%; accent-color: var(--brand); cursor: pointer; 
 </aside>
 
 <script src="conversaciones.js"></script>
+<script src="vendor/qrcode.js"></script>
 <script>
   /* ===================================================================
      Validación y motor: tomados tal cual de src/. No son una copia.
@@ -2366,8 +2368,6 @@ function conversaciones(registros, { limite = 50 } = {}) {
   }
 ];
   var PLANTILLA_CHAT = "<!doctype html>\n<html lang=\"es\">\n<meta charset=\"utf-8\" />\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n<title>__NOMBRE__<\/title>\n<meta name=\"description\" content=\"Resolvemos tus dudas al instante.\" />\n\n<style>\n/*\n * La página que ve el cliente final.\n *\n * Se diseña para el teléfono primero: casi todo el tráfico llega desde un link\n * compartido por WhatsApp o desde un QR, y se abre en el navegador del móvil.\n */\n\n:root {\n  --fondo: #f2f4f7;\n  --panel: #ffffff;\n  --texto: #18202b;\n  --suave: #667085;\n  --linea: #e3e8ef;\n  --burbuja: #f2f4f7;\n  --marca: #1f6feb;\n  --marca-texto: #ffffff;\n  --error-bg: #fdecec;\n  --error: #a12a2a;\n}\n\n@media (prefers-color-scheme: dark) {\n  :root {\n    --fondo: #0e1116;\n    --panel: #161b22;\n    --texto: #e6edf3;\n    --suave: #8d97a5;\n    --linea: #262c36;\n    --burbuja: #21262d;\n    --marca: #4d8ef7;\n    --marca-texto: #06142b;\n    --error-bg: #3a1d1d;\n    --error: #f3a7a7;\n  }\n}\n\n* { box-sizing: border-box; }\n\nhtml, body { height: 100%; }\n\nbody {\n  margin: 0;\n  background: var(--fondo);\n  color: var(--texto);\n  font-family: system-ui, -apple-system, \"Segoe UI\", Roboto, sans-serif;\n  font-size: 16px;\n  line-height: 1.5;\n  -webkit-font-smoothing: antialiased;\n  display: flex;\n  justify-content: center;\n}\n\n.chat {\n  width: min(640px, 100%);\n  /* dvh en vez de vh: en el móvil la barra del navegador cambia de alto al hacer scroll. */\n  height: 100dvh;\n  background: var(--panel);\n  display: flex;\n  flex-direction: column;\n}\n\n/* ---------- Cabecera ---------- */\n\n.cabecera {\n  display: flex;\n  align-items: center;\n  gap: 12px;\n  padding: 14px 18px;\n  padding-top: max(14px, env(safe-area-inset-top));\n  border-bottom: 1px solid var(--linea);\n  flex: none;\n}\n\n.avatar {\n  width: 42px;\n  height: 42px;\n  flex: none;\n  border-radius: 12px;\n  background: var(--burbuja);\n  color: var(--marca);\n  display: grid;\n  place-items: center;\n}\n.avatar svg { width: 23px; height: 23px; }\n\n.identidad { min-width: 0; }\n.identidad h1 {\n  margin: 0;\n  font-size: 17px;\n  font-weight: 650;\n  letter-spacing: -0.01em;\n}\n.identidad p {\n  margin: 1px 0 0;\n  font-size: 13px;\n  color: var(--suave);\n  white-space: nowrap;\n  overflow: hidden;\n  text-overflow: ellipsis;\n}\n\n/* ---------- Conversación ---------- */\n\n.hilo {\n  flex: 1;\n  overflow-y: auto;\n  padding: 18px;\n  display: flex;\n  flex-direction: column;\n  gap: 10px;\n  -webkit-overflow-scrolling: touch;\n}\n\n.burbuja {\n  max-width: 85%;\n  padding: 11px 15px;\n  border-radius: 18px;\n  font-size: 15.5px;\n  line-height: 1.5;\n  white-space: pre-wrap;\n  overflow-wrap: anywhere;\n}\n\n.burbuja.bot {\n  align-self: flex-start;\n  background: var(--burbuja);\n  border-bottom-left-radius: 5px;\n}\n\n.burbuja.cliente {\n  align-self: flex-end;\n  background: var(--marca);\n  color: var(--marca-texto);\n  border-bottom-right-radius: 5px;\n}\n\n.burbuja.aviso {\n  align-self: center;\n  background: var(--error-bg);\n  color: var(--error);\n  font-size: 14px;\n  text-align: center;\n  max-width: 100%;\n}\n\n.escribiendo { display: flex; gap: 4px; align-items: center; padding: 15px; }\n.escribiendo i {\n  width: 6px; height: 6px; border-radius: 50%;\n  background: var(--suave); animation: latir 1.2s infinite;\n}\n.escribiendo i:nth-child(2) { animation-delay: .18s; }\n.escribiendo i:nth-child(3) { animation-delay: .36s; }\n@keyframes latir { 0%,60%,100% { opacity:.25 } 30% { opacity:.9 } }\n\n/* ---------- Atajos ---------- */\n\n.atajos {\n  display: flex;\n  gap: 7px;\n  padding: 0 18px 10px;\n  overflow-x: auto;\n  scrollbar-width: none;\n  flex: none;\n}\n.atajos::-webkit-scrollbar { display: none; }\n.atajos:empty { display: none; }\n\n.atajo {\n  font-family: inherit;\n  font-size: 14px;\n  color: var(--marca);\n  background: transparent;\n  border: 1px solid var(--linea);\n  border-radius: 999px;\n  padding: 7px 14px;\n  white-space: nowrap;\n  cursor: pointer;\n  flex: none;\n}\n.atajo:hover { border-color: var(--marca); }\n\n/* ---------- Escribir ---------- */\n\n.escribir {\n  display: flex;\n  gap: 9px;\n  padding: 12px 18px;\n  padding-bottom: max(12px, env(safe-area-inset-bottom));\n  border-top: 1px solid var(--linea);\n  flex: none;\n}\n\n.campo {\n  flex: 1;\n  min-width: 0;\n  font-family: inherit;\n  /* 16px exactos: menos que eso hace que Safari en iPhone haga zoom al enfocar. */\n  font-size: 16px;\n  color: var(--texto);\n  background: var(--burbuja);\n  border: 1px solid transparent;\n  border-radius: 999px;\n  padding: 12px 18px;\n}\n.campo::placeholder { color: var(--suave); }\n.campo:focus { outline: none; border-color: var(--marca); }\n\n.enviar {\n  width: 46px;\n  height: 46px;\n  flex: none;\n  border: 0;\n  border-radius: 50%;\n  background: var(--marca);\n  color: var(--marca-texto);\n  display: grid;\n  place-items: center;\n  cursor: pointer;\n}\n.enviar svg { width: 21px; height: 21px; }\n.enviar:disabled { opacity: .45; cursor: default; }\n\n:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }\n\n@media (prefers-reduced-motion: reduce) {\n  * { animation: none !important; transition: none !important; }\n}\n\n<\/style>\n\n<main class=\"chat\">\n  <header class=\"cabecera\">\n    <div class=\"avatar\" aria-hidden=\"true\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\">\n        <rect x=\"3\" y=\"7\" width=\"18\" height=\"13\" rx=\"4\" />\n        <path d=\"M12 7V3.5\" />\n        <circle cx=\"12\" cy=\"2.6\" r=\"1.2\" fill=\"currentColor\" stroke=\"none\" />\n        <path d=\"M8.6 12.4v1.6M15.4 12.4v1.6\" />\n        <path d=\"M9.6 16.6h4.8\" />\n      <\/svg>\n    <\/div>\n    <div class=\"identidad\">\n      <h1 id=\"negocio\">__NOMBRE__<\/h1>\n      <p id=\"rubro\"><\/p>\n    <\/div>\n  <\/header>\n\n  <section class=\"hilo\" id=\"hilo\" aria-live=\"polite\" aria-label=\"Conversación\"><\/section>\n\n  <div class=\"atajos\" id=\"atajos\"><\/div>\n\n  <form class=\"escribir\" id=\"escribir\" autocomplete=\"off\">\n    <input\n      class=\"campo\"\n      id=\"campo\"\n      type=\"text\"\n      placeholder=\"Escribe tu pregunta…\"\n      maxlength=\"1000\"\n      aria-label=\"Tu mensaje\"\n      enterkeyhint=\"send\"\n    />\n    <button class=\"enviar\" id=\"enviar\" type=\"submit\" aria-label=\"Enviar\">\n      <svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\">\n        <path d=\"M4 12h15M13 6l6 6-6 6\" />\n      <\/svg>\n    <\/button>\n  <\/form>\n<\/main>\n\n<script src=\"conversaciones.js\"><\/script>\n<script src=\"chat/chat.js\"><\/script>\n<script>\n  /* ====================================================================\n     Motor de PymeBot — generado desde src/bot/ por scripts/build-chat.js.\n     No editar aquí: se cambia el código fuente y se regenera.\n     ==================================================================== */\n\n  /**\n * Utilidades de texto.\n *\n * El objetivo es que \"¿Cuánto CUESTA?\" y \"cuanto cuesta\" sean lo mismo para el motor.\n * En español esto significa: minúsculas, sin acentos, sin signos de puntuación\n * (incluidos ¿ ¡) y sin espacios sobrantes.\n */\n\n/** Pasa un texto a su forma canónica comparable. */\nfunction normalize(text) {\n  if (typeof text !== 'string') return '';\n  return text\n    .toLowerCase()\n    // La ñ es una letra propia del español, no una n con acento: se protege antes de\n    // que NFD la descomponga, o 'año' se convertiría en 'ano'.\n    .replace(/ñ/g, '\\u0001')\n    .normalize('NFD')\n    .replace(/[\\u0300-\\u036f]/g, '') // quita los acentos ya separados por NFD\n    .replace(/\\u0001/g, 'ñ')\n    .replace(/[^a-z0-9ñ\\s]/g, ' ') // ¿ ? ! . , y emojis se vuelven espacio\n    .replace(/\\s+/g, ' ')\n    .trim();\n}\n\n/**\n * Forma usada solo para COMPARAR, no para mostrar.\n *\n * Añade a la normalización el plegado de la ñ. La ñ se conserva en `normalize` porque es\n * una letra propia del español, pero al comparar tiene que dar igual cómo se escribió:\n * el dueño del negocio escribe la palabra clave \"cumpleanos\" y el cliente pregunta por\n * \"cumpleaños\". Confundir \"año\" con \"ano\" es un riesgo teórico; que no coincidan las\n * palabras clave escritas sin ñ es un fallo que ocurre todos los días.\n */\nfunction fold(text) {\n  return normalize(text).replace(/ñ/g, 'n');\n}\n\n/** Divide un texto normalizado en palabras. */\nfunction tokenize(text) {\n  const normalized = normalize(text);\n  return normalized ? normalized.split(' ') : [];\n}\n\n/**\n * Compara dos palabras tolerando el plural del español.\n * \"horarios\" debe encontrar la palabra clave \"horario\", y \"precio\" la clave \"precios\".\n */\nfunction wordsMatch(rawA, rawB) {\n  const a = rawA.replace(/ñ/g, 'n');\n  const b = rawB.replace(/ñ/g, 'n');\n  if (a === b) return true;\n  const [short, long] = a.length <= b.length ? [a, b] : [b, a];\n  if (short.length < 3) return false; // evita que \"la\"/\"las\" cuenten como coincidencia\n  return long === short + 's' || long === short + 'es';\n}\n\n/**\n * Motor de intenciones.\n *\n * Estrategia deliberadamente simple: cada intención declara palabras clave y una\n * respuesta. Se puntúa cuántas palabras clave aparecen en el mensaje y gana la\n * intención con mayor puntaje, siempre que supere un umbral mínimo de confianza.\n *\n * Es determinista, se testea con facilidad y no depende de ningún servicio externo.\n */\n\n\n/**\n * Puntaje mínimo por defecto para aceptar una intención. Debajo de esto, respondemos el\n * respaldo. Cada negocio puede subirlo o bajarlo desde su panel: subirlo hace que el bot\n * responda menos pero se equivoque menos, bajarlo al revés.\n */\nconst CONFIDENCE_THRESHOLD = 1;\n\n/** El umbral que corresponde a este negocio. */\nfunction thresholdFor(business) {\n  const propio = business && Number(business.confidenceThreshold);\n  return Number.isFinite(propio) && propio > 0 ? propio : CONFIDENCE_THRESHOLD;\n}\n\n/**\n * Puntúa una palabra clave contra el mensaje del usuario.\n * Las claves de varias palabras (\"cuanto cuesta\") valen más que las de una sola,\n * porque son mucho más específicas.\n */\nfunction scoreKeyword(keyword, messageTokens, paddedMessage) {\n  // `fold` en vez de `normalize`: comparar tiene que ser indiferente a cómo se escribió la ñ.\n  const normalizedKeyword = fold(keyword);\n  if (!normalizedKeyword) return 0;\n\n  const keywordWords = normalizedKeyword.split(' ');\n\n  if (keywordWords.length > 1) {\n    return paddedMessage.includes(` ${normalizedKeyword} `) ? keywordWords.length * 1.5 : 0;\n  }\n\n  const found = messageTokens.some((token) => wordsMatch(token, normalizedKeyword));\n  if (!found) return 0;\n\n  // Una palabra larga (\"transferencia\") es mejor señal que una corta (\"hora\").\n  return normalizedKeyword.length >= 6 ? 1.5 : 1;\n}\n\n/** Puntúa una intención completa. */\nfunction scoreIntent(intent, messageTokens, paddedMessage) {\n  let score = 0;\n  for (const keyword of intent.keywords || []) {\n    score += scoreKeyword(keyword, messageTokens, paddedMessage);\n  }\n  return score;\n}\n\n/**\n * Busca la mejor intención para un mensaje.\n * @returns {{intent: object|null, score: number}}\n */\nfunction matchIntent(message, business) {\n  const messageTokens = tokenize(message);\n  if (messageTokens.length === 0) return { intent: null, score: 0 };\n\n  const paddedMessage = ` ${fold(message)} `;\n\n  let best = null;\n  let bestScore = 0;\n\n  for (const intent of business.intents || []) {\n    const score = scoreIntent(intent, messageTokens, paddedMessage);\n    if (score > bestScore) {\n      best = intent;\n      bestScore = score;\n    }\n  }\n\n  if (bestScore < thresholdFor(business)) return { intent: null, score: bestScore };\n  return { intent: best, score: bestScore };\n}\n\n/** Arma el mensaje de \"no entendí\" con la lista de temas que el negocio sí cubre. */\nfunction buildFallback(business) {\n  const topics = (business.topics || []).map((topic) => `• ${topic}`).join('\\n');\n  const parts = [business.fallback];\n  if (topics) parts.push(topics);\n  if (business.handoff) parts.push(business.handoff);\n  return parts.filter(Boolean).join('\\n');\n}\n\n/**\n * Genera la respuesta a un mensaje.\n *\n * `session` aporta el mínimo de contexto conversacional del MVP: saber si el bot ya\n * saludó, para no repetir el saludo largo en cada \"hola\".\n *\n * @returns {{reply: string, intent: string, score: number, matched: boolean}}\n */\nfunction respond(message, business, session = null) {\n  // Bot pausado: no se intenta entender nada, se responde lo que el dueño dejó escrito.\n  if (business && business.active === false) {\n    return {\n      reply: business.pausedMessage || 'En este momento no estamos atendiendo por aquí.',\n      intent: 'pausado',\n      score: 0,\n      matched: false,\n    };\n  }\n\n  const normalized = normalize(message);\n\n  if (!normalized) {\n    // Sin texto real. Distinguimos dos casos que se ven iguales para el motor:\n    // un mensaje realmente vacío, y uno que sí traía contenido (solo emojis o signos)\n    // pero que la normalización dejó sin palabras. Decirle \"no recibí nada\" a quien\n    // acaba de escribir 👍 es confuso, así que ese caso va al fallback normal.\n    const escribioAlgo = typeof message === 'string' && message.trim() !== '';\n    if (escribioAlgo) {\n      return { reply: buildFallback(business), intent: 'fallback', score: 0, matched: false };\n    }\n    return {\n      reply: 'No recibí ningún mensaje. ¿Me cuentas en qué te puedo ayudar?',\n      intent: 'vacio',\n      score: 0,\n      matched: false,\n    };\n  }\n\n  const { intent, score } = matchIntent(message, business);\n\n  if (!intent) {\n    return { reply: buildFallback(business), intent: 'fallback', score, matched: false };\n  }\n\n  let reply = intent.answer;\n\n  // Único comportamiento contextual del MVP: no repetir el saludo largo.\n  if (intent.id === 'saludo' && session && session.greeted) {\n    reply = business.greetingRepeat || reply;\n  }\n\n  return { reply, intent: intent.id, score, matched: true };\n}\n\n  const NEGOCIO = /*__BUSINESS__*/;\n\n  /* ==================================================================== */\n\n  PymeChat.iniciar(NEGOCIO, { prueba: true });\n<\/script>\n";
-  var QR_MUESTRA = "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 27 27\" shape-rendering=\"crispEdges\"><path fill=\"#ffffff\" d=\"M0 0h27v27H0z\"/><path stroke=\"#000000\" d=\"M1 1.5h7m1 0h1m1 0h1m1 0h4m2 0h7M1 2.5h1m5 0h1m1 0h1m1 0h1m1 0h4m2 0h1m5 0h1M1 3.5h1m1 0h3m1 0h1m1 0h4m6 0h1m1 0h3m1 0h1M1 4.5h1m1 0h3m1 0h1m1 0h1m2 0h2m1 0h3m1 0h1m1 0h3m1 0h1M1 5.5h1m1 0h3m1 0h1m1 0h1m2 0h5m2 0h1m1 0h3m1 0h1M1 6.5h1m5 0h1m5 0h4m2 0h1m5 0h1M1 7.5h7m1 0h1m1 0h1m1 0h1m1 0h1m1 0h1m1 0h7M9 8.5h1m2 0h3m1 0h1M2 9.5h2m1 0h1m1 0h2m1 0h1m1 0h1m2 0h3m1 0h1m1 0h5M1 10.5h1m1 0h2m4 0h1m3 0h1m3 0h4m1 0h1m1 0h2M1 11.5h4m2 0h1m2 0h2m2 0h1m2 0h2m1 0h6M2 12.5h1m2 0h2m1 0h1m8 0h1m2 0h1m3 0h1M5 13.5h1m1 0h2m2 0h1m4 0h4m2 0h1M4 14.5h1m1 0h1m1 0h1m1 0h2m1 0h2m3 0h2m4 0h2M1 15.5h1m1 0h1m1 0h3m3 0h2m1 0h1m3 0h2m3 0h3M2 16.5h1m1 0h1m4 0h2m4 0h2m4 0h2m2 0h1M1 17.5h1m3 0h9m3 0h5m3 0h1M9 18.5h2m1 0h3m1 0h2m3 0h1m1 0h3M1 19.5h7m1 0h2m1 0h1m1 0h4m1 0h1m1 0h2m1 0h2M1 20.5h1m5 0h1m2 0h3m1 0h2m1 0h1m3 0h1m3 0h1M1 21.5h1m1 0h3m1 0h1m1 0h2m1 0h1m4 0h5m3 0h1M1 22.5h1m1 0h3m1 0h1m2 0h1m2 0h1m2 0h2m2 0h2M1 23.5h1m1 0h3m1 0h1m1 0h4m4 0h1m2 0h2m1 0h1m1 0h1M1 24.5h1m5 0h1m1 0h1m1 0h2m1 0h1m1 0h2m1 0h1m1 0h1m2 0h1M1 25.5h7m2 0h3m1 0h1m1 0h2m1 0h2m3 0h2\"/></svg>\n";
-  var URL_CHAT_DEMO = "chat/dona-elba.html";
 
   var LLAVE = 'pymebot-demo';
 
@@ -2593,7 +2593,7 @@ function conversaciones(registros, { limite = 50 } = {}) {
         return enlaceDelNegocio(negocio).then(function (url) {
           return respuesta(200, {
             url: url,
-            qr: 'qr-de-muestra',
+            qr: null, // lo dibuja el navegador desde el enlace de arriba
             embed:
               '<iframe src="' + url + '" style="width:100%;max-width:420px;height:600px;border:0;border-radius:16px"' +
               ' title="Chat de ' + String(negocio.name).replace(/"/g, '') + '"><\/iframe>',
@@ -2665,9 +2665,6 @@ function conversaciones(registros, { limite = 50 } = {}) {
         return respuesta(200, { conversacion: C.cambiarModo(idConversacion, modo, 'agente') });
       }
     }
-
-    // El QR se pide como texto; en el demo se devuelve uno de muestra.
-    if (ruta === 'qr-de-muestra') return respuesta(200, QR_MUESTRA);
 
     return respuesta(404, { error: 'No encontrado.' });
   };
@@ -2971,12 +2968,59 @@ async function copiar(texto, boton) {
 async function pintarCompartir(slug, url, rutaQr) {
   $('url-publica').value = url;
   $('abrir-url').href = url;
-  $('descargar-qr').href = rutaQr;
   $('descargar-qr').setAttribute('download', `qr-${slug}.svg`);
 
+  // Sin servidor que lo dibuje, el QR se genera aquí mismo desde el enlace real.
+  if (!rutaQr) {
+    pintarQrDelEnlace(url);
+    return;
+  }
+
+  $('descargar-qr').href = rutaQr;
   // El QR se pide como texto y se inserta: así se ve en pantalla y se imprime nítido.
   const res = await fetch(rutaQr);
   $('qr').innerHTML = res.ok ? await res.text() : '';
+}
+
+/*
+ * Un QR admite como máximo 2.953 caracteres (versión 40, corrección L). El enlace del
+ * demo lleva el negocio dentro, así que uno con muchos temas no cabe: en ese caso se dice,
+ * en vez de mostrar un QR que lleve a otra parte.
+ */
+const CAPACIDAD_QR = 2953;
+
+function pintarQrDelEnlace(enlace) {
+  const caja = $('qr');
+  const descargar = $('descargar-qr');
+  const nota = $('nota-qr');
+
+  if (enlace.length > CAPACIDAD_QR) {
+    caja.innerHTML = '';
+    descargar.hidden = true;
+    nota.innerHTML =
+      '<strong>Tu bot tiene demasiados temas para un código QR.</strong> El enlace lleva la ' +
+      `información de tu negocio dentro y ocupa ${enlace.length.toLocaleString('es-CL')} ` +
+      'caracteres; un QR admite unos 2.900. Compártelo por WhatsApp con el enlace de arriba. ' +
+      'Con PymeBot en un servidor el enlace es corto y el QR vuelve a caber.';
+    return;
+  }
+
+  // Corrección L: la que más texto admite. Basta para un QR impreso que no se va a rayar.
+  const qr = qrcode(0, 'L');
+  qr.addData(enlace);
+  qr.make();
+  const svg = qr.createSvgTag({ cellSize: 4, margin: 4, scalable: true });
+
+  caja.innerHTML = svg;
+  descargar.hidden = false;
+  descargar.href = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+
+  // Lo que decide si se escanea es el tamaño de impresión: cuantos más temas, más puntos.
+  // La regla práctica es ~0,4 mm por punto para leerlo a unos 20 cm.
+  const mm = Math.max(25, Math.ceil((qr.getModuleCount() * 0.4) / 5) * 5);
+  nota.innerHTML =
+    `<strong>Imprímelo de al menos ${mm} mm de lado</strong> (${(mm / 10).toLocaleString('es-CL')} cm). ` +
+    'Si cambias las respuestas del bot, vuelve a descargarlo: el QR lleva tu negocio dentro.';
 }
 
 async function cargarCompartir(slug) {
@@ -3676,18 +3720,6 @@ async function entrarAlPanel() {
     probar.removeAttribute('target');
     probar.textContent = 'Probar el bot →';
 
-    // En el demo no hay un QR real que descargar ni una dirección que abrir.
-    // Se oculta en vez de quitarlo: panel.js le asigna propiedades y quitarlo lo
-    // haría fallar, dejando la pestaña Compartir a medio llenar.
-    document.getElementById('descargar-qr').hidden = true;
-
-    /*
-     * Decir en pantalla qué es este QR.
-     *
-     * En el demo no puede apuntar al negocio que se edita: los negocios viven en el
-     * localStorage de este navegador, así que un teléfono abriría uno vacío. Apunta a un
-     * chat publicado de verdad, para que se pueda escanear y se vea funcionar.
-     */
     // Decir qué es este enlace: funciona de verdad, pero lleva el negocio dentro.
     var cajaLink = document.getElementById('url-publica').closest('.bloque');
     if (cajaLink) {
@@ -3701,24 +3733,6 @@ async function entrarAlPanel() {
       document.getElementById('url-publica').parentElement.after(notaLink);
     }
 
-    var tarjetaQr = document.getElementById('qr').closest('.compartir-tarjeta');
-    if (tarjetaQr) {
-      var nota = document.createElement('p');
-      nota.className = 'ayuda';
-      nota.innerHTML =
-        '<strong>En el demo este QR es un ejemplo:</strong> escanéalo y abre un chat de ' +
-        'demostración que funciona. No puede llevar tu negocio dentro como el enlace de ' +
-        'arriba: un QR admite ~2.900 caracteres y un negocio configurado ocupa más.';
-      tarjetaQr.appendChild(nota);
-
-      var abrirChat = document.createElement('a');
-      abrirChat.className = 'btn-ghost';
-      abrirChat.href = URL_CHAT_DEMO;
-      abrirChat.target = '_blank';
-      abrirChat.rel = 'noopener';
-      abrirChat.textContent = 'Abrir ese chat ↗';
-      tarjetaQr.appendChild(abrirChat);
-    }
     document.getElementById('abrir-url').addEventListener('click', function (e) {
       e.preventDefault();
       abrirPreview();
