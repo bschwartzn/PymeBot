@@ -1,0 +1,44 @@
+# Publica el sitio de PymeBot en GitHub Pages cada vez que se sube algo a main.
+#
+# En main el sitio ya está listo para servir (HTML y JS estáticos, sin compilar), así que
+# se publica tal cual. `enablement: true` activa Pages por API la primera vez: no hace
+# falta tocar Settings.
+#
+# Ojo: la rama claude/pymebot-modular-plan-ev6kdh tiene su propio flujo que también
+# publica en Pages (desde src/). Si se sube allí, ese sitio reemplaza a este.
+
+name: Publicar sitio
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - id: deploy
+        uses: actions/deploy-pages@v4
