@@ -2,7 +2,7 @@
 <html lang="es">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Cocinería Doña Elba</title>
+<title>Boracay Spa</title>
 <meta name="description" content="Resolvemos tus dudas al instante." />
 
 <style>
@@ -247,7 +247,7 @@ body {
       </svg>
     </div>
     <div class="identidad">
-      <h1 id="negocio">Cocinería Doña Elba</h1>
+      <h1 id="negocio">Boracay Spa</h1>
       <p id="rubro"></p>
     </div>
   </header>
@@ -483,436 +483,175 @@ function respond(message, business, session = null) {
 }
 
   const NEGOCIO = {
-  "name": "Cocinería Doña Elba",
-  "tagline": "Cocina chilena casera en el Barrio Puerto, Valparaíso",
-  "greeting": "¡Hola! 👋 Soy el asistente de la Cocinería Doña Elba. Puedo ayudarte con la carta, el menú del día, reservas, delivery, horarios y cómo llegar. ¿Qué necesitas saber?",
+  "name": "Boracay Spa",
+  "tagline": "Masajes con alma filipina en Lo Barnechea · demo de PymeBot",
+  "greeting": "¡Hola! 👋 Soy el asistente de Boracay Spa. Te ayudo con nuestros masajes, precios, packs, horario y cómo agendar. ¿Qué te gustaría saber?",
   "greetingRepeat": "¡Aquí sigo! ¿En qué más te ayudo?",
-  "fallback": "Perdona, no estoy seguro de haber entendido eso. Estos son los temas que manejo:",
-  "handoff": "Si prefieres hablar con alguien del local, llámanos al +56 32 234 5678 o escríbenos por WhatsApp al +56 9 6543 2100.",
+  "fallback": "Perdona, no estoy seguro de haber entendido eso. Estos son los temas en los que te puedo ayudar:",
+  "handoff": "Si prefieres hablar con alguien del spa, escríbenos por WhatsApp al +56 9 5963 1422 o a contacto@boracay.cl.",
   "topics": [
-    "Horarios",
-    "Menú del día",
-    "La carta",
-    "Reservar una mesa",
-    "Delivery y retiro",
-    "Cómo llegar",
-    "Opciones sin gluten o veganas"
+    "Horario",
+    "Tipos de masaje",
+    "Precios",
+    "Packs",
+    "Agendar una hora",
+    "Ubicación",
+    "Contacto"
   ],
   "active": true,
   "confidenceThreshold": 1,
-  "pausedMessage": "En este momento no estamos atendiendo por aquí. Escríbenos directamente y te respondemos a la brevedad.",
+  "pausedMessage": "En este momento no estamos respondiendo por aquí. Escríbenos por WhatsApp al +56 9 5963 1422 y te respondemos a la brevedad.",
   "ownerId": null,
   "intents": [
     {
       "id": "saludo",
-      "keywords": [
-        "hola",
-        "buenas",
-        "buenos dias",
-        "buenas tardes",
-        "buenas noches",
-        "hey",
-        "que tal",
-        "alo"
-      ],
+      "keywords": ["hola", "buenas", "buenos dias", "buenas tardes", "buenas noches", "hey", "que tal", "alo", "hello", "hi"],
       "answer": "¡Hola! 👋 Cuéntame, ¿qué necesitas saber?"
     },
     {
       "id": "horarios",
-      "keywords": [
-        "horario",
-        "abren",
-        "cierran",
-        "abierto",
-        "cerrado",
-        "atienden",
-        "a que hora",
-        "hasta que hora",
-        "siguen abiertos",
-        "estan abiertos",
-        "feriado",
-        "lunes",
-        "domingo",
-        "trabajan",
-        "fiestas patrias",
-        "18 de septiembre",
-        "festivo"
-      ],
-      "answer": "Atendemos de martes a sábado de 12:30 a 16:00 y de 19:30 a 23:00, y los domingos solo almuerzo, de 12:30 a 17:00. Los lunes cerramos. 🕒"
-    },
-    {
-      "id": "menu_del_dia",
-      "keywords": [
-        "menu del dia",
-        "menu",
-        "almuerzo del dia",
-        "ejecutivo",
-        "colacion",
-        "que hay hoy",
-        "plato del dia",
-        "hoy"
-      ],
-      "answer": "El menú del día cuesta $9.900 e incluye entrada, plato de fondo, postre y bebida o jugo natural. Se sirve de martes a viernes al almuerzo. Hoy: crema de zapallo, cazuela de vacuno y leche asada. 🍲"
-    },
-    {
-      "id": "carta",
-      "keywords": [
-        "carta",
-        "platos",
-        "que tienen",
-        "que venden",
-        "que sirven",
-        "comida",
-        "especialidad",
-        "recomiendan",
-        "rico",
-        "pastel de choclo",
-        "cazuela",
-        "charquican",
-        "plateada",
-        "empanada",
-        "humitas",
-        "postre",
-        "leche asada",
-        "mote con huesillo"
-      ],
-      "answer": "Nuestra carta es cocina chilena casera: pastel de choclo, cazuela de vacuno o de ave, charquicán, plateada al jugo, congrio frito, chupe de jaibas y empanadas de pino. De postre, leche asada y mote con huesillo. 🍽️"
-    },
-    {
-      "id": "pescados_mariscos",
-      "keywords": [
-        "pescado",
-        "mariscos",
-        "congrio",
-        "reineta",
-        "machas",
-        "jaiba",
-        "ceviche",
-        "caldillo",
-        "fresco"
-      ],
-      "answer": "Trabajamos con pescado fresco de la caleta Portales, así que la disponibilidad cambia cada día. Casi siempre tenemos congrio, reineta, chupe de jaibas y machas a la parmesana. 🐟"
-    },
-    {
-      "id": "precios",
-      "keywords": [
-        "precio",
-        "precios",
-        "cuanto cuesta",
-        "cuanto vale",
-        "cuanto sale",
-        "valor",
-        "caro",
-        "barato",
-        "cuanto cobran"
-      ],
-      "answer": "Los platos de fondo van de $8.500 a $14.900, las entradas de $4.500 a $7.900 y los postres $3.500. El menú del día cuesta $9.900. 💵"
-    },
-    {
-      "id": "reservas",
-      "keywords": [
-        "reservar",
-        "reserva",
-        "reservacion",
-        "apartar",
-        "mesa",
-        "tomar hora",
-        "tienen lugar",
-        "hay espacio",
-        "cupo"
-      ],
-      "answer": "Tomamos reservas para grupos de 4 personas o más, por WhatsApp al +56 9 6543 2100. Para grupos menores no hace falta: llega y te acomodamos. 📅"
-    },
-    {
-      "id": "espera",
-      "keywords": [
-        "fila",
-        "cola",
-        "esperar",
-        "cuanto se demoran",
-        "lleno",
-        "muy lleno",
-        "demora"
-      ],
-      "answer": "Los sábados y domingos entre las 13:30 y las 15:00 suele haber espera de 15 a 30 minutos. Si vienes antes de las 13:00 casi siempre hay mesa al tiro. ⏱️"
-    },
-    {
-      "id": "delivery",
-      "keywords": [
-        "delivery",
-        "despacho",
-        "domicilio",
-        "reparto",
-        "envian",
-        "llevan a",
-        "pedidosya",
-        "uber eats",
-        "rappi",
-        "pedidos ya",
-        "despachan"
-      ],
-      "answer": "Hacemos delivery propio en Valparaíso plano y cerros cercanos, con un costo de $2.500. Pedidos por WhatsApp al +56 9 6543 2100. También estamos en PedidosYa. 🛵"
-    },
-    {
-      "id": "para_llevar",
-      "keywords": [
-        "para llevar",
-        "retirar",
-        "retiro",
-        "takeaway",
-        "pasar a buscar",
-        "llevar"
-      ],
-      "answer": "Sí, puedes pedir para llevar. Encárgalo por WhatsApp y lo dejamos listo para que lo pases a buscar, normalmente en 20 minutos. 🥡"
-    },
-    {
-      "id": "vegetariano",
-      "keywords": [
-        "vegetariano",
-        "vegetariana",
-        "vegano",
-        "vegana",
-        "sin carne",
-        "verduras",
-        "no come carne",
-        "come carne",
-        "carne",
-        "sin gluten ni carne"
-      ],
-      "answer": "Tenemos charquicán vegetariano, porotos granados, ensalada chilena y humitas. La versión vegana del charquicán y de los porotos se prepara sin problema, solo avísale al mesero. 🥬"
-    },
-    {
-      "id": "sin_gluten",
-      "keywords": [
-        "sin gluten",
-        "celiaco",
-        "celiaca",
-        "gluten",
-        "tacc"
-      ],
-      "answer": "Varios platos son naturalmente sin gluten: cazuela, charquicán, porotos granados y los pescados a la plancha. No tenemos cocina separada, así que si tu celiaquía es estricta conviene que lo converses con el mesero. 🌾"
-    },
-    {
-      "id": "alergias",
-      "keywords": [
-        "alergia",
-        "alergico",
-        "alergica",
-        "frutos secos",
-        "mani",
-        "lactosa",
-        "intolerante"
-      ],
-      "answer": "Cuéntanos tu alergia al llegar y la cocina adapta el plato o te recomienda uno seguro. Trabajamos con maní, frutos secos y lácteos en la misma cocina, así que preferimos avisarte. ⚠️"
-    },
-    {
-      "id": "bebidas",
-      "keywords": [
-        "bebida",
-        "bebidas",
-        "vino",
-        "cerveza",
-        "pisco",
-        "trago",
-        "jugo",
-        "borgona",
-        "terremoto",
-        "alcohol",
-        "carta de vinos",
-        "carta de vino",
-        "vinos",
-        "tomar"
-      ],
-      "answer": "Tenemos carta de vinos chilenos por copa y botella, cervezas artesanales de Valparaíso, borgoña, terremoto y jugos naturales. 🍷"
+      "keywords": ["horario", "horarios", "abren", "cierran", "abierto", "abiertos", "atienden", "a que hora", "hasta que hora", "lunes", "domingo", "sabado", "feriado", "festivo", "fin de semana", "trabajan", "hours", "open"],
+      "answer": "Atendemos todos los días, de lunes a domingo, de 10:00 a 21:30. 🕙"
     },
     {
       "id": "ubicacion",
-      "keywords": [
-        "donde estan",
-        "direccion",
-        "ubicacion",
-        "como llegar",
-        "queda",
-        "ubicados",
-        "cerca de",
-        "micro",
-        "metro"
-      ],
-      "answer": "Estamos en Calle Serrano 512, Barrio Puerto, Valparaíso, a dos cuadras de la Plaza Sotomayor. El metro más cercano es Puerto, a 5 minutos caminando. 📍"
+      "keywords": ["donde estan", "donde queda", "direccion", "ubicacion", "como llegar", "ubicados", "la dehesa", "lo barnechea", "edificio oriente", "oficina", "address", "where"],
+      "answer": "Estamos en Av. La Dehesa 1201, oficina 829, Edificio Oriente, Lo Barnechea, Santiago. 📍"
     },
     {
-      "id": "estacionamiento",
-      "keywords": [
-        "estacionamiento",
-        "estacionar",
-        "aparcar",
-        "auto",
-        "parking",
-        "donde dejo el auto"
-      ],
-      "answer": "No tenemos estacionamiento propio, pero hay uno pagado en Blanco 720, a una cuadra, que cobra $1.500 la hora. 🅿️"
+      "id": "reservas",
+      "keywords": ["reservar", "reserva", "reservo", "como reservo", "quiero reservar", "agendar", "agenda", "agendo", "tomar hora", "pedir hora", "sacar hora", "hora disponible", "cita", "disponibilidad", "cupo", "hay hora", "book", "booking"],
+      "answer": "Puedes agendar online en https://boracayspa.site.agendapro.com/cl, eligiendo el masaje, el día y la hora. Si prefieres, escríbenos por WhatsApp al +56 9 5963 1422. 📅"
     },
     {
-      "id": "terraza",
-      "keywords": [
-        "terraza",
-        "afuera",
-        "aire libre",
-        "patio",
-        "adentro",
-        "vista"
-      ],
-      "answer": "Tenemos una terraza techada de 6 mesas con vista al puerto. No se puede reservar, se ocupa por orden de llegada. 🌤️"
+      "id": "aromaterapia",
+      "keywords": ["aromaterapia", "masaje con aromaterapia", "aceites esenciales", "aceites", "aromatherapy", "estres", "estresada", "estresado", "ansiedad", "relajante", "relajacion", "relajarme"],
+      "answer": "El masaje con aromaterapia combina presión suave en todo el cuerpo con aceites esenciales elegidos según lo que necesitas. Ayuda a reducir el estrés, la ansiedad y la tensión muscular. Dura 90 minutos y cuesta $50.000. 🌿"
     },
     {
-      "id": "mascotas",
-      "keywords": [
-        "mascota",
-        "mascotas",
-        "perro",
-        "perrito",
-        "gato",
-        "petfriendly",
-        "pet friendly"
-      ],
-      "answer": "¡Sí! Somos pet friendly en la terraza. Tenemos bebederos y tu perro entra sin problema. 🐕"
+      "id": "tejido_profundo",
+      "keywords": ["tejido profundo", "deep tissue", "descontracturante", "contractura", "contracturas", "nudos", "dolor cronico", "espalda", "dolor de espalda", "tension muscular", "postura"],
+      "answer": "El masaje de tejido profundo trabaja las capas musculares más profundas con movimientos lentos y firmes, sin causar dolor. Es ideal para tensión crónica, nudos, lesiones o problemas de postura. Dura 90 minutos y cuesta $50.000. 💪"
     },
     {
-      "id": "ninos",
-      "keywords": [
-        "niños",
-        "nino",
-        "guagua",
-        "familia",
-        "silla de bebe",
-        "coche",
-        "infantil",
-        "porcion chica",
-        "bebe",
-        "silla para bebe",
-        "cabritos"
-      ],
-      "answer": "Somos un local familiar: tenemos sillas para bebé, espacio para coche y medias porciones a mitad de precio para los niños. 👧"
+      "id": "deportivo",
+      "keywords": ["deportivo", "masaje deportivo", "deportiva", "deportista", "deporte", "sports", "lesion", "lesiones", "entreno", "entrenamiento", "flexibilidad"],
+      "answer": "El masaje deportivo es para quienes hacen actividad física seguido o tienen lesiones por movimientos repetitivos. Combina técnicas profundas con estiramientos para prevenir lesiones y mejorar el rendimiento. Dura 90 minutos y cuesta $50.000. 🏃"
     },
     {
-      "id": "accesibilidad",
-      "keywords": [
-        "silla de ruedas",
-        "accesible",
-        "accesibilidad",
-        "rampa",
-        "movilidad reducida",
-        "escalera"
-      ],
-      "answer": "El salón principal y el baño están a nivel de calle, sin escalones, y hay una mesa adaptada para silla de ruedas. La terraza sí tiene dos peldaños. ♿"
+      "id": "puntos_gatillo",
+      "keywords": ["puntos gatillo", "punto gatillo", "gatillo", "trigger point", "dolor que se irradia", "irradia"],
+      "answer": "El masaje de puntos gatillo trata el dolor crónico aplicando presión en puntos específicos, para aliviar el dolor que se irradia a otras zonas del cuerpo. Dura 90 minutos y cuesta $50.000."
     },
     {
-      "id": "pagos",
-      "keywords": [
-        "pagar",
-        "pagos",
-        "efectivo",
-        "tarjeta",
-        "debito",
-        "credito",
-        "transferencia",
-        "aceptan",
-        "redcompra",
-        "cuotas",
-        "dividir la cuenta",
-        "dividir",
-        "cuenta",
-        "boleta",
-        "propina"
-      ],
-      "answer": "Aceptamos efectivo, débito, crédito y transferencia. No dividimos la cuenta en más de tres pagos, para no hacer esperar a la mesa siguiente. 💳"
+      "id": "reflexologia",
+      "keywords": ["reflexologia", "reflexology", "pies", "pie", "manos y orejas"],
+      "answer": "La reflexología estimula puntos de presión en pies, manos y orejas para relajar todo el cuerpo y mejorar la circulación. Dura 60 minutos y cuesta $40.000. 🦶"
     },
     {
-      "id": "eventos",
-      "keywords": [
-        "evento",
-        "eventos",
-        "cumpleanos",
-        "celebracion",
-        "grupo grande",
-        "grupos",
-        "empresa",
-        "matrimonio",
-        "arriendan",
-        "privado",
-        "cumpleaños",
-        "caben",
-        "cabemos",
-        "cuantas personas",
-        "capacidad",
-        "reunion"
-      ],
-      "answer": "Recibimos grupos de hasta 30 personas y arrendamos el salón completo para eventos privados fuera del horario normal. Escríbenos al +56 9 6543 2100 y te enviamos las alternativas. 🎉"
+      "id": "shiatsu",
+      "keywords": ["shiatsu", "masaje shiatsu", "japones", "japonesa"],
+      "answer": "El shiatsu es una técnica japonesa que se hace con la ropa puesta, con presión rítmica de dedos y palmas en puntos específicos. Alivia el estrés y las molestias musculares y articulares. Dura 90 minutos y cuesta $50.000."
     },
     {
-      "id": "wifi",
-      "keywords": [
-        "wifi",
-        "wifi gratis",
-        "internet",
-        "clave",
-        "señal"
-      ],
-      "answer": "Sí, tenemos wifi gratis para clientes. La clave está en la pizarra de la entrada. 📶"
+      "id": "tailandes",
+      "keywords": ["tailandes", "masaje tailandes", "tailandesa", "thai", "tailandia", "estiramientos", "yoga"],
+      "answer": "El masaje tailandés tradicional es energizante: usa estiramientos parecidos al yoga y acupresión. Se hace sobre una colchoneta y con ropa holgada y cómoda. Mejora la flexibilidad, la circulación y la postura. Dura 90 minutos y cuesta $50.000. 🧘"
+    },
+    {
+      "id": "prenatal",
+      "keywords": ["prenatal", "masaje prenatal", "embarazo", "embarazada", "embarazadas", "gestacion", "guatita", "pregnancy"],
+      "answer": "Sí, tenemos masaje prenatal, seguro y pensado para el embarazo. Alivia el dolor lumbar, la tensión en las piernas y el cansancio, y se hace con cojines o en una camilla especial. Dura 90 minutos y cuesta $50.000. 🤰"
+    },
+    {
+      "id": "pareja",
+      "keywords": ["pareja", "masaje en pareja", "parejas", "en pareja", "couple", "couples", "dos personas", "juntos", "aniversario", "pololo", "polola", "amiga", "amigo"],
+      "answer": "El masaje en pareja es para compartirlo con tu pareja, un amigo o un ser querido: cada uno recibe su masaje con su propio terapeuta, en la misma sala. Cuesta $50.000 por persona y dura 90 minutos. 💑"
+    },
+    {
+      "id": "drenaje_linfatico",
+      "keywords": ["drenaje linfatico", "drenaje", "linfatico", "hinchazon", "retencion de liquidos", "liquido", "postoperatorio", "post operatorio", "cirugia", "operacion"],
+      "answer": "El drenaje linfático es una técnica suave que ayuda a mover los líquidos del cuerpo: reduce la hinchazón y la retención de líquidos y apoya la recuperación después de una cirugía. También lo hacemos en cara y cuello. Dura 90 minutos y cuesta $50.000."
+    },
+    {
+      "id": "reiki",
+      "keywords": ["reiki", "sesion de reiki", "energia", "energetico", "sanacion"],
+      "answer": "El reiki es una técnica japonesa de relajación: el terapeuta canaliza energía con las manos sobre el cuerpo. Es muy calmante y se hace con la ropa puesta. Dura 90 minutos y cuesta $50.000. ✨"
+    },
+    {
+      "id": "cristales",
+      "keywords": ["cristales", "cristal", "piedras", "chakras", "chakra", "crystal"],
+      "answer": "La terapia con cristales usa cristales y piedras, elegidos por sus propiedades, sobre o alrededor del cuerpo para equilibrar la energía y dar paz interior. Dura 90 minutos y cuesta $50.000. 💎"
+    },
+    {
+      "id": "mix_asiatico",
+      "keywords": ["mix asiatico", "mixto asiatico", "asian mix", "asiatico", "masaje filipino", "tecnicas filipinas"],
+      "answer": "El mix asiático nace de las tradiciones filipinas y combina relajación, tejido profundo, shiatsu, reflexología y estiramientos en un solo tratamiento. Libera tensiones, mejora la circulación y renueva la energía. Dura 90 minutos y cuesta $50.000. 🌴"
+    },
+    {
+      "id": "cuatro_manos",
+      "keywords": ["cuatro manos", "four hand", "dos terapeutas"],
+      "answer": "Sí, también hacemos masaje a cuatro manos. Para el valor y la disponibilidad, escríbenos por WhatsApp al +56 9 5963 1422."
+    },
+    {
+      "id": "packs",
+      "keywords": ["pack", "packs", "pack de 10", "pack de 5", "pack de diez", "pack de cinco", "paquete", "paquetes", "sesiones", "varias sesiones", "ahorrar", "plan", "package"],
+      "answer": "Tenemos packs de sesiones:\n• 5 masajes de 60 min: $175.000\n• 5 masajes de 90 min: $225.000\n• 10 masajes de 60 min: $350.000\n• 10 masajes de 90 min: $450.000\nSe compran al agendar en https://boracayspa.site.agendapro.com/cl. 🎁"
+    },
+    {
+      "id": "promociones",
+      "keywords": ["promocion", "promociones", "descuento", "descuentos", "oferta", "ofertas", "verano", "promo", "deals"],
+      "answer": "En nuestra web publicamos descuentos de verano: 60 min a $35.000 (normal $40.000), 75 min a $40.000 (normal $45.000) y 90 min a $45.000 (normal $50.000). Confírmanos por WhatsApp al +56 9 5963 1422 que sigan vigentes antes de agendar. ☀️"
+    },
+    {
+      "id": "precios",
+      "keywords": ["precio", "precios", "cuanto cuesta", "cuanto vale", "cuanto sale", "cuanto cobran", "valor", "valores", "tarifa", "tarifas", "caro", "price", "prices"],
+      "answer": "Los masajes de 90 minutos cuestan $50.000 y la reflexología (60 minutos) $40.000. El masaje en pareja es $50.000 por persona. Si vienes seguido, los packs de 5 o 10 sesiones salen más convenientes. 💆"
+    },
+    {
+      "id": "tipos_de_masaje",
+      "keywords": ["tipos de masaje", "que masajes", "masaje", "servicios", "tratamientos", "terapias", "que ofrecen", "que hacen", "que tienen", "recomiendan", "massage"],
+      "answer": "Tenemos masaje con aromaterapia, de tejido profundo, deportivo, de puntos gatillo, reflexología, shiatsu, tailandés tradicional, prenatal, en pareja, drenaje linfático, reiki, terapia con cristales, mix asiático y masaje a cuatro manos. Pregúntame por cualquiera y te cuento de qué se trata. 🌺"
+    },
+    {
+      "id": "duracion",
+      "keywords": ["duracion", "cuanto dura", "cuanto demora", "cuanto tiempo", "minutos"],
+      "answer": "La mayoría de los masajes dura 90 minutos; la reflexología dura 60. Con los packs también puedes elegir sesiones de 60 o 90 minutos. ⏱️"
+    },
+    {
+      "id": "ropa",
+      "keywords": ["ropa", "vestido", "vestida", "desvestirme", "que me pongo", "que llevo", "que llevar"],
+      "answer": "El shiatsu y el reiki se hacen con la ropa puesta, y el masaje tailandés con ropa holgada y cómoda. Si tienes dudas sobre otro masaje, escríbenos por WhatsApp al +56 9 5963 1422."
+    },
+    {
+      "id": "quienes_somos",
+      "keywords": ["quienes son", "quienes somos", "quien atiende", "terapeutas", "masajistas", "filipinos", "filipinas", "filipino", "boracay", "historia", "experiencia"],
+      "answer": "Boracay Spa trae la esencia de Filipinas a Santiago. Lo crearon tres masajistas filipinos, y cada tratamiento se inspira en técnicas ancestrales de las islas, con aceite de coco e ylang-ylang. 🌺"
+    },
+    {
+      "id": "resenas",
+      "keywords": ["resenas", "buenas resenas", "buenos comentarios", "opiniones", "comentarios", "calificacion", "estrellas", "tripadvisor", "son buenos", "recomendable"],
+      "answer": "Tenemos 5 estrellas en nuestra agenda online (10 reseñas) y también estamos en Tripadvisor. ⭐"
     },
     {
       "id": "contacto",
-      "keywords": [
-        "telefono",
-        "contacto",
-        "whatsapp",
-        "correo",
-        "instagram",
-        "redes",
-        "llamar",
-        "numero"
-      ],
-      "answer": "Teléfono +56 32 234 5678, WhatsApp +56 9 6543 2100 y en Instagram nos encuentras como @cocineriadonaelba. 📞"
+      "keywords": ["telefono", "contacto", "whatsapp", "correo", "mail", "email", "instagram", "redes", "llamar", "numero", "contact"],
+      "answer": "WhatsApp y teléfono: +56 9 5963 1422. Correo: contacto@boracay.cl. Instagram: @boracayspachile. 📞"
     },
     {
       "id": "agradecimiento",
-      "keywords": [
-        "gracias",
-        "muchas gracias",
-        "genial",
-        "perfecto",
-        "buenisimo",
-        "excelente",
-        "bacan"
-      ],
+      "keywords": ["gracias", "muchas gracias", "genial", "perfecto", "buenisimo", "excelente", "bacan", "thanks"],
       "answer": "¡De nada! 😊 ¿Necesitas algo más?"
     },
     {
       "id": "cierre",
-      "keywords": [
-        "no",
-        "nada",
-        "nada mas",
-        "no gracias",
-        "ok",
-        "listo",
-        "vale",
-        "eso es todo",
-        "asi esta bien"
-      ],
-      "answer": "¡Perfecto! Te esperamos por acá. 😊"
+      "keywords": ["no", "nada", "nada mas", "no gracias", "ok", "listo", "vale", "eso es todo", "asi esta bien"],
+      "answer": "¡Perfecto! Te esperamos en Boracay Spa. 🌺"
     },
     {
       "id": "despedida",
-      "keywords": [
-        "chao",
-        "adios",
-        "hasta luego",
-        "nos vemos",
-        "bye",
-        "me voy"
-      ],
-      "answer": "¡Hasta pronto! Que tengas un buen día. 👋"
+      "keywords": ["chao", "adios", "hasta luego", "nos vemos", "bye", "me voy"],
+      "answer": "¡Hasta pronto! Que tengas un lindo día. 👋"
     }
   ]
 };

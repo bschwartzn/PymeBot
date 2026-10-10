@@ -20,7 +20,8 @@
     '.burbuja.agente .quien{display:block;font-size:12px;font-weight:600;color:var(--marca);margin-bottom:2px}' +
     '.burbuja.sistema{align-self:center;background:transparent;color:var(--suave);font-size:13px;text-align:center;padding:2px 10px;max-width:100%}' +
     '.modo{display:inline-block;margin-top:3px;font-size:12px;font-weight:600;border-radius:999px;padding:1px 9px;background:var(--burbuja);color:var(--suave)}' +
-    '.modo.humano{background:var(--marca);color:var(--marca-texto)}';
+    '.modo.humano{background:var(--marca);color:var(--marca-texto)}' +
+    '.burbuja a{color:inherit;text-decoration:underline;overflow-wrap:anywhere}';
 
   /** Clave con la que este navegador recuerda su conversación con cada negocio. */
   function llaveDeSesion(negocioId) {
@@ -103,6 +104,29 @@
     var pintados = {};
     var escribiendoEl = null;
 
+    /**
+     * Agrega el texto con sus links clicables: en el teléfono, "agenda en https://…" tiene
+     * que poder tocarse. Se arma con nodos de texto y <a>, nunca con innerHTML, así que lo
+     * que escriba un cliente no puede inyectar nada.
+     */
+    function textoConEnlaces(el, texto) {
+      texto.split(/(https?:\/\/[^\s]+)/).forEach(function (parte, i) {
+        if (i % 2 === 0) {
+          if (parte) el.appendChild(document.createTextNode(parte));
+          return;
+        }
+        // El punto o la coma que cierran la frase no son parte del link.
+        var url = parte.replace(/[.,;:!?)]+$/, '');
+        var enlace = document.createElement('a');
+        enlace.href = url;
+        enlace.target = '_blank';
+        enlace.rel = 'noopener';
+        enlace.textContent = url.replace(/^https?:\/\//, '');
+        el.appendChild(enlace);
+        if (url !== parte) el.appendChild(document.createTextNode(parte.slice(url.length)));
+      });
+    }
+
     function burbuja(mensaje) {
       var el = document.createElement('div');
       el.className = 'burbuja ' + mensaje.de;
@@ -111,10 +135,8 @@
         quien.className = 'quien';
         quien.textContent = 'Persona del equipo';
         el.appendChild(quien);
-        el.appendChild(document.createTextNode(mensaje.texto));
-      } else {
-        el.textContent = mensaje.texto;
       }
+      textoConEnlaces(el, mensaje.texto);
       // Si el bot está "escribiendo", lo nuevo va antes del indicador.
       hiloEl.insertBefore(el, escribiendoEl);
     }
