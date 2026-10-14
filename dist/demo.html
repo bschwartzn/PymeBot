@@ -3066,10 +3066,15 @@ function cuando(iso) {
 
 async function cargarTranscripciones(slug) {
   const contenedor = $('conversaciones');
-  contenedor.innerHTML = '';
 
   const { ok, datos } = await api('GET', `/api/businesses/${slug}/conversations`);
   if (!ok || !datos || !Array.isArray(datos.conversaciones)) return;
+
+  // Se repinta solo cada pocos segundos: las que el dueño tenía abiertas siguen abiertas.
+  const abiertas = new Set(
+    [...contenedor.querySelectorAll('details.conversacion[open]')].map((caja) => caja.dataset.id),
+  );
+  contenedor.innerHTML = '';
 
   if (datos.conversaciones.length === 0) {
     const p = document.createElement('p');
@@ -3082,6 +3087,8 @@ async function cargarTranscripciones(slug) {
   for (const conversacion of datos.conversaciones) {
     const caja = document.createElement('details');
     caja.className = 'conversacion';
+    caja.dataset.id = conversacion.id;
+    caja.open = abiertas.has(conversacion.id);
 
     const cabecera = document.createElement('summary');
 
@@ -3156,6 +3163,32 @@ async function abrir(slug) {
   pintar(slug, datos.business);
   await refrescar(slug);
 }
+
+/**
+ * Las conversaciones llegan mientras el panel está abierto, a menudo desde otro dispositivo:
+ * el dueño prueba el chat en el teléfono y mira el panel en el computador. Sin esto, lo
+ * nuevo solo aparecía al recargar la página.
+ */
+const REFRESCO_CONVERSACIONES_MS = 15000;
+
+function seccionActiva() {
+  const tab = document.querySelector('.seccion-tab.activo');
+  return tab ? tab.dataset.seccion : null;
+}
+
+async function actualizarConversaciones() {
+  if (!slugActual || document.hidden || formEl.hidden) return;
+  const slug = slugActual;
+  await Promise.all([cargarConversaciones(slug), cargarTranscripciones(slug)]);
+}
+
+setInterval(() => {
+  if (seccionActiva() === 'conversaciones') actualizarConversaciones();
+}, REFRESCO_CONVERSACIONES_MS);
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) actualizarConversaciones();
+});
 
 /* -------------------------------------------------------------- guardar */
 
@@ -3252,6 +3285,8 @@ for (const tab of document.querySelectorAll('.seccion-tab')) {
     for (const bloque of formEl.querySelectorAll('.bloque')) {
       bloque.hidden = bloque.dataset.seccion !== tab.dataset.seccion;
     }
+
+    if (tab.dataset.seccion === 'conversaciones') actualizarConversaciones();
   });
 }
 
