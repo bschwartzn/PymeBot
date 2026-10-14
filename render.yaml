@@ -30,3 +30,12 @@ services:
         value: "1"
       - key: PYMEBOT_PUBLIC_URL
         sync: false # se define en el panel de Render con la dirección real del servicio
+      # El chat que se abre al entrar a la dirección sin indicar negocio.
+      - key: PYMEBOT_BUSINESS
+        value: boracay-spa
+      # La cuenta del dueño, con Boracay Spa ya cargado. Render los pide al crear el
+      # servicio: la contraseña vive en Render, nunca en el repositorio.
+      - key: PYMEBOT_DUENO_EMAIL
+        sync: false
+      - key: PYMEBOT_DUENO_PASSWORD
+        sync: false

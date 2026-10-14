@@ -5,6 +5,8 @@ dist
 docs
 tests
 data
+!data/businesses
+!data/demo
 *.log
 .env
 .DS_Store

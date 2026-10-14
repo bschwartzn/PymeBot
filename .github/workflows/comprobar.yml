@@ -1,0 +1,39 @@
+# Comprueba cada push: instala, corre los tests y arma el sitio empaquetado.
+#
+# Esta rama NO publica en GitHub Pages. Pages sirve la presentación desde la rama main
+# (Boracay Spa en el chat del QR), y si esta rama publicara, reemplazaría ese sitio. El
+# sitio armado queda como artefacto descargable en la pestaña Actions.
+#
+# La versión con servidor —cuentas, panel del dueño y conversaciones entre dispositivos—
+# se despliega en Render con render.yaml, no aquí.
+
+name: Comprobar
+
+on:
+  push:
+    branches: [claude/pymebot-modular-plan-ev6kdh]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  construir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run build:sitio
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sitio-pymebot
+          path: dist/sitio
+          retention-days: 30

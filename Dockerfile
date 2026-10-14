@@ -36,6 +36,8 @@ COPY public ./public
 COPY scripts ./scripts
 # Los negocios de ejemplo: se copian aparte de /data, que es el volumen.
 COPY data/businesses ./semillas/businesses
+# El negocio de la cuenta del dueño (PYMEBOT_DUENO_EMAIL): se lee de aquí al arrancar.
+COPY data/demo ./data/demo
 
 RUN mkdir -p /data && chown -R node:node /data /app
 

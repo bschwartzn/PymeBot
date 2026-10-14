@@ -12,6 +12,7 @@ const path = require('path');
 const config = require('./config');
 const { createApp } = require('./server');
 const { BusinessRepository } = require('./knowledge/repository');
+const { UserStore } = require('./auth/users');
 
 /** De dónde salen los negocios de ejemplo dentro de la imagen. */
 const SEMILLAS = [
@@ -43,10 +44,36 @@ function sembrarSiEstaVacio() {
   return copiados;
 }
 
+/**
+ * Deja lista la cuenta del dueño de la demostración y su negocio.
+ *
+ * Corre en cada arranque y es idempotente: crea la cuenta si falta y el negocio si falta,
+ * pero no toca ninguno de los dos si ya existen. Lo que el dueño edite desde el panel se
+ * conserva entre despliegues; y si el hosting no tiene disco, se vuelve a crear solo.
+ *
+ * @returns {{ email: string, slug: string } | null}
+ */
+function prepararDueno({ dueno = config.dueno, users = new UserStore(), repository = new BusinessRepository() } = {}) {
+  if (!dueno.email || !dueno.password) return null;
+
+  const user =
+    users.findByEmail(dueno.email) ||
+    users.create({ email: dueno.email, password: dueno.password });
+
+  const negocio = JSON.parse(fs.readFileSync(dueno.negocio, 'utf8'));
+  const slug = path.basename(dueno.negocio, '.json');
+  if (!repository.exists(slug)) {
+    repository.save(slug, { ...negocio, ownerId: user.id });
+  }
+
+  return { email: user.email, slug };
+}
+
 function arrancar() {
   const sembrados = sembrarSiEstaVacio();
 
   const repository = new BusinessRepository();
+  const dueno = prepararDueno({ repository });
   const app = createApp({ repository });
 
   const server = app.listen(config.port, () => {
@@ -56,6 +83,9 @@ function arrancar() {
     console.log(`     Panel del dueño:  ${base}/panel.html`);
     console.log(`     Datos en:         ${config.dataDir}`);
     console.log(`     Negocios:         ${repository.list().length}${sembrados ? ` (${sembrados} de ejemplo, primer arranque)` : ''}`);
+    if (dueno) {
+      console.log(`     Cuenta del dueño: ${dueno.email} → ${base}/c/${dueno.slug}`);
+    }
 
     if (config.isProduction && !config.publicUrl) {
       console.warn('     ⚠  Sin PYMEBOT_PUBLIC_URL: los links compartidos y el QR se deducirán de cada petición.');
@@ -96,4 +126,4 @@ function arrancar() {
 
 if (require.main === module) arrancar();
 
-module.exports = { arrancar, sembrarSiEstaVacio };
+module.exports = { arrancar, sembrarSiEstaVacio, prepararDueno };

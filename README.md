@@ -389,6 +389,32 @@ docs/ROADMAP.md        Plan modular completo
 docs/CANALES.md        Cómo añadir WhatsApp u otro canal
 ```
 
+## Mostrar las dos caras: el cliente y el dueño
+
+Para enseñar el producto en dos dispositivos —el chat de **Boracay Spa** en un teléfono y
+el panel del dueño en otro— hace falta la versión con servidor. El sitio de la presentación
+(rama `main`, GitHub Pages) guarda todo en el navegador, así que un teléfono y un computador
+nunca ven las mismas conversaciones.
+
+Al desplegar en Render (abajo), define dos variables:
+
+| Variable | Qué pones |
+|---|---|
+| `PYMEBOT_DUENO_EMAIL` | El correo con el que entra el dueño |
+| `PYMEBOT_DUENO_PASSWORD` | Su contraseña |
+
+Al arrancar, el servidor crea esa cuenta y le deja **Boracay Spa** cargado
+(`data/demo/boracay-spa.json`). Si ya existen no toca nada, así que lo que edites desde el
+panel se conserva. Después:
+
+- **Dispositivo del cliente:** `https://tu-servidor/c/boracay-spa` (o el QR de la pestaña
+  Compartir del panel).
+- **Dispositivo del dueño:** `https://tu-servidor/panel.html`, con ese correo y contraseña,
+  pestaña **Conversaciones**. Lo que escriba el cliente aparece solo en unos segundos.
+
+Esta rama **no publica en GitHub Pages**: si lo hiciera, reemplazaría el sitio de la
+presentación.
+
 ## Ponerlo en internet
 
 El proyecto viene preparado para desplegarse. Es una aplicación Node normal con **una sola

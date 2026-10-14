@@ -53,6 +53,19 @@ const config = {
   defaultBusiness: process.env.PYMEBOT_BUSINESS || 'dona-elba',
 
   /**
+   * La cuenta del dueño para la demostración, con su negocio ya cargado.
+   *
+   * Sirve para enseñar las dos caras del producto en dos dispositivos: el chat que ve el
+   * cliente y el panel del dueño, que recibe esas conversaciones. Sin estas variables no
+   * se crea nada. La contraseña se define en el hosting, nunca en el repositorio.
+   */
+  dueno: {
+    email: process.env.PYMEBOT_DUENO_EMAIL || '',
+    password: process.env.PYMEBOT_DUENO_PASSWORD || '',
+    negocio: path.join(ROOT, 'data', 'demo', process.env.PYMEBOT_DUENO_NEGOCIO || 'boracay-spa.json'),
+  },
+
+  /**
    * Límites de peticiones por IP. Son por instancia del servidor.
    * Generosos para una pyme real, suficientes para frenar un abuso automatizado.
    */

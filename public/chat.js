@@ -35,10 +35,33 @@ function guardarSesion(id) {
 
 let sessionId = leerSesion();
 
+/**
+ * Pone el texto con los links tocables: en el teléfono, "agenda en https://..." tiene que
+ * abrir la agenda. Se arma con nodos de texto y <a>, nunca con innerHTML, así que lo que
+ * escriba un cliente no puede inyectar nada.
+ */
+function textoConEnlaces(el, texto) {
+  String(texto).split(/(https?:\/\/[^\s]+)/).forEach((parte, i) => {
+    if (i % 2 === 0) {
+      if (parte) el.appendChild(document.createTextNode(parte));
+      return;
+    }
+    // El punto o la coma que cierran la frase no son parte del link.
+    const url = parte.replace(/[.,;:!?)]+$/, '');
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.target = '_blank';
+    enlace.rel = 'noopener';
+    enlace.textContent = url.replace(/^https?:\/\//, '');
+    el.appendChild(enlace);
+    if (url !== parte) el.appendChild(document.createTextNode(parte.slice(url.length)));
+  });
+}
+
 function burbuja(texto, quien) {
   const el = document.createElement('div');
   el.className = `burbuja ${quien}`;
-  el.textContent = texto;
+  textoConEnlaces(el, texto);
   hiloEl.appendChild(el);
   hiloEl.scrollTop = hiloEl.scrollHeight;
   return el;
