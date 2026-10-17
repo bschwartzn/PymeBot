@@ -91,6 +91,7 @@ async function cargarNegocio() {
     document.getElementById('negocio').textContent = datos.name;
     document.getElementById('rubro').textContent = datos.tagline || '';
     document.title = datos.name;
+    document.getElementById('prueba').hidden = !datos.esDueno;
 
     burbuja(datos.greeting, 'bot');
 

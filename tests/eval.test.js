@@ -12,7 +12,7 @@ const { evaluar } = require('../scripts/eval');
  *
  * El piso se sube cuando un módulo mejora la comprensión. No se baja para que pase.
  */
-const PISO = { 'dona-elba': 0.95, 'bella-vista': 1.0 };
+const PISO = { 'dona-elba': 0.95, 'bella-vista': 1.0, 'boracay-spa': 0.98 };
 
 const DIR = path.join(__dirname, '..', 'data', 'evals');
 

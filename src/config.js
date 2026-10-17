@@ -34,6 +34,9 @@ const TRUST_PROXY = process.env.PYMEBOT_TRUST_PROXY === undefined
   ? 1
   : Number(process.env.PYMEBOT_TRUST_PROXY) || 0;
 
+/** El negocio de la cuenta del dueño, en data/demo/. */
+const NEGOCIO_DEL_DUENO = process.env.PYMEBOT_DUENO_NEGOCIO || 'boracay-spa.json';
+
 const config = {
   isProduction,
   port: Number(process.env.PORT) || 3000,
@@ -50,7 +53,9 @@ const config = {
   publicUrl: (process.env.PYMEBOT_PUBLIC_URL || '').replace(/\/+$/, ''),
 
   /** Negocio que atiende el chat cuando no se pide uno en particular. */
-  defaultBusiness: process.env.PYMEBOT_BUSINESS || 'dona-elba',
+  defaultBusiness:
+    process.env.PYMEBOT_BUSINESS ||
+    (process.env.PYMEBOT_DUENO_EMAIL ? path.basename(NEGOCIO_DEL_DUENO, '.json') : 'dona-elba'),
 
   /**
    * La cuenta del dueño para la demostración, con su negocio ya cargado.
@@ -62,7 +67,28 @@ const config = {
   dueno: {
     email: process.env.PYMEBOT_DUENO_EMAIL || '',
     password: process.env.PYMEBOT_DUENO_PASSWORD || '',
-    negocio: path.join(ROOT, 'data', 'demo', process.env.PYMEBOT_DUENO_NEGOCIO || 'boracay-spa.json'),
+    negocio: path.join(ROOT, 'data', 'demo', path.basename(NEGOCIO_DEL_DUENO)),
+  },
+
+  /**
+   * ¿Este servidor es el bot de UN cliente? Lo es cuando se define la cuenta del dueño.
+   *
+   * Entonces se comporta como su producto y no como una plataforma de pruebas: nadie más
+   * puede crear cuentas, no hay negocios de ejemplo, y la portada abre directamente su chat.
+   */
+  get modoCliente() {
+    return Boolean(this.dueno.email && this.dueno.password);
+  },
+
+  /**
+   * ¿Cualquiera puede crear una cuenta? Solo si se pide explícitamente, o en desarrollo.
+   * En internet, un registro abierto deja que un desconocido publique su propio "chat"
+   * con la dirección del negocio: la puerta perfecta para un fraude.
+   */
+  get registroAbierto() {
+    if (process.env.PYMEBOT_REGISTRO === 'abierto') return true;
+    if (process.env.PYMEBOT_REGISTRO === 'cerrado') return false;
+    return !this.modoCliente && !isProduction;
   },
 
   /**

@@ -38,8 +38,9 @@ function crearAtencion({ sessions, conversations = null }) {
    * @param {string} entrada.slug       su identificador, para el registro
    * @param {string} entrada.canal      'web', 'whatsapp', …
    * @param {string} [entrada.idExterno] identificador de la conversación en ese canal
+   * @param {boolean} [entrada.registrar] false para las pruebas del dueño: no cuentan
    */
-  return function atender({ texto, negocio, slug, canal = 'web', idExterno = null }) {
+  return function atender({ texto, negocio, slug, canal = 'web', idExterno = null, registrar = true }) {
     if (typeof texto !== 'string' || texto.trim() === '') {
       throw new MensajeInvalido('El mensaje no puede estar vacío.');
     }
@@ -57,7 +58,7 @@ function crearAtencion({ sessions, conversations = null }) {
 
     // El registro nunca puede tumbar una conversación. Perder una línea de estadística es
     // molesto; dejar a un cliente sin respuesta porque el disco está lleno, no.
-    if (conversations && slug) {
+    if (registrar && conversations && slug) {
       try {
         conversations.registrar(slug, {
           conversationId: sesion.id,

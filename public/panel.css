@@ -511,3 +511,20 @@ input[type="range"] { width: 100%; accent-color: var(--brand); cursor: pointer; 
 .dicho.bot { align-self: flex-start; background: var(--panel); border: 1px solid var(--border); border-bottom-left-radius: 4px; }
 /* Marcar dónde falló: es lo que el dueño busca al leer una conversación. */
 .dicho.bot.no-supo { border-color: color-mix(in srgb, var(--warn) 45%, var(--border)); background: var(--warn-bg); }
+
+/* ==================== Cuenta ==================== */
+
+.topbar-acciones { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+.dialogo {
+  width: min(400px, calc(100vw - 32px));
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 22px;
+  background: var(--panel);
+  color: var(--ink);
+}
+.dialogo::backdrop { background: rgba(20, 28, 40, .45); }
+.dialogo h2 { margin: 0; font-size: 18px; }
+.dialogo .ayuda { margin: 0; }
+.dialogo-acciones { display: flex; justify-content: flex-end; gap: 8px; }

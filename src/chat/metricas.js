@@ -38,12 +38,24 @@ function agrupar(registros, clave) {
  * Resume la actividad de un negocio.
  * @param {Array} registros lo que devuelve ConversationLog.leer
  */
+/**
+ * ¿El bot quedó sin dar la información pedida?
+ *
+ * Además del respaldo ("no entendí"), cuenta la intención `sin_dato`: el bot entendió la
+ * pregunta pero el negocio no tiene ese dato cargado y deriva al equipo. Para la dueña son
+ * lo mismo: preguntas reales que le falta responder.
+ */
+function quedoSinResponder(r) {
+  if (r.intent === 'pausado') return false;
+  return r.matched === false || r.intent === 'sin_dato';
+}
+
 function resumir(registros, { dias = DIAS_POR_DEFECTO, ahora = Date.now() } = {}) {
   const desde = new Date(ahora - dias * 24 * 60 * 60 * 1000).toISOString();
   const recientes = registros.filter((r) => r.at >= desde);
 
   const conversaciones = new Set(recientes.map((r) => r.conversationId));
-  const sinRespuesta = recientes.filter((r) => r.matched === false && r.intent !== 'pausado');
+  const sinRespuesta = recientes.filter(quedoSinResponder);
 
   // Los días se rellenan aunque no haya tráfico: un hueco en el gráfico también informa.
   const porDia = [];
@@ -73,7 +85,7 @@ function resumir(registros, { dias = DIAS_POR_DEFECTO, ahora = Date.now() } = {}
 
     /** De qué temas preguntan más, entre los que sí sabe responder. */
     temasMasPreguntados: agrupar(
-      recientes.filter((r) => r.matched),
+      recientes.filter((r) => r.matched && !quedoSinResponder(r)),
       (r) => r.intent,
     ).slice(0, 12),
 
@@ -115,7 +127,7 @@ function conversaciones(registros, { limite = 50 } = {}) {
       intent: registro.intent,
       matched: registro.matched,
     });
-    if (registro.matched === false && registro.intent !== 'pausado') conversacion.sinRespuesta += 1;
+    if (quedoSinResponder(registro)) conversacion.sinRespuesta += 1;
   }
 
   // Las más recientes primero: es lo que el dueño quiere mirar al entrar.

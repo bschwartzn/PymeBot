@@ -18,12 +18,13 @@ const { validateBusiness } = require('../src/knowledge/schema');
 
 const ROOT = path.join(__dirname, '..');
 const DIR_EVALS = path.join(ROOT, 'data', 'evals');
-const DIR_NEGOCIOS = path.join(ROOT, 'data', 'businesses');
+// Los ejemplos viven en data/businesses; los negocios de clientes reales, en data/demo.
+const DIRS_NEGOCIOS = [path.join(ROOT, 'data', 'businesses'), path.join(ROOT, 'data', 'demo')];
 
 function cargarNegocio(slug) {
-  const { ok, errors, business } = validateBusiness(
-    JSON.parse(fs.readFileSync(path.join(DIR_NEGOCIOS, `${slug}.json`), 'utf8')),
-  );
+  const archivo = DIRS_NEGOCIOS.map((dir) => path.join(dir, `${slug}.json`)).find((f) => fs.existsSync(f));
+  if (!archivo) throw new Error(`No existe el negocio "${slug}".`);
+  const { ok, errors, business } = validateBusiness(JSON.parse(fs.readFileSync(archivo, 'utf8')));
   if (!ok) throw new Error(`El negocio "${slug}" no es válido: ${errors.map((e) => e.mensaje).join(' ')}`);
   return business;
 }
@@ -39,14 +40,16 @@ function evaluar(evalSet) {
       espera: caso.espera,
       obtuvo: resultado.intent,
       score: resultado.score,
-      acierta: resultado.intent === caso.espera,
+      // `espera` puede ser una lista cuando más de una respuesta contesta bien la pregunta:
+      // "¿cuánto cuesta la reflexología?" lo responde tanto su ficha como la lista de precios.
+      acierta: [].concat(caso.espera).includes(resultado.intent),
     };
   });
 }
 
 /** Clasifica un fallo, porque no todos duelen igual. */
 function tipoDeFallo({ espera, obtuvo }) {
-  if (espera === 'fallback') return 'responde algo que no sabe';
+  if ([].concat(espera).includes('fallback')) return 'responde algo que no sabe';
   if (obtuvo === 'fallback') return 'no entiende';
   return 'confunde de tema';
 }

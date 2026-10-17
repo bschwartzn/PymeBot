@@ -1,0 +1,806 @@
+{
+  "negocio": "boracay-spa",
+  "descripcion": "Preguntas como las escribiría un cliente real de Boracay Spa, con faltas de ortografía y chilenismos. Los casos que esperan \"fallback\" son temas que el spa no informa: el bot debe reconocer que no sabe y derivar al WhatsApp, no inventar.",
+  "casos": [
+    {
+      "mensaje": "hola",
+      "espera": "saludo"
+    },
+    {
+      "mensaje": "hola buenas tardes",
+      "espera": "saludo"
+    },
+    {
+      "mensaje": "buenas!!",
+      "espera": "saludo"
+    },
+    {
+      "mensaje": "holaaa",
+      "espera": "saludo"
+    },
+    {
+      "mensaje": "buen dia",
+      "espera": "saludo"
+    },
+    {
+      "mensaje": "a que hora abren?",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "cual es el horario de atencion",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "atienden los domingos?",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "hasta que hora estan abiertos",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "abren el feriado?",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "trabajan los fines de semana",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "horario?",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "a q hora cierran",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "donde estan ubicados",
+      "espera": "ubicacion"
+    },
+    {
+      "mensaje": "cual es la direccion",
+      "espera": "ubicacion"
+    },
+    {
+      "mensaje": "donde queda el spa",
+      "espera": "ubicacion"
+    },
+    {
+      "mensaje": "como llego?",
+      "espera": "ubicacion"
+    },
+    {
+      "mensaje": "en que comuna estan",
+      "espera": "ubicacion"
+    },
+    {
+      "mensaje": "estan en la dehesa?",
+      "espera": "ubicacion"
+    },
+    {
+      "mensaje": "quiero reservar un masaje",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "como agendo una hora",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "tienen hora para hoy?",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "hay disponibilidad mañana en la tarde",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "quiero pedir hora",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "me gustaria agendar",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "puedo reservar por aca?",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "necesito una cita para el sabado",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "cuanto cuesta un masaje",
+      "espera": "precios"
+    },
+    {
+      "mensaje": "precios?",
+      "espera": "precios"
+    },
+    {
+      "mensaje": "que valor tienen los masajes",
+      "espera": "precios"
+    },
+    {
+      "mensaje": "cuanto sale",
+      "espera": "precios"
+    },
+    {
+      "mensaje": "cuanto cobran por un masaje",
+      "espera": "precios"
+    },
+    {
+      "mensaje": "es muy caro?",
+      "espera": "precios"
+    },
+    {
+      "mensaje": "presios",
+      "espera": "precios"
+    },
+    {
+      "mensaje": "lista de precios",
+      "espera": "precios"
+    },
+    {
+      "mensaje": "que masajes tienen",
+      "espera": "tipos_de_masaje"
+    },
+    {
+      "mensaje": "que servicios ofrecen",
+      "espera": "tipos_de_masaje"
+    },
+    {
+      "mensaje": "que tipos de masaje hay",
+      "espera": "tipos_de_masaje"
+    },
+    {
+      "mensaje": "que me recomiendan",
+      "espera": "tipos_de_masaje"
+    },
+    {
+      "mensaje": "que tratamientos hacen",
+      "espera": "tipos_de_masaje"
+    },
+    {
+      "mensaje": "tienen aromaterapia?",
+      "espera": "aromaterapia"
+    },
+    {
+      "mensaje": "ando muy estresada, que me sirve",
+      "espera": "aromaterapia"
+    },
+    {
+      "mensaje": "quiero algo relajante",
+      "espera": "aromaterapia"
+    },
+    {
+      "mensaje": "tengo contracturas en la espalda",
+      "espera": "tejido_profundo"
+    },
+    {
+      "mensaje": "masaje descontracturante",
+      "espera": "tejido_profundo"
+    },
+    {
+      "mensaje": "tengo mucho dolor de espalda",
+      "espera": "tejido_profundo"
+    },
+    {
+      "mensaje": "que es el tejido profundo",
+      "espera": "tejido_profundo"
+    },
+    {
+      "mensaje": "soy deportista, que masaje me sirve",
+      "espera": "deportivo"
+    },
+    {
+      "mensaje": "tienen masaje deportivo?",
+      "espera": "deportivo"
+    },
+    {
+      "mensaje": "me lesione entrenando",
+      "espera": "deportivo"
+    },
+    {
+      "mensaje": "que son los puntos gatillo",
+      "espera": "puntos_gatillo"
+    },
+    {
+      "mensaje": "tienen reflexologia",
+      "espera": "reflexologia"
+    },
+    {
+      "mensaje": "masaje de pies",
+      "espera": "reflexologia"
+    },
+    {
+      "mensaje": "hacen shiatsu?",
+      "espera": "shiatsu"
+    },
+    {
+      "mensaje": "masaje japones",
+      "espera": "shiatsu"
+    },
+    {
+      "mensaje": "tienen masaje tailandes",
+      "espera": "tailandes"
+    },
+    {
+      "mensaje": "thai massage?",
+      "espera": "tailandes"
+    },
+    {
+      "mensaje": "estoy embarazada, puedo hacerme un masaje?",
+      "espera": "prenatal"
+    },
+    {
+      "mensaje": "masaje prenatal",
+      "espera": "prenatal"
+    },
+    {
+      "mensaje": "tengo 6 meses de embarazo",
+      "espera": "prenatal"
+    },
+    {
+      "mensaje": "quiero ir con mi pololo",
+      "espera": "pareja"
+    },
+    {
+      "mensaje": "tienen masaje para parejas",
+      "espera": "pareja"
+    },
+    {
+      "mensaje": "es para regalarle a mi pareja y a mi, juntos",
+      "espera": "pareja"
+    },
+    {
+      "mensaje": "podemos ir dos personas al mismo tiempo",
+      "espera": "pareja"
+    },
+    {
+      "mensaje": "hacen drenaje linfatico?",
+      "espera": "drenaje_linfatico"
+    },
+    {
+      "mensaje": "me operé hace poco, me sirve el drenaje",
+      "espera": "drenaje_linfatico"
+    },
+    {
+      "mensaje": "tengo retencion de liquidos",
+      "espera": "drenaje_linfatico"
+    },
+    {
+      "mensaje": "hacen reiki",
+      "espera": "reiki"
+    },
+    {
+      "mensaje": "terapia con cristales?",
+      "espera": "cristales"
+    },
+    {
+      "mensaje": "trabajan con piedras",
+      "espera": "cristales"
+    },
+    {
+      "mensaje": "que es el mix asiatico",
+      "espera": "mix_asiatico"
+    },
+    {
+      "mensaje": "masaje filipino",
+      "espera": "mix_asiatico"
+    },
+    {
+      "mensaje": "masaje a cuatro manos",
+      "espera": "cuatro_manos"
+    },
+    {
+      "mensaje": "tienen packs?",
+      "espera": "packs"
+    },
+    {
+      "mensaje": "cuanto sale el pack de 10",
+      "espera": "packs"
+    },
+    {
+      "mensaje": "hay paquetes de varias sesiones",
+      "espera": "packs"
+    },
+    {
+      "mensaje": "tienen descuentos?",
+      "espera": "promociones"
+    },
+    {
+      "mensaje": "alguna promocion vigente",
+      "espera": "promociones"
+    },
+    {
+      "mensaje": "hay ofertas de verano",
+      "espera": "promociones"
+    },
+    {
+      "mensaje": "cuanto dura el masaje",
+      "espera": "duracion"
+    },
+    {
+      "mensaje": "cuanto tiempo demora una sesion",
+      "espera": "duracion"
+    },
+    {
+      "mensaje": "de cuantos minutos son",
+      "espera": "duracion"
+    },
+    {
+      "mensaje": "tengo que sacarme la ropa?",
+      "espera": "ropa"
+    },
+    {
+      "mensaje": "que ropa llevo",
+      "espera": "ropa"
+    },
+    {
+      "mensaje": "quienes son los masajistas",
+      "espera": "quienes_somos"
+    },
+    {
+      "mensaje": "quienes atienden",
+      "espera": "quienes_somos"
+    },
+    {
+      "mensaje": "de donde son los terapeutas",
+      "espera": "quienes_somos"
+    },
+    {
+      "mensaje": "tienen buenas reseñas?",
+      "espera": "resenas"
+    },
+    {
+      "mensaje": "son recomendables?",
+      "espera": "resenas"
+    },
+    {
+      "mensaje": "cual es el telefono",
+      "espera": "contacto"
+    },
+    {
+      "mensaje": "tienen whatsapp",
+      "espera": "contacto"
+    },
+    {
+      "mensaje": "me pasas el instagram",
+      "espera": "contacto"
+    },
+    {
+      "mensaje": "cual es su correo",
+      "espera": "contacto"
+    },
+    {
+      "mensaje": "gracias",
+      "espera": "agradecimiento"
+    },
+    {
+      "mensaje": "muchas gracias por la info",
+      "espera": "agradecimiento"
+    },
+    {
+      "mensaje": "genial gracias!",
+      "espera": "agradecimiento"
+    },
+    {
+      "mensaje": "no, eso era todo",
+      "espera": "cierre"
+    },
+    {
+      "mensaje": "ok",
+      "espera": "cierre"
+    },
+    {
+      "mensaje": "nada mas",
+      "espera": "cierre"
+    },
+    {
+      "mensaje": "chao",
+      "espera": "despedida"
+    },
+    {
+      "mensaje": "hasta luego",
+      "espera": "despedida"
+    },
+    {
+      "mensaje": "quiero hablar con una persona",
+      "espera": "hablar_con_persona"
+    },
+    {
+      "mensaje": "me puede atender alguien de verdad",
+      "espera": "hablar_con_persona"
+    },
+    {
+      "mensaje": "necesito hablar con alguien del spa",
+      "espera": "hablar_con_persona"
+    },
+    {
+      "mensaje": "tienen estacionamiento?",
+      "espera": "sin_dato"
+    },
+    {
+      "mensaje": "no tienen estacionamiento?",
+      "espera": "sin_dato"
+    },
+    {
+      "mensaje": "aceptan tarjeta de credito?",
+      "espera": "sin_dato"
+    },
+    {
+      "mensaje": "se puede pagar con transferencia",
+      "espera": "sin_dato"
+    },
+    {
+      "mensaje": "hacen faciales?",
+      "espera": "fallback"
+    },
+    {
+      "mensaje": "hacen depilacion",
+      "espera": "fallback"
+    },
+    {
+      "mensaje": "tienen manicure",
+      "espera": "fallback"
+    },
+    {
+      "mensaje": "tienen sauna o jacuzzi",
+      "espera": "fallback"
+    },
+    {
+      "mensaje": "atienden a domicilio?",
+      "espera": "sin_dato"
+    },
+    {
+      "mensaje": "venden gift card?",
+      "espera": "sin_dato"
+    },
+    {
+      "mensaje": "puedo llevar a mi perro",
+      "espera": "fallback"
+    },
+    {
+      "mensaje": "cual es la capital de francia",
+      "espera": "fallback"
+    },
+    {
+      "mensaje": "asdfgh",
+      "espera": "fallback"
+    },
+    {
+      "mensaje": "wenas",
+      "espera": "saludo"
+    },
+    {
+      "mensaje": "hola, que tal?",
+      "espera": "saludo"
+    },
+    {
+      "mensaje": "abren los lunes?",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "que horario tienen el domingo",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "a que hora cierran hoy",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "cual es su direccion exacta",
+      "espera": "ubicacion"
+    },
+    {
+      "mensaje": "me mandas la ubicacion",
+      "espera": "ubicacion"
+    },
+    {
+      "mensaje": "estan cerca del mall?",
+      "espera": "fallback"
+    },
+    {
+      "mensaje": "quiero agendar un masaje para mañana",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "como hago una reserva",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "hay cupo el viernes?",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "cuanto vale el masaje descontracturante",
+      "espera": [
+        "tejido_profundo",
+        "precios"
+      ]
+    },
+    {
+      "mensaje": "precio del masaje en pareja",
+      "espera": "pareja"
+    },
+    {
+      "mensaje": "cuanto cuesta la reflexologia",
+      "espera": [
+        "reflexologia",
+        "precios"
+      ]
+    },
+    {
+      "mensaje": "valor del pack de 5",
+      "espera": "packs"
+    },
+    {
+      "mensaje": "q masajes hacen",
+      "espera": "tipos_de_masaje"
+    },
+    {
+      "mensaje": "me duele el cuello y los hombros",
+      "espera": "tejido_profundo"
+    },
+    {
+      "mensaje": "quiero relajarme",
+      "espera": "aromaterapia"
+    },
+    {
+      "mensaje": "estoy esperando guagua",
+      "espera": "prenatal"
+    },
+    {
+      "mensaje": "masaje para embarazadas",
+      "espera": "prenatal"
+    },
+    {
+      "mensaje": "corro maratones, me sirve algo?",
+      "espera": "deportivo"
+    },
+    {
+      "mensaje": "quiero regalarle un masaje a mi mama",
+      "espera": "sin_dato"
+    },
+    {
+      "mensaje": "tienen giftcard",
+      "espera": "sin_dato"
+    },
+    {
+      "mensaje": "hacen masajes reductivos?",
+      "espera": [
+        "fallback",
+        "tipos_de_masaje"
+      ]
+    },
+    {
+      "mensaje": "cuanto dura la reflexologia",
+      "espera": "duracion"
+    },
+    {
+      "mensaje": "hay que ir con ropa especial?",
+      "espera": "ropa"
+    },
+    {
+      "mensaje": "son filipinos de verdad?",
+      "espera": "quienes_somos"
+    },
+    {
+      "mensaje": "que opinan los clientes",
+      "espera": "resenas"
+    },
+    {
+      "mensaje": "numero de whatsapp porfa",
+      "espera": "contacto"
+    },
+    {
+      "mensaje": "mail de contacto",
+      "espera": "contacto"
+    },
+    {
+      "mensaje": "ya gracias",
+      "espera": "agradecimiento"
+    },
+    {
+      "mensaje": "perfecto muchas gracias",
+      "espera": "agradecimiento"
+    },
+    {
+      "mensaje": "ok chao",
+      "espera": "despedida"
+    },
+    {
+      "mensaje": "nos vemos!",
+      "espera": "despedida"
+    },
+    {
+      "mensaje": "quiero hablar con alguien",
+      "espera": "hablar_con_persona"
+    },
+    {
+      "mensaje": "eres un bot?",
+      "espera": "hablar_con_persona"
+    },
+    {
+      "mensaje": "puedo pagar en efectivo",
+      "espera": "sin_dato"
+    },
+    {
+      "mensaje": "tienen ducha",
+      "espera": "sin_dato"
+    },
+    {
+      "mensaje": "cuanto sale el estacionamiento",
+      "espera": "sin_dato"
+    },
+    {
+      "mensaje": "hola tienen estacionamiento",
+      "espera": "sin_dato"
+    },
+    {
+      "mensaje": "buenas noches",
+      "espera": "saludo"
+    },
+    {
+      "mensaje": "hola hola",
+      "espera": "saludo"
+    },
+    {
+      "mensaje": "estan abiertos ahora?",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "abren a las 9?",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "que dias abren",
+      "espera": "horarios"
+    },
+    {
+      "mensaje": "cuál es la dirección del local",
+      "espera": "ubicacion"
+    },
+    {
+      "mensaje": "en que parte de santiago estan",
+      "espera": "ubicacion"
+    },
+    {
+      "mensaje": "llego en metro?",
+      "espera": "fallback"
+    },
+    {
+      "mensaje": "puedo agendar online",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "quisiera reservar para dos personas",
+      "espera": "pareja"
+    },
+    {
+      "mensaje": "tienen horas disponibles esta semana",
+      "espera": "reservas"
+    },
+    {
+      "mensaje": "cuanto es el masaje",
+      "espera": "precios"
+    },
+    {
+      "mensaje": "cuánto cobran??",
+      "espera": "precios"
+    },
+    {
+      "mensaje": "hay algo mas barato?",
+      "espera": "precios"
+    },
+    {
+      "mensaje": "el masaje de 60 minutos cuanto cuesta",
+      "espera": "precios"
+    },
+    {
+      "mensaje": "tienen masaje relajante",
+      "espera": "aromaterapia"
+    },
+    {
+      "mensaje": "tengo la espalda hecha pedazos",
+      "espera": "tejido_profundo"
+    },
+    {
+      "mensaje": "algo para la ansiedad",
+      "espera": "aromaterapia"
+    },
+    {
+      "mensaje": "juego futbol y tengo una lesion",
+      "espera": "deportivo"
+    },
+    {
+      "mensaje": "me hice una lipo, sirve el drenaje?",
+      "espera": "drenaje_linfatico"
+    },
+    {
+      "mensaje": "tengo los pies cansados",
+      "espera": "reflexologia"
+    },
+    {
+      "mensaje": "que es el shiatzu",
+      "espera": "shiatsu"
+    },
+    {
+      "mensaje": "reiki a distancia?",
+      "espera": "reiki"
+    },
+    {
+      "mensaje": "con piedras calientes?",
+      "espera": "cristales"
+    },
+    {
+      "mensaje": "que incluye el pack",
+      "espera": "packs"
+    },
+    {
+      "mensaje": "hay promo?",
+      "espera": "promociones"
+    },
+    {
+      "mensaje": "cuanto duran las sesiones",
+      "espera": "duracion"
+    },
+    {
+      "mensaje": "tengo que llevar algo?",
+      "espera": "ropa"
+    },
+    {
+      "mensaje": "quienes son ustedes",
+      "espera": "quienes_somos"
+    },
+    {
+      "mensaje": "cuantas estrellas tienen",
+      "espera": "resenas"
+    },
+    {
+      "mensaje": "me das el telefono",
+      "espera": "contacto"
+    },
+    {
+      "mensaje": "instagram?",
+      "espera": "contacto"
+    },
+    {
+      "mensaje": "gracias!!!",
+      "espera": "agradecimiento"
+    },
+    {
+      "mensaje": "listo, gracias",
+      "espera": "agradecimiento"
+    },
+    {
+      "mensaje": "eso seria",
+      "espera": "cierre"
+    },
+    {
+      "mensaje": "adios",
+      "espera": "despedida"
+    },
+    {
+      "mensaje": "quiero que me atienda una persona",
+      "espera": "hablar_con_persona"
+    },
+    {
+      "mensaje": "aceptan debito?",
+      "espera": "sin_dato"
+    },
+    {
+      "mensaje": "tienen estacionamiento para clientes",
+      "espera": "sin_dato"
+    },
+    {
+      "mensaje": "hacen masajes con ventosas",
+      "espera": [
+        "fallback",
+        "tipos_de_masaje"
+      ]
+    }
+  ]
+}

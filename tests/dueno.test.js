@@ -4,7 +4,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 
-const { prepararDueno } = require('../src/arranque');
+const { prepararDueno, quitarEjemplos } = require('../src/arranque');
+const { AuthSessionStore } = require('../src/auth/sessions');
 const { BusinessRepository } = require('../src/knowledge/repository');
 const { UserStore } = require('../src/auth/users');
 const { validateBusiness } = require('../src/knowledge/schema');
@@ -59,4 +60,43 @@ test('Boracay es válido y responde lo que preguntaría un cliente', () => {
   for (const pregunta of ['¿a qué hora abren?', 'cuanto cuesta un masaje', 'como agendo una hora']) {
     assert.ok(respond(pregunta, negocio).matched, `debería entender «${pregunta}»`);
   }
+});
+
+test('cambiar la contraseña en el hosting recupera la cuenta y cierra sus sesiones', () => {
+  const e = entorno();
+  const authSessions = new AuthSessionStore({ file: path.join(path.dirname(e.users.file), 'sessions.json') });
+  prepararDueno({ ...e, authSessions });
+  const user = e.users.findByEmail('duena@ejemplo.cl');
+  const token = authSessions.create(user.id);
+
+  prepararDueno({ ...e, authSessions, dueno: { ...e.dueno, password: 'la-recuperada-456' } });
+
+  assert.ok(e.users.authenticate('duena@ejemplo.cl', 'la-recuperada-456'));
+  assert.strictEqual(e.users.authenticate('duena@ejemplo.cl', 'clave-segura-123'), null);
+  assert.strictEqual(authSessions.userIdFor(token), null, 'las sesiones abiertas se cierran');
+});
+
+test('si la dueña cambió su contraseña en el panel, reiniciar no se la pisa', () => {
+  const e = entorno();
+  prepararDueno(e);
+  const user = e.users.findByEmail('duena@ejemplo.cl');
+  e.users.setPassword(user.id, 'la-del-panel-789', { actual: 'clave-segura-123' });
+
+  prepararDueno(e);
+
+  assert.ok(e.users.authenticate('duena@ejemplo.cl', 'la-del-panel-789'));
+});
+
+test('en el bot de un cliente se quitan los ejemplos, nunca un negocio con dueño', () => {
+  const e = entorno();
+  const semillas = fs.mkdtempSync(path.join(os.tmpdir(), 'pymebot-semillas-'));
+  fs.writeFileSync(path.join(semillas, 'ejemplo.json'), '{}');
+  fs.writeFileSync(path.join(semillas, 'boracay-spa.json'), '{}');
+
+  prepararDueno(e);
+  e.repository.save('ejemplo', { name: 'Ejemplo', intents: [{ id: 'a', keywords: ['a'], answer: 'a' }] });
+
+  assert.strictEqual(quitarEjemplos({ repository: e.repository, modoCliente: false, semillas: [semillas] }), 0);
+  assert.strictEqual(quitarEjemplos({ repository: e.repository, modoCliente: true, semillas: [semillas] }), 1);
+  assert.deepStrictEqual(e.repository.list().map((n) => n.slug), ['boracay-spa']);
 });

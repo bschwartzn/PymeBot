@@ -18,6 +18,9 @@ const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_EMAIL = 200;
 const MAX_NAME = 80;
 
+/** Un hash cualquiera, para que comprobar un correo inexistente tarde lo mismo. */
+const HASH_DE_RELLENO = hashPassword('relleno-que-nunca-coincide');
+
 class AuthError extends Error {
   constructor(mensaje, campo = null) {
     super(mensaje);
@@ -109,8 +112,37 @@ class UserStore {
    */
   authenticate(email, password) {
     const user = this.findByEmail(email);
-    if (!user) return null;
+    if (!user) {
+      // Se calcula un hash igual: si un correo inexistente respondiera al instante, el
+      // tiempo de respuesta delataría qué correos tienen cuenta.
+      verifyPassword(typeof password === 'string' ? password : '', HASH_DE_RELLENO);
+      return null;
+    }
     if (!verifyPassword(password, user.passwordHash)) return null;
+    return UserStore.publicView(user);
+  }
+
+  /**
+   * Cambia la contraseña de una cuenta. Lanza AuthError con un mensaje mostrable.
+   * @param {object} [opciones]
+   * @param {string} [opciones.actual] si viene, tiene que ser la contraseña vigente
+   * @param {string} [opciones.desdeEntorno] hash de la contraseña del hosting que la dejó así
+   */
+  setPassword(userId, nueva, { actual, desdeEntorno } = {}) {
+    const users = this.read();
+    const user = users.find((u) => u.id === userId);
+    if (!user) throw new AuthError('Esa cuenta no existe.');
+
+    if (actual !== undefined && !verifyPassword(actual, user.passwordHash)) {
+      throw new AuthError('La contraseña actual no es correcta.', 'actual');
+    }
+    const problema = checkPasswordStrength(nueva);
+    if (problema) throw new AuthError(problema, 'nueva');
+
+    user.passwordHash = hashPassword(nueva);
+    user.passwordChangedAt = new Date().toISOString();
+    if (desdeEntorno !== undefined) user.passwordFromEnv = desdeEntorno;
+    this.write(users);
     return UserStore.publicView(user);
   }
 

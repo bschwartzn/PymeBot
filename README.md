@@ -83,7 +83,7 @@ Corre un conjunto de preguntas escritas como las escribiría un cliente real
 los fallos por tipo: **no entiende** (cae en el respaldo teniendo la respuesta), **confunde
 de tema** (responde con seguridad algo que no se preguntó) y **responde algo que no sabe**.
 
-Hoy el negocio de referencia acierta **98.7 %** (74/75). El piso está enganchado a `npm test`,
+Hoy el negocio de referencia acierta **98.7 %** (74/75), y Boracay Spa **100 %** (197/197). El piso está enganchado a `npm test`,
 así que un cambio que lo baje rompe la suite. El piso se sube cuando un módulo mejora la
 comprensión; no se baja para que pase.
 
@@ -93,7 +93,7 @@ comprensión; no se baja para que pase.
 npm test
 ```
 
-174 tests sobre el motor, las sesiones, la API HTTP, la validación de negocios, el
+200 tests sobre el motor, las sesiones, la API HTTP, la validación de negocios, el
 repositorio, la autenticación y autorización, el canal público, las conversaciones y sus
 métricas, el endurecimiento de producción y la precisión del bot.
 
@@ -264,9 +264,9 @@ El panel tiene cuatro secciones:
 - **El panel es privado.** Cada dueño ve y edita solo sus propios negocios.
 - Los ejemplos que trae PymeBot no tienen dueño: se pueden copiar, no editar.
 
-> ⚠️ **Antes de publicarlo en internet**, ten presente que todavía no hay verificación de
-> correo ni recuperación de contraseña, y que usuarios y sesiones se guardan en archivos
-> JSON. Está pensado para uso local y pruebas. El detalle está en
+> ⚠️ Usuarios y sesiones se guardan en archivos JSON, y no hay correo de recuperación: la
+> contraseña se recupera desde el hosting (ver «El bot de un cliente»). Alcanza para un
+> negocio; para muchos habría que pasar a una base de datos. El detalle está en
 > [`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ### Si prefieres editar los archivos a mano
@@ -384,7 +384,7 @@ public/
   index.*              Sandbox interno de pruebas
 scripts/               Generadores de páginas sin servidor y medidor de precisión
 dist/                  Páginas en un solo archivo, sin servidor (generadas)
-tests/                 174 tests con el runner nativo de Node
+tests/                 200 tests con el runner nativo de Node
 docs/ROADMAP.md        Plan modular completo
 docs/CANALES.md        Cómo añadir WhatsApp u otro canal
 ```
@@ -414,6 +414,63 @@ panel se conserva. Después:
 
 Esta rama **no publica en GitHub Pages**: si lo hiciera, reemplazaría el sitio de la
 presentación.
+
+## El bot de un cliente
+
+Con `PYMEBOT_DUENO_EMAIL` y `PYMEBOT_DUENO_PASSWORD` definidas, el servidor deja de ser una
+plataforma de pruebas y pasa a ser **el bot de ese negocio**:
+
+| | Plataforma (sin esas variables) | Bot de un cliente |
+|---|---|---|
+| Crear cuentas | Abierto en desarrollo | **Cerrado**: nadie más puede publicar un chat en tu dirección |
+| Negocios de ejemplo | Se siembran | **No hay**, y los que hubiera se quitan al arrancar |
+| Portada `/` | Sandbox interno, con el motor por dentro | **Abre el chat** del negocio |
+| `/api/directory` | Lista los negocios | No disponible |
+
+`PYMEBOT_REGISTRO=abierto` o `cerrado` fuerza el registro en cualquiera de los dos modos.
+
+### Las pruebas de la dueña no cuentan
+
+Si la dueña abre su chat en el mismo navegador donde tiene el panel abierto, el chat se lo
+avisa y **esas conversaciones no se guardan**: no ensucian las cifras ni la lista de
+«no supo responder». Para el resto, la pestaña **Conversaciones** tiene **Borrar todas las
+conversaciones**, para empezar de cero antes de abrir el bot al público.
+
+### Contraseña
+
+- **Cambiarla:** botón **Cambiar contraseña** en el panel. Pide la actual y cierra las
+  sesiones en los demás dispositivos.
+- **Recuperarla:** cambia `PYMEBOT_DUENO_PASSWORD` en el hosting y vuelve a desplegar. La
+  nueva se aplica una vez y cierra todas las sesiones; si después se cambia desde el panel,
+  los reinicios no la pisan.
+
+### Seguridad
+
+- **Registro cerrado** en el bot de un cliente (arriba).
+- **Fuerza bruta:** límite por IP en el acceso, y bloqueo por correo **e IP** tras 10
+  intentos fallidos: quien prueba contraseñas se bloquea a sí mismo, no a la dueña.
+- **Contraseñas** con scrypt; el login tarda lo mismo exista o no el correo, para no delatar
+  qué correos tienen cuenta.
+- **Sesiones** en cookie `httpOnly`, `sameSite=lax` y `secure` en producción; además, toda
+  petición que modifica algo y llega desde otro sitio se rechaza (CSRF).
+- **Cabeceras:** CSP sin scripts en línea, `X-Frame-Options` en el panel (solo el chat se
+  puede incrustar, para el widget), HSTS en producción.
+- **Datos de clientes:** las conversaciones solo las ve la dueña. El registro tiene un techo
+  de unos 10 MB por negocio, para que nadie pueda llenar el disco a fuerza de mensajes.
+- **Errores:** nunca devuelven detalles internos; `/health` solo dice si el servidor está vivo.
+
+### Qué tan bien responde
+
+El motor entiende faltas de ortografía («presios», «masjae»), letras alargadas («holaaa»),
+plurales y verbos en plural dentro de frases («¿cuánto duran?»). «Hola», «gracias», «ok» o
+«no» solo se contestan como cortesía cuando el mensaje es solo eso: «¿no tienen
+estacionamiento?» no es un cierre de conversación. Quien pide hablar con una persona recibe
+el contacto del negocio.
+
+Boracay se mide con 197 preguntas en [`data/evals/boracay-spa.json`](data/evals/boracay-spa.json).
+Antes de ajustar con ellas, sobre 40 preguntas que el bot nunca había visto acertó 33 (82,5 %):
+esa es la cifra honesta para preguntas nuevas. Lo que no sabe —estacionamiento, formas de
+pago— lo deriva al WhatsApp en vez de inventar, y aparece en el panel como pendiente.
 
 ## Ponerlo en internet
 

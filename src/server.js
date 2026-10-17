@@ -68,6 +68,8 @@ function createApp({
   authSessions = new AuthSessionStore(),
   sessions = new SessionStore(),
   conversations = new ConversationLog(),
+  registroAbierto = config.registroAbierto,
+  modoCliente = config.modoCliente,
 } = {}) {
   /*
    * El núcleo de la conversación, sin HTTP dentro. Cualquier canal (la web hoy, WhatsApp
@@ -86,7 +88,40 @@ function createApp({
   app.disable('x-powered-by');
 
   app.use(cabecerasDeSeguridad({ isProduction: config.isProduction }));
+
+  /*
+   * Defensa contra peticiones forjadas desde otro sitio (CSRF), además de la cookie
+   * sameSite. Un navegador siempre manda Origin en un POST, PUT o DELETE: si viene de otra
+   * dirección, no es el panel ni el chat de este servidor y no se atiende.
+   */
+  app.use('/api', (req, res, next) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
+    const origen = req.get('origin');
+    if (!origen) return next(); // curl, el hosting, un canal servidor a servidor
+    let host;
+    try {
+      host = new URL(origen).host;
+    } catch (err) {
+      host = null;
+    }
+    const propios = [req.get('host'), req.get('x-forwarded-host')];
+    if (config.publicUrl) propios.push(new URL(config.publicUrl).host);
+    if (!host || !propios.includes(host)) {
+      return res.status(403).json({ error: 'Petición rechazada.' });
+    }
+    next();
+  });
+
   app.use(express.json({ limit: '256kb' }));
+
+  // En el bot de un cliente, la portada es su chat. El sandbox interno (que muestra el
+  // motor por dentro) no se publica.
+  if (modoCliente) {
+    app.get(['/', '/index.html', '/app.js'], (req, res) => {
+      res.redirect(302, `/c/${encodeURIComponent(DEFAULT_SLUG)}`);
+    });
+  }
+
   app.use(
     express.static(path.join(__dirname, '..', 'public'), {
       // Los archivos llevan su contenido en el nombre solo en dist/; aquí se revalida.
@@ -104,7 +139,13 @@ function createApp({
   });
   const limitarEscritura = rateLimit(config.limits.write);
 
-  /** Intentos fallidos de login, por correo. Se limpia solo. */
+  /**
+   * Intentos fallidos de login, por correo E IP.
+   *
+   * Solo por correo, cualquiera podría dejar a la dueña sin poder entrar escribiendo mal su
+   * contraseña diez veces. Por correo e IP, el que se equivoca se bloquea a sí mismo; y el
+   * límite por IP de limitarAuth frena a quien prueba muchos correos.
+   */
   const intentosFallidos = new Map();
 
   function registrarFallo(clave) {
@@ -208,7 +249,7 @@ function createApp({
    */
   function publicUrl(req, slug) {
     const base =
-      process.env.PYMEBOT_PUBLIC_URL ||
+      config.publicUrl ||
       `${req.headers['x-forwarded-proto'] || req.protocol}://${req.headers['x-forwarded-host'] || req.get('host')}`;
     return `${base.replace(/\/+$/, '')}/c/${encodeURIComponent(slug)}`;
   }
@@ -254,18 +295,22 @@ function createApp({
 
   // Lo consulta el hosting para saber si la instancia está viva. Tiene que ser barato y
   // no depender de nada que pueda fallar por su cuenta.
+  // Cuántas cuentas o sesiones hay no es asunto de quien pregunta: solo si está viva.
   app.get('/health', (req, res) => {
-    res.json({
-      status: 'ok',
-      businesses: repository.list().length,
-      users: users.count,
-      sessions: sessions.size,
-      uptime: Math.round(process.uptime()),
-    });
+    res.json({ status: 'ok', uptime: Math.round(process.uptime()) });
   });
 
-  /** Los negocios con los que se puede conversar. Público: alimenta el selector del chat. */
+  /** Lo que el panel necesita saber antes de iniciar sesión. */
+  app.get('/api/instalacion', (req, res) => {
+    res.json({ registroAbierto });
+  });
+
+  /**
+   * Los negocios con los que se puede conversar: alimenta el selector del sandbox.
+   * En el bot de un cliente no hay selector, y listar lo que hay no le sirve a nadie más.
+   */
   app.get('/api/directory', (req, res) => {
+    if (modoCliente) return res.status(404).json({ error: 'No disponible.' });
     res.json({ businesses: repository.list().map(({ slug, name }) => ({ slug, name })) });
   });
 
@@ -281,6 +326,8 @@ function createApp({
       greeting: business.active ? business.greeting : business.pausedMessage,
       topics: business.active ? business.topics : [],
       active: business.active,
+      // La dueña probando su propio bot: el chat se lo avisa, y esa conversación no cuenta.
+      esDueno: Boolean(req.user && business.ownerId === req.user.id),
     });
   });
 
@@ -290,12 +337,16 @@ function createApp({
    * webhook, sin tocar nada del núcleo.
    */
   app.post('/api/chat', limitarChat, (req, res) => {
-    const { sessionId, message } = req.body || {};
+    const { sessionId, message, business: pedido } = req.body || {};
 
     // Cada lectura va al disco, así que un cambio guardado en el panel aplica ya.
-    const { slug, business, noEncontrado } = resolveBusiness(req.body.business);
+    const { slug, business, noEncontrado } = resolveBusiness(typeof pedido === 'string' ? pedido : undefined);
     if (noEncontrado) return chatNoDisponible(res);
     if (!business) return sinNegocios(res);
+
+    // Lo que la dueña escribe para probar su bot no se mezcla con lo que preguntan sus
+    // clientes: si no, las cifras y la lista de "no supo responder" quedarían falseadas.
+    const esPrueba = Boolean(req.user && business.ownerId === req.user.id);
 
     let resultado;
     try {
@@ -305,7 +356,8 @@ function createApp({
         slug,
         canal: 'web',
         // En la web, la conversación la identifica lo que guardó el navegador.
-        idExterno: sessionId,
+        idExterno: typeof sessionId === 'string' ? sessionId : null,
+        registrar: !esPrueba,
       });
     } catch (err) {
       if (err instanceof MensajeInvalido) return res.status(400).json({ error: err.message });
@@ -319,6 +371,7 @@ function createApp({
       intent: resultado.intent,
       matched: resultado.matched,
       score: resultado.score,
+      prueba: esPrueba,
     });
   });
 
@@ -373,6 +426,9 @@ function createApp({
   }
 
   app.post('/api/auth/signup', limitarAuth, (req, res) => {
+    if (!registroAbierto) {
+      return res.status(403).json({ error: 'El registro de cuentas nuevas está cerrado.' });
+    }
     const { email, password, name, businessName } = req.body || {};
 
     let user;
@@ -402,7 +458,7 @@ function createApp({
 
   app.post('/api/auth/login', limitarAuth, (req, res) => {
     const { email, password } = req.body || {};
-    const clave = UserStore.normalizeEmail(email);
+    const clave = `${UserStore.normalizeEmail(email)}|${req.ip}`;
 
     if (estaBloqueado(clave)) {
       return res.status(429).json({
@@ -433,6 +489,24 @@ function createApp({
     res.json({ user: req.user });
   });
 
+  /**
+   * Cambia la contraseña. Pide la actual (una sesión olvidada abierta no basta para
+   * quedarse con la cuenta) y cierra todas las demás sesiones: si alguien más había
+   * entrado, queda fuera.
+   */
+  app.post('/api/auth/password', limitarAuth, requireAuth, (req, res) => {
+    const { actual, nueva } = req.body || {};
+    try {
+      users.setPassword(req.user.id, nueva, { actual: typeof actual === 'string' ? actual : '' });
+    } catch (err) {
+      if (err instanceof AuthError) return res.status(422).json({ error: err.message, campo: err.campo });
+      throw err;
+    }
+    authSessions.destroyAllFor(req.user.id);
+    abrirSesion(res, req.user);
+    res.json({ ok: true });
+  });
+
   // ============================================================ PRIVADO: el panel
 
   /** Solo los negocios de quien pregunta. */
@@ -442,7 +516,7 @@ function createApp({
 
   /** Los ejemplos que vienen con PymeBot, para copiar uno y partir de ahí. */
   app.get('/api/examples', requireAuth, (req, res) => {
-    res.json({ examples: repository.listExamples() });
+    res.json({ examples: modoCliente ? [] : repository.listExamples() });
   });
 
   app.get('/api/businesses/:slug', requireAuth, requireOwnedBusiness, (req, res) => {
@@ -486,6 +560,12 @@ function createApp({
     res.json({ conversaciones: conversaciones(conversations.leer(req.params.slug), { limite }) });
   });
 
+  /** Vacía las conversaciones: por ejemplo, las de las pruebas antes de abrir al público. */
+  app.delete('/api/businesses/:slug/conversations', limitarEscritura, requireAuth, requireOwnedBusiness, (req, res) => {
+    conversations.borrar(req.params.slug);
+    res.json({ ok: true });
+  });
+
   app.post('/api/businesses', limitarEscritura, requireAuth, (req, res) => {
     const nombre = req.body && typeof req.body.name === 'string' ? req.body.name.trim() : '';
     if (!nombre) return res.status(422).json({ error: 'El negocio necesita un nombre.' });
@@ -503,7 +583,7 @@ function createApp({
 
   /** Copia un ejemplo a la cuenta de quien lo pide. */
   app.post('/api/examples/:slug/copy', requireAuth, (req, res) => {
-    const ejemplo = repository.get(req.params.slug);
+    const ejemplo = modoCliente ? null : repository.get(req.params.slug);
     if (!ejemplo || ejemplo.ownerId !== null) {
       return res.status(404).json({ error: 'Ese ejemplo no existe.' });
     }
@@ -540,6 +620,23 @@ function createApp({
     // algo que ya no existe, y son datos de clientes de alguien.
     conversations.borrar(req.params.slug);
     res.json({ ok: true });
+  });
+
+  // Una ruta de la API que no existe responde en JSON, como el resto de la API.
+  app.use('/api', (req, res) => res.status(404).json({ error: 'No existe.' }));
+
+  /*
+   * Último recurso. Un JSON mal formado es culpa de quien lo mandó (400); cualquier otra
+   * cosa es nuestra (500). En ningún caso sale el detalle interno del error: diría qué
+   * archivos y versiones hay por dentro.
+   */
+  // eslint-disable-next-line no-unused-vars
+  app.use((err, req, res, next) => {
+    if (err && (err.type === 'entity.parse.failed' || err.type === 'entity.too.large')) {
+      return res.status(err.status || 400).json({ error: 'La petición no es válida.' });
+    }
+    console.error('Error no controlado:', err);
+    res.status(500).json({ error: 'Algo falló de nuestro lado. Inténtalo de nuevo en un momento.' });
   });
 
   return app;

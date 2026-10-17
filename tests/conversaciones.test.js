@@ -267,3 +267,17 @@ test('una conversación de punta a punta queda legible desde el registro', () =>
   );
   assert.strictEqual(conversacion.mensajes[0].respuesta, 'De 10 a 20.');
 });
+
+test('lo que el bot derivó por no tener el dato cuenta como pendiente para la dueña', () => {
+  const { resumir } = require('../src/chat/metricas');
+  const ahora = Date.now();
+  const at = new Date(ahora - 1000).toISOString();
+  const registros = [
+    { at, conversationId: 'a', pregunta: 'tienen estacionamiento', intent: 'sin_dato', matched: true },
+    { at, conversationId: 'a', pregunta: 'horario', intent: 'horarios', matched: true },
+  ];
+  const r = resumir(registros, { ahora });
+  assert.strictEqual(r.sinRespuesta, 1);
+  assert.strictEqual(r.preguntasSinRespuesta[0].ejemplo, 'tienen estacionamiento');
+  assert.deepStrictEqual(r.temasMasPreguntados.map((t) => t.clave), ['horarios']);
+});

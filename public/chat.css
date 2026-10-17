@@ -230,3 +230,14 @@ body {
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* La dueña probando su propio bot: se le avisa que esto no cuenta como conversación. */
+.prueba {
+  margin: 0;
+  padding: 8px 16px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--suave);
+  background: var(--burbuja);
+  border-bottom: 1px solid var(--linea);
+}

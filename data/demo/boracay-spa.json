@@ -1,6 +1,6 @@
 {
   "name": "Boracay Spa",
-  "tagline": "Masajes con alma filipina en Lo Barnechea · demo de PymeBot",
+  "tagline": "Masajes con alma filipina en Lo Barnechea",
   "greeting": "¡Hola! 👋 Soy el asistente de Boracay Spa. Te ayudo con nuestros masajes, precios, packs, horario y cómo agendar. ¿Qué te gustaría saber?",
   "greetingRepeat": "¡Aquí sigo! ¿En qué más te ayudo?",
   "fallback": "Perdona, no estoy seguro de haber entendido eso. Estos son los temas en los que te puedo ayudar:",
@@ -30,7 +30,11 @@
         "que tal",
         "alo",
         "hello",
-        "hi"
+        "hi",
+        "buen dia",
+        "buena tarde",
+        "wenas",
+        "wena"
       ],
       "answer": "¡Hola! 👋 Cuéntame, ¿qué necesitas saber?"
     },
@@ -43,18 +47,28 @@
         "cierran",
         "abierto",
         "abiertos",
-        "atienden",
         "a que hora",
         "hasta que hora",
-        "lunes",
-        "domingo",
-        "sabado",
-        "feriado",
         "festivo",
         "fin de semana",
-        "trabajan",
         "hours",
-        "open"
+        "open",
+        "que dias",
+        "dias de atencion",
+        "horario de atencion",
+        "atienden los",
+        "atienden el",
+        "atienden hoy",
+        "abren hoy",
+        "abren los",
+        "abren el",
+        "trabajan los",
+        "estan abiertos",
+        "fines de semana",
+        "los domingos",
+        "los sabados",
+        "los feriados",
+        "feriados"
       ],
       "answer": "Atendemos todos los días, de lunes a domingo, de 10:00 a 21:30. 🕙"
     },
@@ -72,7 +86,14 @@
         "edificio oriente",
         "oficina",
         "address",
-        "where"
+        "where",
+        "como llego",
+        "comuna",
+        "en que comuna",
+        "donde se ubican",
+        "en que parte",
+        "en que sector",
+        "sector"
       ],
       "answer": "Estamos en Av. La Dehesa 1201, oficina 829, Edificio Oriente, Lo Barnechea, Santiago. 📍"
     },
@@ -96,7 +117,11 @@
         "cupo",
         "hay hora",
         "book",
-        "booking"
+        "booking",
+        "tienen hora",
+        "hora para",
+        "agendar hora",
+        "reservar hora"
       ],
       "answer": "Puedes agendar online en https://boracayspa.site.agendapro.com/cl, eligiendo el masaje, el día y la hora. Si prefieres, escríbenos por WhatsApp al +56 9 5963 1422. 📅"
     },
@@ -131,7 +156,14 @@
         "espalda",
         "dolor de espalda",
         "tension muscular",
-        "postura"
+        "postura",
+        "cuello",
+        "hombros",
+        "hombro",
+        "dolor de cuello",
+        "lumbago",
+        "espalda baja",
+        "me duele"
       ],
       "answer": "El masaje de tejido profundo trabaja las capas musculares más profundas con movimientos lentos y firmes, sin causar dolor. Es ideal para tensión crónica, nudos, lesiones o problemas de postura. Dura 90 minutos y cuesta $50.000. 💪"
     },
@@ -148,7 +180,19 @@
         "lesiones",
         "entreno",
         "entrenamiento",
-        "flexibilidad"
+        "flexibilidad",
+        "maraton",
+        "maratones",
+        "corro",
+        "correr",
+        "running",
+        "gimnasio",
+        "gym",
+        "crossfit",
+        "ciclismo",
+        "soy deportista",
+        "para deportistas",
+        "hago deporte"
       ],
       "answer": "El masaje deportivo es para quienes hacen actividad física seguido o tienen lesiones por movimientos repetitivos. Combina técnicas profundas con estiramientos para prevenir lesiones y mejorar el rendimiento. Dura 90 minutos y cuesta $50.000. 🏃"
     },
@@ -194,7 +238,8 @@
         "thai",
         "tailandia",
         "estiramientos",
-        "yoga"
+        "yoga",
+        "thai massage"
       ],
       "answer": "El masaje tailandés tradicional es energizante: usa estiramientos parecidos al yoga y acupresión. Se hace sobre una colchoneta y con ropa holgada y cómoda. Mejora la flexibilidad, la circulación y la postura. Dura 90 minutos y cuesta $50.000. 🧘"
     },
@@ -208,7 +253,11 @@
         "embarazadas",
         "gestacion",
         "guatita",
-        "pregnancy"
+        "pregnancy",
+        "guagua",
+        "esperando guagua",
+        "esperando un bebe",
+        "bebe"
       ],
       "answer": "Sí, tenemos masaje prenatal, seguro y pensado para el embarazo. Alivia el dolor lumbar, la tensión en las piernas y el cansancio, y se hace con cojines o en una camilla especial. Dura 90 minutos y cuesta $50.000. 🤰"
     },
@@ -340,9 +389,50 @@
         "tarifas",
         "caro",
         "price",
-        "prices"
+        "prices",
+        "barato",
+        "mas barato",
+        "economico",
+        "cuanto es",
+        "cuanto seria"
       ],
       "answer": "Los masajes de 90 minutos cuestan $50.000 y la reflexología (60 minutos) $40.000. El masaje en pareja es $50.000 por persona. Si vienes seguido, los packs de 5 o 10 sesiones salen más convenientes. 💆"
+    },
+    {
+      "id": "sin_dato",
+      "keywords": [
+        "estacionamiento",
+        "el estacionamiento",
+        "estacionar",
+        "estaciono",
+        "parking",
+        "pago",
+        "pagar",
+        "formas de pago",
+        "medios de pago",
+        "efectivo",
+        "tarjeta",
+        "debito",
+        "credito",
+        "transferencia",
+        "redcompra",
+        "gift card",
+        "giftcard",
+        "regalo",
+        "regalar",
+        "regalarle",
+        "voucher",
+        "tarjeta de regalo",
+        "domicilio",
+        "a domicilio",
+        "ducha",
+        "duchas",
+        "vestidor",
+        "locker",
+        "boleta",
+        "factura"
+      ],
+      "answer": "Ese dato prefiero que te lo confirme el equipo del spa, para no darte información equivocada. Escríbenos por WhatsApp al +56 9 5963 1422 o a contacto@boracay.cl y te responden a la brevedad. 🙏"
     },
     {
       "id": "tipos_de_masaje",
@@ -398,7 +488,9 @@
         "filipino",
         "boracay",
         "historia",
-        "experiencia"
+        "experiencia",
+        "quienes atienden",
+        "quien me atiende"
       ],
       "answer": "Boracay Spa trae la esencia de Filipinas a Santiago. Lo crearon tres masajistas filipinos, y cada tratamiento se inspira en técnicas ancestrales de las islas, con aceite de coco e ylang-ylang. 🌺"
     },
@@ -414,7 +506,11 @@
         "estrellas",
         "tripadvisor",
         "son buenos",
-        "recomendable"
+        "recomendable",
+        "opinan",
+        "que dicen",
+        "clientes",
+        "experiencias"
       ],
       "answer": "Tenemos 5 estrellas en nuestra agenda online (10 reseñas) y también estamos en Tripadvisor. ⭐"
     },
@@ -460,7 +556,10 @@
         "listo",
         "vale",
         "eso es todo",
-        "asi esta bien"
+        "asi esta bien",
+        "eso seria",
+        "seria todo",
+        "nada mas gracias"
       ],
       "answer": "¡Perfecto! Te esperamos en Boracay Spa. 🌺"
     },

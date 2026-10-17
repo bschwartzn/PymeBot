@@ -19,9 +19,17 @@ const { isValidSlug } = require('../knowledge/schema');
 /** Cuántas líneas se leen al calcular métricas. Evita cargar un archivo enorme en memoria. */
 const MAX_LINEAS = 20000;
 
+/**
+ * Tamaño máximo del registro de un negocio. Al pasarlo, el archivo se archiva y se empieza
+ * uno nuevo, guardando solo el anterior: así el disco tiene un techo (unos 10 MB por negocio)
+ * aunque alguien automatice mensajes. 5 MB son decenas de miles de mensajes reales.
+ */
+const MAX_BYTES = 5 * 1024 * 1024;
+
 class ConversationLog {
-  constructor({ dir = conversationsDir } = {}) {
+  constructor({ dir = conversationsDir, maxBytes = MAX_BYTES } = {}) {
     this.dir = dir;
+    this.maxBytes = maxBytes;
     fs.mkdirSync(this.dir, { recursive: true });
   }
 
@@ -31,6 +39,11 @@ class ConversationLog {
     const file = path.join(this.dir, `${slug}.jsonl`);
     if (path.dirname(path.resolve(file)) !== path.resolve(this.dir)) return null;
     return file;
+  }
+
+  /** El registro anterior, ya archivado. */
+  archivoDe(file) {
+    return file.replace(/\.jsonl$/, '.anterior.jsonl');
   }
 
   /**
@@ -53,6 +66,9 @@ class ConversationLog {
     });
 
     try {
+      if (fs.existsSync(file) && fs.statSync(file).size > this.maxBytes) {
+        fs.renameSync(file, this.archivoDe(file));
+      }
       fs.appendFileSync(file, `${linea}\n`, 'utf8');
       return true;
     } catch (err) {
@@ -63,13 +79,16 @@ class ConversationLog {
   /** Todos los intercambios de un negocio, del más antiguo al más reciente. */
   leer(slug) {
     const file = this.pathFor(slug);
-    if (!file || !fs.existsSync(file)) return [];
+    if (!file) return [];
 
-    let lineas;
-    try {
-      lineas = fs.readFileSync(file, 'utf8').split('\n').filter(Boolean);
-    } catch (err) {
-      return [];
+    let lineas = [];
+    for (const archivo of [this.archivoDe(file), file]) {
+      if (!fs.existsSync(archivo)) continue;
+      try {
+        lineas = lineas.concat(fs.readFileSync(archivo, 'utf8').split('\n').filter(Boolean));
+      } catch (err) {
+        // Si uno no se puede leer, se usa lo que haya en el otro.
+      }
     }
 
     // Solo las más recientes: un negocio con mucho tráfico no debe hacer lenta la métrica.
@@ -88,10 +107,16 @@ class ConversationLog {
 
   borrar(slug) {
     const file = this.pathFor(slug);
-    if (!file || !fs.existsSync(file)) return false;
-    fs.unlinkSync(file);
-    return true;
+    if (!file) return false;
+    let borrado = false;
+    for (const archivo of [file, this.archivoDe(file)]) {
+      if (fs.existsSync(archivo)) {
+        fs.unlinkSync(archivo);
+        borrado = true;
+      }
+    }
+    return borrado;
   }
 }
 
-module.exports = { ConversationLog, MAX_LINEAS };
+module.exports = { ConversationLog, MAX_LINEAS, MAX_BYTES };

@@ -12,7 +12,9 @@ const path = require('path');
 const config = require('./config');
 const { createApp } = require('./server');
 const { BusinessRepository } = require('./knowledge/repository');
-const { UserStore } = require('./auth/users');
+const { UserStore, AuthError } = require('./auth/users');
+const { AuthSessionStore } = require('./auth/sessions');
+const { hashPassword, verifyPassword } = require('./auth/passwords');
 
 /** De dónde salen los negocios de ejemplo dentro de la imagen. */
 const SEMILLAS = [
@@ -29,6 +31,9 @@ const SEMILLAS = [
  */
 function sembrarSiEstaVacio() {
   fs.mkdirSync(config.businessesDir, { recursive: true });
+
+  // El bot de un cliente no lleva negocios de ejemplo: serían chats de prueba públicos.
+  if (config.modoCliente) return 0;
 
   const yaHay = fs.readdirSync(config.businessesDir).filter((f) => f.endsWith('.json'));
   if (yaHay.length > 0) return 0;
@@ -53,12 +58,28 @@ function sembrarSiEstaVacio() {
  *
  * @returns {{ email: string, slug: string } | null}
  */
-function prepararDueno({ dueno = config.dueno, users = new UserStore(), repository = new BusinessRepository() } = {}) {
+function prepararDueno({
+  dueno = config.dueno,
+  users = new UserStore(),
+  repository = new BusinessRepository(),
+  authSessions = new AuthSessionStore(),
+} = {}) {
   if (!dueno.email || !dueno.password) return null;
 
-  const user =
-    users.findByEmail(dueno.email) ||
-    users.create({ email: dueno.email, password: dueno.password });
+  let user = users.findByEmail(dueno.email);
+  if (!user) {
+    const creado = users.create({ email: dueno.email, password: dueno.password });
+    users.setPassword(creado.id, dueno.password, { desdeEntorno: hashPassword(dueno.password) });
+    user = users.findById(creado.id);
+  } else if (!user.passwordFromEnv || !verifyPassword(dueno.password, user.passwordFromEnv)) {
+    /*
+     * La contraseña del hosting cambió: es la forma de recuperar la cuenta sin correo de
+     * recuperación. Se aplica una sola vez —si después la dueña la cambia desde el panel,
+     * los reinicios no se la pisan— y cierra todas las sesiones abiertas.
+     */
+    users.setPassword(user.id, dueno.password, { desdeEntorno: hashPassword(dueno.password) });
+    authSessions.destroyAllFor(user.id);
+  }
 
   const negocio = JSON.parse(fs.readFileSync(dueno.negocio, 'utf8'));
   const slug = path.basename(dueno.negocio, '.json');
@@ -69,11 +90,49 @@ function prepararDueno({ dueno = config.dueno, users = new UserStore(), reposito
   return { email: user.email, slug };
 }
 
+/**
+ * En el bot de un cliente, los negocios de ejemplo sobran: quedarían como chats públicos de
+ * prueba en su dirección. Solo se borran los que son ejemplos (sin dueño y con el nombre de
+ * un archivo de ejemplo), nunca un negocio de alguien.
+ */
+function quitarEjemplos({
+  repository = new BusinessRepository(),
+  modoCliente = config.modoCliente,
+  semillas = SEMILLAS,
+} = {}) {
+  if (!modoCliente) return 0;
+  const ejemplos = semillas
+    .filter((dir) => fs.existsSync(dir) && path.resolve(dir) !== path.resolve(repository.dir))
+    .flatMap((dir) => fs.readdirSync(dir).filter((f) => f.endsWith('.json')))
+    .map((f) => f.replace(/\.json$/, ''));
+
+  let quitados = 0;
+  for (const slug of new Set(ejemplos)) {
+    const negocio = repository.get(slug);
+    if (negocio && negocio.ownerId === null) {
+      repository.remove(slug);
+      quitados += 1;
+    }
+  }
+  return quitados;
+}
+
 function arrancar() {
   const sembrados = sembrarSiEstaVacio();
 
   const repository = new BusinessRepository();
-  const dueno = prepararDueno({ repository });
+
+  // Una contraseña del hosting que no sirve (muy corta, por ejemplo) no puede dejar el chat
+  // caído: los clientes siguen atendidos y el registro dice exactamente qué corregir.
+  let dueno = null;
+  try {
+    dueno = prepararDueno({ repository });
+  } catch (err) {
+    if (!(err instanceof AuthError)) throw err;
+    console.error(`  ⚠  No se pudo preparar la cuenta del dueño: ${err.message}`);
+    console.error('     Corrige PYMEBOT_DUENO_PASSWORD en el hosting y vuelve a desplegar.');
+  }
+  quitarEjemplos({ repository });
   const app = createApp({ repository });
 
   const server = app.listen(config.port, () => {
@@ -126,4 +185,4 @@ function arrancar() {
 
 if (require.main === module) arrancar();
 
-module.exports = { arrancar, sembrarSiEstaVacio, prepararDueno };
+module.exports = { arrancar, sembrarSiEstaVacio, prepararDueno, quitarEjemplos };

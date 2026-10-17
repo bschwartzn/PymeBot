@@ -134,6 +134,34 @@ $('salir').addEventListener('click', async () => {
   mostrarAcceso();
 });
 
+/* ---------------------------------------------------------- contraseña */
+
+const dialogoClave = $('dialogo-clave');
+
+$('abrir-clave').addEventListener('click', () => {
+  $('form-clave').reset();
+  mostrarErrorAcceso('error-clave', '');
+  dialogoClave.showModal();
+});
+
+$('cancelar-clave').addEventListener('click', () => dialogoClave.close());
+
+$('form-clave').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  mostrarErrorAcceso('error-clave', '');
+  const form = event.target;
+  const { ok, datos } = await api('POST', '/api/auth/password', {
+    actual: form.actual.value,
+    nueva: form.nueva.value,
+  });
+  if (!ok) {
+    mostrarErrorAcceso('error-clave', datos.error || 'No se pudo cambiar la contraseña.');
+    return;
+  }
+  dialogoClave.close();
+  mostrarMensaje('ok', 'Contraseña cambiada. Las sesiones en otros dispositivos se cerraron.');
+});
+
 /* -------------------------------------------------------------- listados */
 
 async function cargarLista() {
@@ -594,7 +622,7 @@ async function cargarTranscripciones(slug) {
       hilo.appendChild(dijo);
 
       const contesto = document.createElement('div');
-      contesto.className = `dicho bot${mensaje.matched === false && mensaje.intent !== 'pausado' ? ' no-supo' : ''}`;
+      contesto.className = `dicho bot${(mensaje.matched === false && mensaje.intent !== 'pausado') || mensaje.intent === 'sin_dato' ? ' no-supo' : ''}`;
       contesto.textContent = mensaje.respuesta;
       hilo.appendChild(contesto);
     }
@@ -654,6 +682,21 @@ setInterval(() => {
 
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) actualizarConversaciones();
+});
+
+$('vaciar-conversaciones').addEventListener('click', async () => {
+  if (!slugActual) return;
+  const seguro = window.confirm(
+    'Se borrarán todas las conversaciones guardadas de este bot. No se puede deshacer. ¿Continuar?',
+  );
+  if (!seguro) return;
+  const { ok } = await api('DELETE', `/api/businesses/${slugActual}/conversations`);
+  if (!ok) {
+    mostrarMensaje('error', 'No se pudieron borrar las conversaciones.');
+    return;
+  }
+  await actualizarConversaciones();
+  mostrarMensaje('ok', 'Conversaciones borradas. Desde ahora solo verás las nuevas.');
 });
 
 /* -------------------------------------------------------------- guardar */
@@ -764,11 +807,20 @@ formEl.confidenceThreshold.addEventListener('input', () => pintarUmbral(formEl.c
 async function entrarAlPanel() {
   mostrarPanel();
   await cargarEjemplos();
+  // En el bot de un cliente no hay ejemplos que copiar: el bloque entero sobra.
+  $('bloque-ejemplos').hidden = $('ejemplos').children.length === 0;
   const negocios = await cargarLista();
   if (negocios.length > 0) await abrir(negocios[0].slug);
 }
 
 (async () => {
+  // Con el registro cerrado, la pestaña "Crear cuenta" solo llevaría a un error.
+  const { datos: instalacion } = await api('GET', '/api/instalacion');
+  if (instalacion && instalacion.registroAbierto === false) {
+    $('tab-crear').hidden = true;
+    $('form-crear').remove();
+  }
+
   const { datos } = await api('GET', '/api/auth/me');
   if (datos.user) {
     usuario = datos.user;

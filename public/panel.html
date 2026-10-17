@@ -71,8 +71,31 @@
             <p id="quien"></p>
           </div>
         </div>
-        <button id="salir" class="btn-ghost" type="button">Cerrar sesión</button>
+        <div class="topbar-acciones">
+          <button id="abrir-clave" class="btn-ghost" type="button">Cambiar contraseña</button>
+          <button id="salir" class="btn-ghost" type="button">Cerrar sesión</button>
+        </div>
       </header>
+
+      <dialog id="dialogo-clave" class="dialogo">
+        <form id="form-clave" class="acceso-form" method="dialog">
+          <h2>Cambiar contraseña</h2>
+          <p class="ayuda">Al cambiarla se cierran tus sesiones en los demás dispositivos.</p>
+          <label>
+            Contraseña actual
+            <input name="actual" type="password" autocomplete="current-password" required />
+          </label>
+          <label>
+            Contraseña nueva
+            <input name="nueva" type="password" autocomplete="new-password" minlength="8" required />
+          </label>
+          <div id="error-clave" class="msg error" hidden></div>
+          <div class="dialogo-acciones">
+            <button id="cancelar-clave" class="btn-ghost" type="button">Cancelar</button>
+            <button class="btn" type="submit">Guardar</button>
+          </div>
+        </form>
+      </dialog>
 
       <main class="layout">
         <aside class="sidebar">
@@ -82,7 +105,7 @@
           </div>
           <ul id="lista" class="lista"></ul>
 
-          <div class="ejemplos">
+          <div class="ejemplos" id="bloque-ejemplos">
             <h3>Partir de un ejemplo</h3>
             <p class="ayuda">Copia uno a tu cuenta y edítalo.</p>
             <ul id="ejemplos" class="lista"></ul>
@@ -278,6 +301,17 @@
                   completa.
                 </p>
                 <div id="conversaciones" class="conversaciones"></div>
+              </div>
+
+              <div class="compartir-tarjeta">
+                <h3>Empezar de cero</h3>
+                <p class="ayuda">
+                  Borra todas las conversaciones guardadas, por ejemplo las de las pruebas antes
+                  de abrir el bot a tus clientes. No se puede deshacer.
+                </p>
+                <button id="vaciar-conversaciones" class="btn-ghost danger" type="button">
+                  Borrar todas las conversaciones
+                </button>
               </div>
             </fieldset>
           </form>

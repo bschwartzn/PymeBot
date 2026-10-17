@@ -58,7 +58,8 @@ test('GET /health responde ok', async () => {
     const { status, body } = await srv.get('/health');
     assert.strictEqual(status, 200);
     assert.strictEqual(body.status, 'ok');
-    assert.ok(body.businesses >= 1, 'debería reportar los negocios cargados');
+    // Solo dice si está viva: cuántas cuentas o negocios hay no es público.
+    assert.deepStrictEqual(Object.keys(body).sort(), ['status', 'uptime']);
   } finally {
     await srv.close();
   }
