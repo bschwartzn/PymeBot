@@ -1,0 +1,1339 @@
+<title>Boracay Spa</title>
+<meta name="description" content="Resolvemos tus dudas al instante." />
+
+<style>
+/*
+ * La página que ve el cliente final.
+ *
+ * Se diseña para el teléfono primero: casi todo el tráfico llega desde un link
+ * compartido por WhatsApp o desde un QR, y se abre en el navegador del móvil.
+ */
+
+:root {
+  --fondo: #f2f4f7;
+  --panel: #ffffff;
+  --texto: #18202b;
+  --suave: #667085;
+  --linea: #e3e8ef;
+  --burbuja: #f2f4f7;
+  --marca: #1f6feb;
+  --marca-texto: #ffffff;
+  --error-bg: #fdecec;
+  --error: #a12a2a;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #0e1116;
+    --panel: #161b22;
+    --texto: #e6edf3;
+    --suave: #8d97a5;
+    --linea: #262c36;
+    --burbuja: #21262d;
+    --marca: #4d8ef7;
+    --marca-texto: #06142b;
+    --error-bg: #3a1d1d;
+    --error: #f3a7a7;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  display: flex;
+  justify-content: center;
+}
+
+.chat {
+  width: min(640px, 100%);
+  /* dvh en vez de vh: en el móvil la barra del navegador cambia de alto al hacer scroll. */
+  height: 100dvh;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- Cabecera ---------- */
+
+.cabecera {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  padding-top: max(14px, env(safe-area-inset-top));
+  border-bottom: 1px solid var(--linea);
+  flex: none;
+}
+
+.avatar {
+  width: 42px;
+  height: 42px;
+  flex: none;
+  border-radius: 12px;
+  background: var(--burbuja);
+  color: var(--marca);
+  display: grid;
+  place-items: center;
+}
+.avatar svg { width: 23px; height: 23px; }
+
+.identidad { min-width: 0; }
+.identidad h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.identidad p {
+  margin: 1px 0 0;
+  font-size: 13px;
+  color: var(--suave);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Conversación ---------- */
+
+.hilo {
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.burbuja a {
+  color: inherit;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+}
+
+.burbuja {
+  max-width: 85%;
+  padding: 11px 15px;
+  border-radius: 18px;
+  font-size: 15.5px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.burbuja.bot {
+  align-self: flex-start;
+  background: var(--burbuja);
+  border-bottom-left-radius: 5px;
+}
+
+.burbuja.cliente {
+  align-self: flex-end;
+  background: var(--marca);
+  color: var(--marca-texto);
+  border-bottom-right-radius: 5px;
+}
+
+.burbuja.aviso {
+  align-self: center;
+  background: var(--error-bg);
+  color: var(--error);
+  font-size: 14px;
+  text-align: center;
+  max-width: 100%;
+}
+
+.escribiendo { display: flex; gap: 4px; align-items: center; padding: 15px; }
+.escribiendo i {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--suave); animation: latir 1.2s infinite;
+}
+.escribiendo i:nth-child(2) { animation-delay: .18s; }
+.escribiendo i:nth-child(3) { animation-delay: .36s; }
+@keyframes latir { 0%,60%,100% { opacity:.25 } 30% { opacity:.9 } }
+
+/* ---------- Atajos ---------- */
+
+.atajos {
+  display: flex;
+  gap: 7px;
+  padding: 0 18px 10px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: none;
+}
+.atajos::-webkit-scrollbar { display: none; }
+.atajos:empty { display: none; }
+
+.atajo {
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--marca);
+  background: transparent;
+  border: 1px solid var(--linea);
+  border-radius: 999px;
+  padding: 7px 14px;
+  white-space: nowrap;
+  cursor: pointer;
+  flex: none;
+}
+.atajo:hover { border-color: var(--marca); }
+
+/* ---------- Escribir ---------- */
+
+.escribir {
+  display: flex;
+  gap: 9px;
+  padding: 12px 18px;
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid var(--linea);
+  flex: none;
+}
+
+.campo {
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  /* 16px exactos: menos que eso hace que Safari en iPhone haga zoom al enfocar. */
+  font-size: 16px;
+  color: var(--texto);
+  background: var(--burbuja);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 12px 18px;
+}
+.campo::placeholder { color: var(--suave); }
+.campo:focus { outline: none; border-color: var(--marca); }
+
+.enviar {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border: 0;
+  border-radius: 50%;
+  background: var(--marca);
+  color: var(--marca-texto);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.enviar svg { width: 21px; height: 21px; }
+.enviar:disabled { opacity: .45; cursor: default; }
+
+:focus-visible { outline: 2px solid var(--marca); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}
+
+/* La dueña probando su propio bot: se le avisa que esto no cuenta como conversación. */
+.prueba {
+  margin: 0;
+  padding: 8px 16px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--suave);
+  background: var(--burbuja);
+  border-bottom: 1px solid var(--linea);
+}
+
+</style>
+
+<main class="chat">
+  <header class="cabecera">
+    <div class="avatar" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="7" width="18" height="13" rx="4" />
+        <path d="M12 7V3.5" />
+        <circle cx="12" cy="2.6" r="1.2" fill="currentColor" stroke="none" />
+        <path d="M8.6 12.4v1.6M15.4 12.4v1.6" />
+        <path d="M9.6 16.6h4.8" />
+      </svg>
+    </div>
+    <div class="identidad">
+      <h1 id="negocio">Boracay Spa</h1>
+      <p id="rubro"></p>
+    </div>
+  </header>
+
+  <section class="hilo" id="hilo" aria-live="polite" aria-label="Conversación"></section>
+
+  <div class="atajos" id="atajos"></div>
+
+  <form class="escribir" id="escribir" autocomplete="off">
+    <input
+      class="campo"
+      id="campo"
+      type="text"
+      placeholder="Escribe tu pregunta…"
+      maxlength="1000"
+      aria-label="Tu mensaje"
+      enterkeyhint="send"
+    />
+    <button class="enviar" id="enviar" type="submit" aria-label="Enviar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M4 12h15M13 6l6 6-6 6" />
+      </svg>
+    </button>
+  </form>
+</main>
+
+<script>
+  /* ====================================================================
+     Motor de PymeBot — generado desde src/bot/ por scripts/build-chat.js.
+     No editar aquí: se cambia el código fuente y se regenera.
+     ==================================================================== */
+
+  /**
+ * Utilidades de texto.
+ *
+ * El objetivo es que "¿Cuánto CUESTA?" y "cuanto cuesta" sean lo mismo para el motor.
+ * En español esto significa: minúsculas, sin acentos, sin signos de puntuación
+ * (incluidos ¿ ¡) y sin espacios sobrantes.
+ */
+
+/** Pasa un texto a su forma canónica comparable. */
+function normalize(text) {
+  if (typeof text !== 'string') return '';
+  return text
+    .toLowerCase()
+    // La ñ es una letra propia del español, no una n con acento: se protege antes de
+    // que NFD la descomponga, o 'año' se convertiría en 'ano'.
+    .replace(/ñ/g, '\u0001')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '') // quita los acentos ya separados por NFD
+    .replace(/\u0001/g, 'ñ')
+    .replace(/[^a-z0-9ñ\s]/g, ' ') // ¿ ? ! . , y emojis se vuelven espacio
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Forma usada solo para COMPARAR, no para mostrar.
+ *
+ * Añade a la normalización el plegado de la ñ. La ñ se conserva en `normalize` porque es
+ * una letra propia del español, pero al comparar tiene que dar igual cómo se escribió:
+ * el dueño del negocio escribe la palabra clave "cumpleanos" y el cliente pregunta por
+ * "cumpleaños". Confundir "año" con "ano" es un riesgo teórico; que no coincidan las
+ * palabras clave escritas sin ñ es un fallo que ocurre todos los días.
+ */
+function fold(text) {
+  return alargadas(normalize(text).replace(/ñ/g, 'n'));
+}
+
+/**
+ * Deshace las letras alargadas: "holaaa" → "hola", "graciasss" → "gracias".
+ * Solo tres o más repeticiones: dos letras iguales seguidas son ortografía normal ("lluvia",
+ * "acceso") y no se tocan.
+ */
+function alargadas(texto) {
+  return texto.replace(/([a-z])\1{2,}/g, '$1');
+}
+
+/** Divide un texto normalizado en palabras. */
+function tokenize(text) {
+  const normalized = alargadas(normalize(text));
+  return normalized ? normalized.split(' ') : [];
+}
+
+/**
+ * Compara dos palabras tolerando el plural del español.
+ * "horarios" debe encontrar la palabra clave "horario", y "precio" la clave "precios"; y
+ * "cuestan" la clave "cuesta".
+ */
+function wordsMatch(rawA, rawB) {
+  const a = rawA.replace(/ñ/g, 'n');
+  const b = rawB.replace(/ñ/g, 'n');
+  if (a === b) return true;
+  const [short, long] = a.length <= b.length ? [a, b] : [b, a];
+  if (short.length < 3) return false; // evita que "la"/"las" cuenten como coincidencia
+  if (long === short + 's' || long === short + 'es') return true;
+  // El verbo en plural: "dura" y "duran", "cuesta" y "cuestan", "abre" y "abren".
+  return /[aeiou]$/.test(short) && long === short + 'n';
+}
+
+/**
+ * ¿Es una falta de ortografía de la palabra clave? "presios" por "precios", "masjae" por
+ * "masaje", "rezerva" por "reserva".
+ *
+ * Una sola letra de diferencia (cambiada, sobrante, faltante o dos letras traspuestas), y
+ * solo entre palabras de 6 letras o más que empiezan igual: en palabras cortas una letra
+ * cambia el sentido ("caro" y "cara", "corro" y "correo"), y casi nadie se equivoca en la
+ * primera letra.
+ */
+function casiIgual(rawA, rawB) {
+  const a = rawA.replace(/ñ/g, 'n');
+  const b = rawB.replace(/ñ/g, 'n');
+  if (a.length < 6 || b.length < 6 || a[0] !== b[0]) return false;
+  if (Math.abs(a.length - b.length) > 1) return false;
+  return distancia(a, b) <= 1;
+}
+
+/** Distancia de Damerau-Levenshtein (con trasposiciones), cortada en cuanto pasa de 1. */
+function distancia(a, b) {
+  const filas = [];
+  for (let i = 0; i <= a.length; i += 1) {
+    filas[i] = [i];
+    for (let j = 1; j <= b.length; j += 1) {
+      if (i === 0) {
+        filas[i][j] = j;
+        continue;
+      }
+      const costo = a[i - 1] === b[j - 1] ? 0 : 1;
+      let d = Math.min(filas[i - 1][j] + 1, filas[i][j - 1] + 1, filas[i - 1][j - 1] + costo);
+      if (i > 1 && j > 1 && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        d = Math.min(d, filas[i - 2][j - 2] + 1);
+      }
+      filas[i][j] = d;
+    }
+    if (Math.min(...filas[i]) > 1) return 2;
+  }
+  return filas[a.length][b.length];
+}
+
+/**
+ * Motor de intenciones.
+ *
+ * Estrategia deliberadamente simple: cada intención declara palabras clave y una
+ * respuesta. Se puntúa cuántas palabras clave aparecen en el mensaje y gana la
+ * intención con mayor puntaje, siempre que supere un umbral mínimo de confianza.
+ *
+ * Es determinista, se testea con facilidad y no depende de ningún servicio externo.
+ */
+
+
+/**
+ * Puntaje mínimo por defecto para aceptar una intención. Debajo de esto, respondemos el
+ * respaldo. Cada negocio puede subirlo o bajarlo desde su panel: subirlo hace que el bot
+ * responda menos pero se equivoque menos, bajarlo al revés.
+ */
+const CONFIDENCE_THRESHOLD = 1;
+
+/**
+ * Intenciones de cortesía: saludar, agradecer, cerrar, despedirse.
+ *
+ * Se tratan aparte porque sus palabras clave ("no", "ok", "hola", "nada") aparecen dentro de
+ * preguntas de verdad. "¿No tienen estacionamiento?" no es un cierre de conversación, y
+ * "hola, ¿atienden a domicilio?" no se contesta con un saludo. Solo ganan cuando el mensaje
+ * es únicamente cortesía; si trae algo más, responde el tema o, si no lo hay, el respaldo.
+ */
+const PRIORIDAD_CORTESIA = ['despedida', 'agradecimiento', 'saludo', 'cierre'];
+const CORTESIA = new Set(PRIORIDAD_CORTESIA);
+
+/** Palabras de relleno que acompañan a la cortesía sin cambiarla ("muchas gracias por la info"). */
+const RELLENO = new Set(
+  ('a al de del el la las lo los y o que por para con me te le se mi tu su un una uno ' +
+    'muy mucho muchas muchos todo toda eso esto era es fue ya si mas bueno buena bien super ' +
+    'info informacion ayuda atencion amable entonces igual pues po nomas oye che tanto')
+    .split(' '),
+);
+
+/**
+ * Pedir hablar con una persona. Son frases, no palabras sueltas: "persona" sola aparece en
+ * "¿cuánto cuesta por persona?", y "alguien" en "¿alguien me puede decir el horario?".
+ */
+const PIDE_PERSONA = [
+  'hablar con una persona', 'hablar con alguien', 'hablar con un humano', 'hablar con una humana',
+  'hablar con el dueno', 'hablar con la duena', 'hablar con un ejecutivo', 'hablar con una ejecutiva',
+  'hablar con un agente', 'hablar con el encargado', 'hablar con la encargada',
+  'hablar con el equipo', 'hablar con recepcion', 'una persona real', 'persona de verdad',
+  'alguien de verdad', 'atencion humana', 'que me atienda alguien', 'me atienda una persona',
+  'me puede atender alguien', 'quiero una persona', 'necesito una persona', 'pasame con alguien',
+  'paseme con alguien', 'comunicarme con alguien', 'comunicarme con una persona', 'eres un bot',
+  'eres un robot', 'eres una maquina',
+];
+
+function pideUnaPersona(mensajePlegado) {
+  return PIDE_PERSONA.some((frase) => mensajePlegado.includes(` ${frase} `));
+}
+
+/** El umbral que corresponde a este negocio. */
+function thresholdFor(business) {
+  const propio = business && Number(business.confidenceThreshold);
+  return Number.isFinite(propio) && propio > 0 ? propio : CONFIDENCE_THRESHOLD;
+}
+
+/**
+ * Puntúa una palabra clave contra el mensaje del usuario.
+ * Las claves de varias palabras ("cuanto cuesta") valen más que las de una sola,
+ * porque son mucho más específicas.
+ */
+function scoreKeyword(keyword, messageTokens, paddedMessage, conocidas = new Set()) {
+  // `fold` en vez de `normalize`: comparar tiene que ser indiferente a cómo se escribió la ñ.
+  const normalizedKeyword = fold(keyword);
+  if (!normalizedKeyword) return 0;
+
+  const keywordWords = normalizedKeyword.split(' ');
+
+  if (keywordWords.length > 1) {
+    return contieneFrase(messageTokens, keywordWords) ? keywordWords.length * 1.5 : 0;
+  }
+
+  // Una palabra larga ("transferencia") es mejor señal que una corta ("hora").
+  const peso = normalizedKeyword.length >= 6 ? 1.5 : 1;
+
+  if (messageTokens.some((token) => wordsMatch(token, normalizedKeyword))) return peso;
+
+  // Con una falta de ortografía cuenta un poco menos: si otra intención calza exacta, gana.
+  // Una palabra que ya existe tal cual ("muchas", o la clave de otro tema) no es una falta
+  // de ortografía: "muchas gracias" no tiene nada que ver con "mechas".
+  const conFalta = messageTokens.some(
+    (token) => !conocidas.has(fold(token)) && casiIgual(token, normalizedKeyword),
+  );
+  if (conFalta) return peso * 0.8;
+
+  return 0;
+}
+
+/**
+ * ¿El mensaje es solo cortesía? Cada palabra tiene que ser parte de una palabra clave de
+ * cortesía o relleno. "no, eso era todo" sí; "no tienen estacionamiento" no.
+ */
+function esSoloCortesia(messageTokens, paddedMessage, intents) {
+  const claves = intents.filter((i) => CORTESIA.has(i.id)).flatMap((i) => i.keywords || []);
+
+  const cubiertas = new Set();
+  for (const keyword of claves) {
+    const plegada = fold(keyword);
+    if (!plegada) continue;
+    if (plegada.includes(' ')) {
+      if (contieneFrase(messageTokens, plegada.split(' '))) plegada.split(' ').forEach((p) => cubiertas.add(p));
+    } else {
+      for (const token of messageTokens) {
+        if (wordsMatch(token, plegada) || casiIgual(token, plegada)) cubiertas.add(fold(token));
+      }
+    }
+  }
+
+  return messageTokens.every((token) => cubiertas.has(fold(token)) || RELLENO.has(fold(token)));
+}
+
+/**
+ * ¿Aparece la frase, palabra por palabra y seguida? Cada palabra tolera plural y verbo en
+ * plural, así que "cuanto duran" encuentra la frase "cuanto dura" y "fines de semana" la
+ * frase "fin de semana".
+ */
+function contieneFrase(messageTokens, palabras) {
+  for (let i = 0; i + palabras.length <= messageTokens.length; i += 1) {
+    if (palabras.every((palabra, j) => wordsMatch(messageTokens[i + j], palabra))) return true;
+  }
+  return false;
+}
+
+/** Puntúa una intención completa. */
+function scoreIntent(intent, messageTokens, paddedMessage, conocidas) {
+  let score = 0;
+  for (const keyword of intent.keywords || []) {
+    score += scoreKeyword(keyword, messageTokens, paddedMessage, conocidas);
+  }
+  return score;
+}
+
+/**
+ * Busca la mejor intención para un mensaje.
+ * @returns {{intent: object|null, score: number}}
+ */
+function matchIntent(message, business) {
+  const messageTokens = tokenize(message);
+  if (messageTokens.length === 0) return { intent: null, score: 0 };
+
+  const paddedMessage = ` ${fold(message)} `;
+
+  const umbral = thresholdFor(business);
+  const intents = business.intents || [];
+
+  // Las palabras que el negocio usa tal cual, más el relleno común del español.
+  const conocidas = new Set(RELLENO);
+  for (const intent of intents) {
+    for (const keyword of intent.keywords || []) fold(keyword).split(' ').forEach((p) => conocidas.add(p));
+  }
+
+  // Primero los temas: si el mensaje pregunta algo, eso manda sobre el saludo que lo acompañe.
+  let best = null;
+  let bestScore = 0;
+  for (const intent of intents) {
+    if (CORTESIA.has(intent.id)) continue;
+    const score = scoreIntent(intent, messageTokens, paddedMessage, conocidas);
+    if (score > bestScore) {
+      best = intent;
+      bestScore = score;
+    }
+  }
+  if (bestScore >= umbral) return { intent: best, score: bestScore };
+
+  // Sin tema: la cortesía solo responde si el mensaje no trae nada más.
+  // En un empate gana la que cierra la conversación: "ok chao" es una despedida.
+  let cortesia = null;
+  let cortesiaScore = 0;
+  const porPrioridad = intents
+    .filter((i) => CORTESIA.has(i.id))
+    .sort((x, y) => PRIORIDAD_CORTESIA.indexOf(x.id) - PRIORIDAD_CORTESIA.indexOf(y.id));
+  for (const intent of porPrioridad) {
+    const score = scoreIntent(intent, messageTokens, paddedMessage, conocidas);
+    if (score > cortesiaScore) {
+      cortesia = intent;
+      cortesiaScore = score;
+    }
+  }
+  if (cortesiaScore >= umbral && esSoloCortesia(messageTokens, paddedMessage, intents)) {
+    // Si se despide, se despide: "gracias, chao" cierra la conversación aunque "gracias"
+    // pese más que "chao".
+    const despedida = intents.find((i) => i.id === 'despedida');
+    const scoreDespedida = despedida ? scoreIntent(despedida, messageTokens, paddedMessage, conocidas) : 0;
+    if (scoreDespedida >= umbral) return { intent: despedida, score: scoreDespedida };
+    return { intent: cortesia, score: cortesiaScore };
+  }
+
+  return { intent: null, score: Math.max(bestScore, cortesiaScore) };
+}
+
+/** Arma el mensaje de "no entendí" con la lista de temas que el negocio sí cubre. */
+function buildFallback(business) {
+  const topics = (business.topics || []).map((topic) => `• ${topic}`).join('\n');
+  const parts = [business.fallback];
+  if (topics) parts.push(topics);
+  if (business.handoff) parts.push(business.handoff);
+  return parts.filter(Boolean).join('\n');
+}
+
+/**
+ * Genera la respuesta a un mensaje.
+ *
+ * `session` aporta el mínimo de contexto conversacional del MVP: saber si el bot ya
+ * saludó, para no repetir el saludo largo en cada "hola".
+ *
+ * @returns {{reply: string, intent: string, score: number, matched: boolean}}
+ */
+function respond(message, business, session = null) {
+  // Bot pausado: no se intenta entender nada, se responde lo que el dueño dejó escrito.
+  if (business && business.active === false) {
+    return {
+      reply: business.pausedMessage || 'En este momento no estamos atendiendo por aquí.',
+      intent: 'pausado',
+      score: 0,
+      matched: false,
+    };
+  }
+
+  const normalized = normalize(message);
+
+  if (!normalized) {
+    // Sin texto real. Distinguimos dos casos que se ven iguales para el motor:
+    // un mensaje realmente vacío, y uno que sí traía contenido (solo emojis o signos)
+    // pero que la normalización dejó sin palabras. Decirle "no recibí nada" a quien
+    // acaba de escribir 👍 es confuso, así que ese caso va al fallback normal.
+    const escribioAlgo = typeof message === 'string' && message.trim() !== '';
+    if (escribioAlgo) {
+      return { reply: buildFallback(business), intent: 'fallback', score: 0, matched: false };
+    }
+    return {
+      reply: 'No recibí ningún mensaje. ¿Me cuentas en qué te puedo ayudar?',
+      intent: 'vacio',
+      score: 0,
+      matched: false,
+    };
+  }
+
+  // Quien pide una persona tiene que recibir el contacto, no una respuesta automática más.
+  // Si el negocio armó su propia intención para esto, se respeta la suya.
+  const propia = (business.intents || []).find((i) => i.id === 'hablar_con_persona');
+  if (!propia && business.handoff && pideUnaPersona(` ${fold(message)} `)) {
+    return { reply: business.handoff, intent: 'hablar_con_persona', score: 0, matched: true };
+  }
+
+  const { intent, score } = matchIntent(message, business);
+
+  if (!intent) {
+    return { reply: buildFallback(business), intent: 'fallback', score, matched: false };
+  }
+
+  let reply = intent.answer;
+
+  // Único comportamiento contextual del MVP: no repetir el saludo largo.
+  if (intent.id === 'saludo' && session && session.greeted) {
+    reply = business.greetingRepeat || reply;
+  }
+
+  return { reply, intent: intent.id, score, matched: true };
+}
+
+  const NEGOCIO = {
+  "name": "Boracay Spa",
+  "tagline": "Masajes con alma filipina en Lo Barnechea",
+  "greeting": "¡Hola! 👋 Soy el asistente de Boracay Spa. Te ayudo con nuestros masajes, precios, packs, horario y cómo agendar. ¿Qué te gustaría saber?",
+  "greetingRepeat": "¡Aquí sigo! ¿En qué más te ayudo?",
+  "fallback": "Perdona, no estoy seguro de haber entendido eso. Estos son los temas en los que te puedo ayudar:",
+  "handoff": "Si prefieres hablar con alguien del spa, escríbenos por WhatsApp al +56 9 5963 1422 o a contacto@boracay.cl.",
+  "topics": [
+    "Horario",
+    "Tipos de masaje",
+    "Precios",
+    "Packs",
+    "Agendar una hora",
+    "Ubicación",
+    "Contacto"
+  ],
+  "active": true,
+  "confidenceThreshold": 1,
+  "pausedMessage": "En este momento no estamos respondiendo por aquí. Escríbenos por WhatsApp al +56 9 5963 1422 y te respondemos a la brevedad.",
+  "ownerId": null,
+  "intents": [
+    {
+      "id": "saludo",
+      "keywords": [
+        "hola",
+        "buenas",
+        "buenos dias",
+        "buenas tardes",
+        "buenas noches",
+        "hey",
+        "que tal",
+        "alo",
+        "hello",
+        "hi",
+        "buen dia",
+        "buena tarde",
+        "wenas",
+        "wena"
+      ],
+      "answer": "¡Hola! 👋 Cuéntame, ¿qué necesitas saber?"
+    },
+    {
+      "id": "horarios",
+      "keywords": [
+        "horario",
+        "horarios",
+        "abren",
+        "cierran",
+        "abierto",
+        "abiertos",
+        "a que hora",
+        "hasta que hora",
+        "festivo",
+        "fin de semana",
+        "hours",
+        "open",
+        "que dias",
+        "dias de atencion",
+        "horario de atencion",
+        "atienden los",
+        "atienden el",
+        "atienden hoy",
+        "abren hoy",
+        "abren los",
+        "abren el",
+        "trabajan los",
+        "estan abiertos",
+        "fines de semana",
+        "los domingos",
+        "los sabados",
+        "los feriados",
+        "feriados"
+      ],
+      "answer": "Atendemos todos los días, de lunes a domingo, de 10:00 a 21:30. 🕙"
+    },
+    {
+      "id": "ubicacion",
+      "keywords": [
+        "donde estan",
+        "donde queda",
+        "direccion",
+        "ubicacion",
+        "como llegar",
+        "ubicados",
+        "la dehesa",
+        "lo barnechea",
+        "edificio oriente",
+        "oficina",
+        "address",
+        "where",
+        "como llego",
+        "comuna",
+        "en que comuna",
+        "donde se ubican",
+        "en que parte",
+        "en que sector",
+        "sector"
+      ],
+      "answer": "Estamos en Av. La Dehesa 1201, oficina 829, Edificio Oriente, Lo Barnechea, Santiago. 📍"
+    },
+    {
+      "id": "reservas",
+      "keywords": [
+        "reservar",
+        "reserva",
+        "reservo",
+        "como reservo",
+        "quiero reservar",
+        "agendar",
+        "agenda",
+        "agendo",
+        "tomar hora",
+        "pedir hora",
+        "sacar hora",
+        "hora disponible",
+        "cita",
+        "disponibilidad",
+        "cupo",
+        "hay hora",
+        "book",
+        "booking",
+        "tienen hora",
+        "hora para",
+        "agendar hora",
+        "reservar hora"
+      ],
+      "answer": "Puedes agendar online en https://boracayspa.site.agendapro.com/cl, eligiendo el masaje, el día y la hora. Si prefieres, escríbenos por WhatsApp al +56 9 5963 1422. 📅"
+    },
+    {
+      "id": "aromaterapia",
+      "keywords": [
+        "aromaterapia",
+        "masaje con aromaterapia",
+        "aceites esenciales",
+        "aceites",
+        "aromatherapy",
+        "estres",
+        "estresada",
+        "estresado",
+        "ansiedad",
+        "relajante",
+        "relajacion",
+        "relajarme"
+      ],
+      "answer": "El masaje con aromaterapia combina presión suave en todo el cuerpo con aceites esenciales elegidos según lo que necesitas. Ayuda a reducir el estrés, la ansiedad y la tensión muscular. Dura 90 minutos y cuesta $50.000. 🌿"
+    },
+    {
+      "id": "tejido_profundo",
+      "keywords": [
+        "tejido profundo",
+        "deep tissue",
+        "descontracturante",
+        "contractura",
+        "contracturas",
+        "nudos",
+        "dolor cronico",
+        "espalda",
+        "dolor de espalda",
+        "tension muscular",
+        "postura",
+        "cuello",
+        "hombros",
+        "hombro",
+        "dolor de cuello",
+        "lumbago",
+        "espalda baja",
+        "me duele"
+      ],
+      "answer": "El masaje de tejido profundo trabaja las capas musculares más profundas con movimientos lentos y firmes, sin causar dolor. Es ideal para tensión crónica, nudos, lesiones o problemas de postura. Dura 90 minutos y cuesta $50.000. 💪"
+    },
+    {
+      "id": "deportivo",
+      "keywords": [
+        "deportivo",
+        "masaje deportivo",
+        "deportiva",
+        "deportista",
+        "deporte",
+        "sports",
+        "lesion",
+        "lesiones",
+        "entreno",
+        "entrenamiento",
+        "flexibilidad",
+        "maraton",
+        "maratones",
+        "corro",
+        "correr",
+        "running",
+        "gimnasio",
+        "gym",
+        "crossfit",
+        "ciclismo",
+        "soy deportista",
+        "para deportistas",
+        "hago deporte"
+      ],
+      "answer": "El masaje deportivo es para quienes hacen actividad física seguido o tienen lesiones por movimientos repetitivos. Combina técnicas profundas con estiramientos para prevenir lesiones y mejorar el rendimiento. Dura 90 minutos y cuesta $50.000. 🏃"
+    },
+    {
+      "id": "puntos_gatillo",
+      "keywords": [
+        "puntos gatillo",
+        "punto gatillo",
+        "gatillo",
+        "trigger point",
+        "dolor que se irradia",
+        "irradia"
+      ],
+      "answer": "El masaje de puntos gatillo trata el dolor crónico aplicando presión en puntos específicos, para aliviar el dolor que se irradia a otras zonas del cuerpo. Dura 90 minutos y cuesta $50.000."
+    },
+    {
+      "id": "reflexologia",
+      "keywords": [
+        "reflexologia",
+        "reflexology",
+        "pies",
+        "pie",
+        "manos y orejas"
+      ],
+      "answer": "La reflexología estimula puntos de presión en pies, manos y orejas para relajar todo el cuerpo y mejorar la circulación. Dura 60 minutos y cuesta $40.000. 🦶"
+    },
+    {
+      "id": "shiatsu",
+      "keywords": [
+        "shiatsu",
+        "masaje shiatsu",
+        "japones",
+        "japonesa"
+      ],
+      "answer": "El shiatsu es una técnica japonesa que se hace con la ropa puesta, con presión rítmica de dedos y palmas en puntos específicos. Alivia el estrés y las molestias musculares y articulares. Dura 90 minutos y cuesta $50.000."
+    },
+    {
+      "id": "tailandes",
+      "keywords": [
+        "tailandes",
+        "masaje tailandes",
+        "tailandesa",
+        "thai",
+        "tailandia",
+        "estiramientos",
+        "yoga",
+        "thai massage"
+      ],
+      "answer": "El masaje tailandés tradicional es energizante: usa estiramientos parecidos al yoga y acupresión. Se hace sobre una colchoneta y con ropa holgada y cómoda. Mejora la flexibilidad, la circulación y la postura. Dura 90 minutos y cuesta $50.000. 🧘"
+    },
+    {
+      "id": "prenatal",
+      "keywords": [
+        "prenatal",
+        "masaje prenatal",
+        "embarazo",
+        "embarazada",
+        "embarazadas",
+        "gestacion",
+        "guatita",
+        "pregnancy",
+        "guagua",
+        "esperando guagua",
+        "esperando un bebe",
+        "bebe"
+      ],
+      "answer": "Sí, tenemos masaje prenatal, seguro y pensado para el embarazo. Alivia el dolor lumbar, la tensión en las piernas y el cansancio, y se hace con cojines o en una camilla especial. Dura 90 minutos y cuesta $50.000. 🤰"
+    },
+    {
+      "id": "pareja",
+      "keywords": [
+        "pareja",
+        "masaje en pareja",
+        "parejas",
+        "en pareja",
+        "couple",
+        "couples",
+        "dos personas",
+        "juntos",
+        "aniversario",
+        "pololo",
+        "polola",
+        "amiga",
+        "amigo"
+      ],
+      "answer": "El masaje en pareja es para compartirlo con tu pareja, un amigo o un ser querido: cada uno recibe su masaje con su propio terapeuta, en la misma sala. Cuesta $50.000 por persona y dura 90 minutos. 💑"
+    },
+    {
+      "id": "drenaje_linfatico",
+      "keywords": [
+        "drenaje linfatico",
+        "drenaje",
+        "linfatico",
+        "hinchazon",
+        "retencion de liquidos",
+        "liquido",
+        "postoperatorio",
+        "post operatorio",
+        "cirugia",
+        "operacion"
+      ],
+      "answer": "El drenaje linfático es una técnica suave que ayuda a mover los líquidos del cuerpo: reduce la hinchazón y la retención de líquidos y apoya la recuperación después de una cirugía. También lo hacemos en cara y cuello. Dura 90 minutos y cuesta $50.000."
+    },
+    {
+      "id": "reiki",
+      "keywords": [
+        "reiki",
+        "sesion de reiki",
+        "energia",
+        "energetico",
+        "sanacion"
+      ],
+      "answer": "El reiki es una técnica japonesa de relajación: el terapeuta canaliza energía con las manos sobre el cuerpo. Es muy calmante y se hace con la ropa puesta. Dura 90 minutos y cuesta $50.000. ✨"
+    },
+    {
+      "id": "cristales",
+      "keywords": [
+        "cristales",
+        "cristal",
+        "piedras",
+        "chakras",
+        "chakra",
+        "crystal"
+      ],
+      "answer": "La terapia con cristales usa cristales y piedras, elegidos por sus propiedades, sobre o alrededor del cuerpo para equilibrar la energía y dar paz interior. Dura 90 minutos y cuesta $50.000. 💎"
+    },
+    {
+      "id": "mix_asiatico",
+      "keywords": [
+        "mix asiatico",
+        "mixto asiatico",
+        "asian mix",
+        "asiatico",
+        "masaje filipino",
+        "tecnicas filipinas"
+      ],
+      "answer": "El mix asiático nace de las tradiciones filipinas y combina relajación, tejido profundo, shiatsu, reflexología y estiramientos en un solo tratamiento. Libera tensiones, mejora la circulación y renueva la energía. Dura 90 minutos y cuesta $50.000. 🌴"
+    },
+    {
+      "id": "cuatro_manos",
+      "keywords": [
+        "cuatro manos",
+        "four hand",
+        "dos terapeutas"
+      ],
+      "answer": "Sí, también hacemos masaje a cuatro manos. Para el valor y la disponibilidad, escríbenos por WhatsApp al +56 9 5963 1422."
+    },
+    {
+      "id": "packs",
+      "keywords": [
+        "pack",
+        "packs",
+        "pack de 10",
+        "pack de 5",
+        "pack de diez",
+        "pack de cinco",
+        "paquete",
+        "paquetes",
+        "sesiones",
+        "varias sesiones",
+        "ahorrar",
+        "plan",
+        "package"
+      ],
+      "answer": "Tenemos packs de sesiones:\n• 5 masajes de 60 min: $175.000\n• 5 masajes de 90 min: $225.000\n• 10 masajes de 60 min: $350.000\n• 10 masajes de 90 min: $450.000\nSe compran al agendar en https://boracayspa.site.agendapro.com/cl. 🎁"
+    },
+    {
+      "id": "promociones",
+      "keywords": [
+        "promocion",
+        "promociones",
+        "descuento",
+        "descuentos",
+        "oferta",
+        "ofertas",
+        "verano",
+        "promo",
+        "deals"
+      ],
+      "answer": "En nuestra web publicamos descuentos de verano: 60 min a $35.000 (normal $40.000), 75 min a $40.000 (normal $45.000) y 90 min a $45.000 (normal $50.000). Confírmanos por WhatsApp al +56 9 5963 1422 que sigan vigentes antes de agendar. ☀️"
+    },
+    {
+      "id": "precios",
+      "keywords": [
+        "precio",
+        "precios",
+        "cuanto cuesta",
+        "cuanto vale",
+        "cuanto sale",
+        "cuanto cobran",
+        "valor",
+        "valores",
+        "tarifa",
+        "tarifas",
+        "caro",
+        "price",
+        "prices",
+        "barato",
+        "mas barato",
+        "economico",
+        "cuanto es",
+        "cuanto seria"
+      ],
+      "answer": "Los masajes de 90 minutos cuestan $50.000 y la reflexología (60 minutos) $40.000. El masaje en pareja es $50.000 por persona. Si vienes seguido, los packs de 5 o 10 sesiones salen más convenientes. 💆"
+    },
+    {
+      "id": "sin_dato",
+      "keywords": [
+        "estacionamiento",
+        "el estacionamiento",
+        "estacionar",
+        "estaciono",
+        "parking",
+        "pago",
+        "pagar",
+        "formas de pago",
+        "medios de pago",
+        "efectivo",
+        "tarjeta",
+        "debito",
+        "credito",
+        "transferencia",
+        "redcompra",
+        "gift card",
+        "giftcard",
+        "regalo",
+        "regalar",
+        "regalarle",
+        "voucher",
+        "tarjeta de regalo",
+        "domicilio",
+        "a domicilio",
+        "ducha",
+        "duchas",
+        "vestidor",
+        "locker",
+        "boleta",
+        "factura"
+      ],
+      "answer": "Ese dato prefiero que te lo confirme el equipo del spa, para no darte información equivocada. Escríbenos por WhatsApp al +56 9 5963 1422 o a contacto@boracay.cl y te responden a la brevedad. 🙏"
+    },
+    {
+      "id": "tipos_de_masaje",
+      "keywords": [
+        "tipos de masaje",
+        "que masajes",
+        "masaje",
+        "servicios",
+        "tratamientos",
+        "terapias",
+        "que ofrecen",
+        "que hacen",
+        "que tienen",
+        "recomiendan",
+        "massage"
+      ],
+      "answer": "Tenemos masaje con aromaterapia, de tejido profundo, deportivo, de puntos gatillo, reflexología, shiatsu, tailandés tradicional, prenatal, en pareja, drenaje linfático, reiki, terapia con cristales, mix asiático y masaje a cuatro manos. Pregúntame por cualquiera y te cuento de qué se trata. 🌺"
+    },
+    {
+      "id": "duracion",
+      "keywords": [
+        "duracion",
+        "cuanto dura",
+        "cuanto demora",
+        "cuanto tiempo",
+        "minutos"
+      ],
+      "answer": "La mayoría de los masajes dura 90 minutos; la reflexología dura 60. Con los packs también puedes elegir sesiones de 60 o 90 minutos. ⏱️"
+    },
+    {
+      "id": "ropa",
+      "keywords": [
+        "ropa",
+        "vestido",
+        "vestida",
+        "desvestirme",
+        "que me pongo",
+        "que llevo",
+        "que llevar"
+      ],
+      "answer": "El shiatsu y el reiki se hacen con la ropa puesta, y el masaje tailandés con ropa holgada y cómoda. Si tienes dudas sobre otro masaje, escríbenos por WhatsApp al +56 9 5963 1422."
+    },
+    {
+      "id": "quienes_somos",
+      "keywords": [
+        "quienes son",
+        "quienes somos",
+        "quien atiende",
+        "terapeutas",
+        "masajistas",
+        "filipinos",
+        "filipinas",
+        "filipino",
+        "boracay",
+        "historia",
+        "experiencia",
+        "quienes atienden",
+        "quien me atiende"
+      ],
+      "answer": "Boracay Spa trae la esencia de Filipinas a Santiago. Lo crearon tres masajistas filipinos, y cada tratamiento se inspira en técnicas ancestrales de las islas, con aceite de coco e ylang-ylang. 🌺"
+    },
+    {
+      "id": "resenas",
+      "keywords": [
+        "resenas",
+        "buenas resenas",
+        "buenos comentarios",
+        "opiniones",
+        "comentarios",
+        "calificacion",
+        "estrellas",
+        "tripadvisor",
+        "son buenos",
+        "recomendable",
+        "opinan",
+        "que dicen",
+        "clientes",
+        "experiencias"
+      ],
+      "answer": "Tenemos 5 estrellas en nuestra agenda online (10 reseñas) y también estamos en Tripadvisor. ⭐"
+    },
+    {
+      "id": "contacto",
+      "keywords": [
+        "telefono",
+        "contacto",
+        "whatsapp",
+        "correo",
+        "mail",
+        "email",
+        "instagram",
+        "redes",
+        "llamar",
+        "numero",
+        "contact"
+      ],
+      "answer": "WhatsApp y teléfono: +56 9 5963 1422. Correo: contacto@boracay.cl. Instagram: @boracayspachile. 📞"
+    },
+    {
+      "id": "agradecimiento",
+      "keywords": [
+        "gracias",
+        "muchas gracias",
+        "genial",
+        "perfecto",
+        "buenisimo",
+        "excelente",
+        "bacan",
+        "thanks"
+      ],
+      "answer": "¡De nada! 😊 ¿Necesitas algo más?"
+    },
+    {
+      "id": "cierre",
+      "keywords": [
+        "no",
+        "nada",
+        "nada mas",
+        "no gracias",
+        "ok",
+        "listo",
+        "vale",
+        "eso es todo",
+        "asi esta bien",
+        "eso seria",
+        "seria todo",
+        "nada mas gracias"
+      ],
+      "answer": "¡Perfecto! Te esperamos en Boracay Spa. 🌺"
+    },
+    {
+      "id": "despedida",
+      "keywords": [
+        "chao",
+        "adios",
+        "hasta luego",
+        "nos vemos",
+        "bye",
+        "me voy"
+      ],
+      "answer": "¡Hasta pronto! Que tengas un lindo día. 👋"
+    }
+  ]
+};
+
+  /* ==================================================================== */
+
+  const hiloEl = document.getElementById("hilo");
+  const atajosEl = document.getElementById("atajos");
+  const formEl = document.getElementById("escribir");
+  const campoEl = document.getElementById("campo");
+  const enviarEl = document.getElementById("enviar");
+
+  // Sin servidor, la sesión es simplemente lo que el motor necesita recordar.
+  const sesion = { greeted: false };
+
+  /* Links tocables: en el teléfono, "agenda en https://..." tiene que abrir la agenda.
+     Con nodos de texto y <a>, nunca innerHTML: lo que escriba un cliente no se ejecuta. */
+  function textoConEnlaces(el, texto) {
+    String(texto).split(/(https?:\/\/[^\s]+)/).forEach(function (parte, i) {
+      if (i % 2 === 0) {
+        if (parte) el.appendChild(document.createTextNode(parte));
+        return;
+      }
+      var url = parte.replace(/[.,;:!?)]+$/, "");
+      var enlace = document.createElement("a");
+      enlace.href = url;
+      enlace.target = "_blank";
+      enlace.rel = "noopener";
+      enlace.textContent = url.replace(/^https?:\/\//, "");
+      el.appendChild(enlace);
+      if (url !== parte) el.appendChild(document.createTextNode(parte.slice(url.length)));
+    });
+  }
+
+  function burbuja(texto, quien) {
+    const el = document.createElement("div");
+    el.className = "burbuja " + quien;
+    textoConEnlaces(el, texto);
+    hiloEl.appendChild(el);
+    hiloEl.scrollTop = hiloEl.scrollHeight;
+    return el;
+  }
+
+  function escribiendo() {
+    const el = document.createElement("div");
+    el.className = "burbuja bot escribiendo";
+    el.innerHTML = "<i></i><i></i><i></i>";
+    hiloEl.appendChild(el);
+    hiloEl.scrollTop = hiloEl.scrollHeight;
+    return el;
+  }
+
+  function enviar(texto) {
+    const mensaje = String(texto || "").trim();
+    if (!mensaje) return;
+
+    burbuja(mensaje, "cliente");
+    campoEl.value = "";
+    enviarEl.disabled = true;
+
+    const pensando = escribiendo();
+
+    // Una pausa breve para que se lea como una conversación.
+    setTimeout(function () {
+      const resultado = respond(mensaje, NEGOCIO, sesion);
+      pensando.remove();
+      burbuja(resultado.reply, "bot");
+      if (resultado.intent === "saludo") sesion.greeted = true;
+      enviarEl.disabled = false;
+      campoEl.focus();
+    }, 300);
+  }
+
+  formEl.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+    enviar(campoEl.value);
+  });
+
+  document.getElementById("rubro").textContent = NEGOCIO.tagline || "";
+  burbuja(NEGOCIO.active === false ? NEGOCIO.pausedMessage : NEGOCIO.greeting, "bot");
+
+  if (NEGOCIO.active !== false) {
+    (NEGOCIO.topics || []).forEach(function (tema) {
+      const boton = document.createElement("button");
+      boton.className = "atajo";
+      boton.type = "button";
+      boton.textContent = tema;
+      boton.addEventListener("click", function () {
+        enviar(tema);
+      });
+      atajosEl.appendChild(boton);
+    });
+  }
+</script>

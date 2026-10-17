@@ -32,8 +32,12 @@ function toBrowserScript(source) {
 
 const slug = process.argv[2] || process.env.PYMEBOT_BUSINESS || 'dona-elba';
 
+// Los ejemplos viven en data/businesses; los negocios de clientes reales, en data/demo.
+const carpeta = ['businesses', 'demo'].find((c) => fs.existsSync(path.join(ROOT, 'data', c, `${slug}.json`)));
+if (!carpeta) throw new Error(`No existe el negocio "${slug}".`);
+
 const { ok, errors, business } = validateBusiness(
-  JSON.parse(read('data', 'businesses', `${slug}.json`)),
+  JSON.parse(read('data', carpeta, `${slug}.json`)),
 );
 if (!ok) {
   throw new Error(`El negocio "${slug}" no es válido:\n${errors.map((e) => `  - ${e.mensaje}`).join('\n')}`);

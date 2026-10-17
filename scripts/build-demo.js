@@ -45,6 +45,27 @@ function cuerpoDelPanel() {
   return cuerpo.replace(/\s*<script src="panel\.js"><\/script>/, '').trim();
 }
 
+/**
+ * `npm run build:demo -- --cliente boracay-spa` arma el panel de ESE negocio (data/demo/):
+ * sin ejemplos, sin registro, con el negocio ya cargado. Sirve para que la dueña lo pruebe
+ * antes de tener su servidor.
+ */
+const indiceCliente = process.argv.indexOf('--cliente');
+const cliente = indiceCliente !== -1 ? process.argv[indiceCliente + 1] : null;
+
+const AVISO_DEMO = `<strong>Demo de PymeBot.</strong>
+  <span>
+    Es el panel real: lo que edites cambia el bot de verdad, aquí mismo. Los cambios quedan
+    solo en este navegador y el acceso no comprueba la contraseña.
+  </span>`;
+
+const AVISO_CLIENTE = (nombre) => `<strong>Panel de ${nombre} · versión de prueba.</strong>
+  <span>
+    Es el panel y el bot reales. Para probarlo como cliente usa «Probar el bot»: esas
+    conversaciones aparecen en la pestaña Conversaciones. Sin servidor, todo queda solo en
+    este navegador y el acceso no comprueba la contraseña.
+  </span>`;
+
 (async () => {
   const motor = [
     toBrowserScript(read('src', 'bot', 'text.js')),
@@ -57,10 +78,15 @@ function cuerpoDelPanel() {
     .replace('/*__ESTILOS__*/', () => read('public', 'chat.css'))
     .replace('/*__ENGINE__*/', () => motor);
 
-  const ejemplos = fs
-    .readdirSync(path.join(ROOT, 'data', 'businesses'))
-    .filter((f) => f.endsWith('.json'))
-    .map((f) => ({ slug: f.replace(/\.json$/, ''), ...JSON.parse(read('data', 'businesses', f)) }));
+  const ejemplos = cliente
+    ? []
+    : fs
+        .readdirSync(path.join(ROOT, 'data', 'businesses'))
+        .filter((f) => f.endsWith('.json'))
+        .map((f) => ({ slug: f.replace(/\.json$/, ''), ...JSON.parse(read('data', 'businesses', f)) }));
+
+  const precarga = cliente ? { slug: cliente, negocio: JSON.parse(read('data', 'demo', `${cliente}.json`)) } : null;
+  const escapar = (t) => String(t).replace(/[<>&"]/g, '');
 
   /*
    * El generador de QR, empaquetado para el navegador.
@@ -95,17 +121,20 @@ function cuerpoDelPanel() {
     .replace('/*__PANEL_JS__*/', () => read('public', 'panel.js'))
     .replace('/*__EJEMPLOS__*/', () => JSON.stringify(ejemplos, null, 2))
     .replace('/*__PLANTILLA_CHAT__*/', () => comoCadenaJs(plantillaChat))
-    .replace('/*__GENERADOR_QR__*/', () => generadorQr);
+    .replace('/*__GENERADOR_QR__*/', () => generadorQr)
+    .replace('/*__PRECARGA__*/', () => JSON.stringify(precarga).replace(/<\/script/gi, '<\\/script'))
+    .replace('/*__LLAVE__*/', () => JSON.stringify(cliente ? `pymebot-${cliente}` : 'pymebot-demo'))
+    .replace('<!--__AVISO__-->', () => (precarga ? AVISO_CLIENTE(escapar(precarga.negocio.name)) : AVISO_DEMO));
 
-  for (const marcador of ['__ESTILOS_PANEL__', '__CUERPO_PANEL__', '__SCHEMA__', '__METRICAS__', '__MOTOR__', '__PANEL_JS__', '__EJEMPLOS__', '__PLANTILLA_CHAT__', '__GENERADOR_QR__']) {
+  for (const marcador of ['__PRECARGA__', '__LLAVE__', '__AVISO__', '__ESTILOS_PANEL__', '__CUERPO_PANEL__', '__SCHEMA__', '__METRICAS__', '__MOTOR__', '__PANEL_JS__', '__EJEMPLOS__', '__PLANTILLA_CHAT__', '__GENERADOR_QR__']) {
     if (html.includes(marcador)) throw new Error(`La plantilla no se rellenó: queda ${marcador}.`);
   }
 
-  const out = path.join(ROOT, 'dist', 'demo.html');
+  const out = path.join(ROOT, 'dist', cliente ? `panel-${cliente}.html` : 'demo.html');
   fs.mkdirSync(path.dirname(out), { recursive: true });
   fs.writeFileSync(out, html);
 
   console.log(
-    `dist/demo.html generado · ${ejemplos.length} ejemplos · ${(html.length / 1024).toFixed(1)} KB`,
+    `${path.relative(ROOT, out)} generado · ${cliente ? `panel de ${precarga.negocio.name}` : `${ejemplos.length} ejemplos`} · ${(html.length / 1024).toFixed(1)} KB`,
   );
 })();

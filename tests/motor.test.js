@@ -16,6 +16,7 @@ const NEGOCIO = {
     { id: 'contacto', keywords: ['telefono', 'correo'], answer: '+56 9 1234 5678.' },
     { id: 'cierre', keywords: ['no', 'ok', 'nada'], answer: '¡Perfecto!' },
     { id: 'despedida', keywords: ['chao'], answer: '¡Chao!' },
+    { id: 'agradecimiento', keywords: ['gracias'], answer: '¡De nada!' },
   ],
 };
 
@@ -31,6 +32,7 @@ test('la cortesía no se apropia de una pregunta de verdad', () => {
 
 test('en un empate de cortesía gana la despedida', () => {
   assert.strictEqual(intent('ok chao'), 'despedida');
+  assert.strictEqual(intent('gracias chao'), 'despedida', 'si se despide, se despide');
 });
 
 test('entiende faltas de ortografía y letras alargadas', () => {

@@ -60,11 +60,7 @@
 </style>
 
 <div class="aviso-demo">
-  <strong>Demo de PymeBot.</strong>
-  <span>
-    Es el panel real: lo que edites cambia el bot de verdad, aquí mismo. Los cambios quedan
-    solo en este navegador y el acceso no comprueba la contraseña.
-  </span>
+  <!--__AVISO__-->
 </div>
 
 <!--__CUERPO_PANEL__-->
@@ -107,7 +103,13 @@
   var EJEMPLOS = /*__EJEMPLOS__*/;
   var PLANTILLA_CHAT = /*__PLANTILLA_CHAT__*/;
 
-  var LLAVE = 'pymebot-demo';
+  /*
+   * El negocio de un cliente, ya cargado y a nombre de quien entre. Con él, el archivo es
+   * "el panel de ese negocio": sin ejemplos, sin registro, como en su servidor.
+   */
+  var PRECARGA = /*__PRECARGA__*/;
+
+  var LLAVE = /*__LLAVE__*/;
 
   /* ------------------------------------------------------------------
      El enlace compartible.
@@ -146,7 +148,12 @@
   }
 
   function estadoInicial() {
-    return { usuario: null, negocios: {}, conversaciones: {} };
+    var inicial = { usuario: null, negocios: {}, conversaciones: {} };
+    if (PRECARGA) {
+      var cargado = validateBusiness(Object.assign({}, PRECARGA.negocio, { ownerId: 'demo' }));
+      if (cargado.ok) inicial.negocios[PRECARGA.slug] = cargado.business;
+    }
+    return inicial;
   }
 
   function leerEstado() {
@@ -247,6 +254,7 @@
     var partes = String(ruta).split('?')[0].split('/').filter(Boolean); // ['api','businesses',slug]
 
     // --- cuentas ---
+    if (ruta === '/api/instalacion') return respuesta(200, { registroAbierto: !PRECARGA });
     if (ruta === '/api/auth/me') return respuesta(200, { user: estado.usuario });
 
     if (ruta === '/api/auth/signup' || ruta === '/api/auth/login') {
@@ -282,6 +290,14 @@
     }
 
     if (!estado.usuario) return respuesta(401, { error: 'Necesitas iniciar sesión.' });
+
+    // Sin servidor no hay contraseña guardada que cambiar: se acepta para mostrar el flujo.
+    if (ruta === '/api/auth/password') {
+      if (!cuerpo || !cuerpo.nueva || String(cuerpo.nueva).length < 8) {
+        return respuesta(422, { error: 'La contraseña debe tener al menos 8 caracteres.', campo: 'nueva' });
+      }
+      return respuesta(200, { ok: true });
+    }
 
     // --- ejemplos ---
     if (ruta === '/api/examples') {
@@ -338,6 +354,12 @@
             whatsapp: 'https://wa.me/?text=' + encodeURIComponent('Resuelve tus dudas por aquí: ' + url),
           });
         });
+      }
+
+      if (partes[3] === 'conversations' && metodo === 'DELETE') {
+        delete estado.conversaciones[slug];
+        guardarEstado(estado);
+        return respuesta(200, { ok: true });
       }
 
       if (partes[3] === 'conversations') {

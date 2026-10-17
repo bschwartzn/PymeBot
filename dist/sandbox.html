@@ -758,6 +758,11 @@ function matchIntent(message, business) {
     }
   }
   if (cortesiaScore >= umbral && esSoloCortesia(messageTokens, paddedMessage, intents)) {
+    // Si se despide, se despide: "gracias, chao" cierra la conversación aunque "gracias"
+    // pese más que "chao".
+    const despedida = intents.find((i) => i.id === 'despedida');
+    const scoreDespedida = despedida ? scoreIntent(despedida, messageTokens, paddedMessage, conocidas) : 0;
+    if (scoreDespedida >= umbral) return { intent: despedida, score: scoreDespedida };
     return { intent: cortesia, score: cortesiaScore };
   }
 

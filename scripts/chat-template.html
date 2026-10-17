@@ -65,10 +65,29 @@
   // Sin servidor, la sesión es simplemente lo que el motor necesita recordar.
   const sesion = { greeted: false };
 
+  /* Links tocables: en el teléfono, "agenda en https://..." tiene que abrir la agenda.
+     Con nodos de texto y <a>, nunca innerHTML: lo que escriba un cliente no se ejecuta. */
+  function textoConEnlaces(el, texto) {
+    String(texto).split(/(https?:\/\/[^\s]+)/).forEach(function (parte, i) {
+      if (i % 2 === 0) {
+        if (parte) el.appendChild(document.createTextNode(parte));
+        return;
+      }
+      var url = parte.replace(/[.,;:!?)]+$/, "");
+      var enlace = document.createElement("a");
+      enlace.href = url;
+      enlace.target = "_blank";
+      enlace.rel = "noopener";
+      enlace.textContent = url.replace(/^https?:\/\//, "");
+      el.appendChild(enlace);
+      if (url !== parte) el.appendChild(document.createTextNode(parte.slice(url.length)));
+    });
+  }
+
   function burbuja(texto, quien) {
     const el = document.createElement("div");
     el.className = "burbuja " + quien;
-    el.textContent = texto;
+    textoConEnlaces(el, texto);
     hiloEl.appendChild(el);
     hiloEl.scrollTop = hiloEl.scrollHeight;
     return el;
