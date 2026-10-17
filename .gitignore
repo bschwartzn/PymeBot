@@ -14,3 +14,4 @@ data/conversations/
 # El sitio se construye en CI, no se sube compilado.
 dist/sitio/
 dist/pymebot-sitio.zip
+data-local/
