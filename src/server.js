@@ -29,6 +29,7 @@ const { resumir, conversaciones } = require('./chat/metricas');
 const { crearAtencion, MensajeInvalido } = require('./chat/atender');
 const { rateLimit } = require('./http/limits');
 const { cabecerasDeSeguridad } = require('./http/seguridad');
+const { Avisos } = require('./http/eventos');
 const config = require('./config');
 
 /** Largo máximo de un mensaje. Un cliente real no escribe 2.000 caracteres. */
@@ -70,6 +71,7 @@ function createApp({
   conversations = new ConversationLog(),
   registroAbierto = config.registroAbierto,
   modoCliente = config.modoCliente,
+  avisos = new Avisos(),
 } = {}) {
   /*
    * El núcleo de la conversación, sin HTTP dentro. Cualquier canal (la web hoy, WhatsApp
@@ -364,6 +366,18 @@ function createApp({
       throw err;
     }
 
+    // El panel de la dueña, si está abierto, se entera en el momento.
+    if (!esPrueba) {
+      avisos.avisar(slug, 'mensaje', {
+        conversacion: resultado.conversacion,
+        pregunta: String(message).slice(0, 200),
+        intent: resultado.intent,
+        // Lo que más le importa saber al instante: que el bot no supo, o que piden a alguien.
+        sinRespuesta: !resultado.matched || resultado.intent === 'sin_dato',
+        pideUnaPersona: resultado.intent === 'hablar_con_persona',
+      });
+    }
+
     res.json({
       sessionId: resultado.conversacion,
       business: slug,
@@ -543,6 +557,16 @@ function createApp({
     });
   });
 
+  /**
+   * Avisos en tiempo real: el panel deja esta conexión abierta y recibe un evento por cada
+   * mensaje de un cliente. Privado como todo el panel: solo la dueña de ESE negocio.
+   */
+  app.get('/api/businesses/:slug/eventos', requireAuth, requireOwnedBusiness, (req, res) => {
+    if (!avisos.suscribir(req.params.slug, req, res)) {
+      res.status(429).json({ error: 'Hay demasiados paneles abiertos para este negocio.' });
+    }
+  });
+
   /** Qué preguntaron los clientes, y qué no supo responder el bot. */
   app.get('/api/businesses/:slug/metrics', requireAuth, requireOwnedBusiness, (req, res) => {
     const dias = Math.min(Math.max(Number(req.query.dias) || 14, 1), 90);
@@ -638,6 +662,9 @@ function createApp({
     console.error('Error no controlado:', err);
     res.status(500).json({ error: 'Algo falló de nuestro lado. Inténtalo de nuevo en un momento.' });
   });
+
+  // Para cerrar las conexiones abiertas al apagar el servidor.
+  app.locals.avisos = avisos;
 
   return app;
 }

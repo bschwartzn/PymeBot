@@ -130,6 +130,7 @@ $('salir').addEventListener('click', async () => {
   await api('POST', '/api/auth/logout');
   usuario = null;
   slugActual = null;
+  dejarDeEscuchar();
   formEl.hidden = true;
   mostrarAcceso();
 });
@@ -655,7 +656,95 @@ async function abrir(slug) {
     return;
   }
   pintar(slug, datos.business);
+  escucharEnVivo(slug);
   await refrescar(slug);
+}
+
+/* ------------------------------------------------------------- en vivo */
+
+/*
+ * El servidor avisa en el momento en que un cliente escribe (Server-Sent Events). El panel
+ * actualiza las cifras y la conversación, y si la dueña está en otra pestaña del panel o en
+ * otra ventana, se lo hace notar. Si la conexión se corta, el navegador reconecta solo, y
+ * mientras tanto sigue el refresco periódico de abajo.
+ */
+let enVivo = null;
+let sinLeer = 0;
+const TITULO_ORIGINAL = document.title;
+const tabConversaciones = document.querySelector('.seccion-tab[data-seccion="conversaciones"]');
+
+function pintarSinLeer() {
+  tabConversaciones.textContent = sinLeer > 0 ? `Conversaciones (${sinLeer})` : 'Conversaciones';
+  tabConversaciones.classList.toggle('con-nuevas', sinLeer > 0);
+  document.title = sinLeer > 0 ? `(${sinLeer}) ${TITULO_ORIGINAL}` : TITULO_ORIGINAL;
+}
+
+function marcarLeidas() {
+  sinLeer = 0;
+  pintarSinLeer();
+}
+
+function pintarEstadoEnVivo(conectado) {
+  const indicador = $('en-vivo');
+  indicador.hidden = false;
+  indicador.classList.toggle('desconectado', !conectado);
+  indicador.textContent = conectado ? 'En vivo' : 'Reconectando…';
+}
+
+let avisoTimer = null;
+function avisoFlotante(texto, tipo) {
+  const caja = $('aviso-flotante');
+  caja.textContent = texto;
+  caja.className = `aviso-flotante ${tipo || ''}`;
+  caja.hidden = false;
+  clearTimeout(avisoTimer);
+  avisoTimer = setTimeout(() => {
+    caja.hidden = true;
+  }, 6000);
+}
+
+function escucharEnVivo(slug) {
+  if (enVivo) enVivo.close();
+  enVivo = null;
+  // El demo en un solo archivo no tiene servidor que avise: se queda con el refresco.
+  if (typeof EventSource === 'undefined' || !/^https?:$/.test(location.protocol)) return;
+
+  enVivo = new EventSource(`/api/businesses/${encodeURIComponent(slug)}/eventos`);
+  enVivo.addEventListener('open', () => pintarEstadoEnVivo(true));
+  enVivo.addEventListener('error', () => pintarEstadoEnVivo(false));
+  enVivo.addEventListener('mensaje', (evento) => {
+    if (slug !== slugActual) return;
+    let datos = {};
+    try {
+      datos = JSON.parse(evento.data);
+    } catch (err) {
+      /* un aviso sin datos igual sirve para refrescar */
+    }
+
+    const mirando = seccionActiva() === 'conversaciones' && !document.hidden;
+    if (!mirando) {
+      sinLeer += 1;
+      pintarSinLeer();
+    }
+
+    const pregunta = datos.pregunta ? `«${datos.pregunta}»` : 'un mensaje';
+    if (datos.pideUnaPersona) {
+      avisoFlotante(`Un cliente pide hablar con una persona: ${pregunta}`, 'urgente');
+    } else if (datos.sinRespuesta) {
+      avisoFlotante(`El bot no supo responder: ${pregunta}`, 'pendiente');
+    } else {
+      avisoFlotante(`Nuevo mensaje de un cliente: ${pregunta}`);
+    }
+
+    // Se actualiza aunque la ventana no esté a la vista: al volver, ya está al día.
+    Promise.all([cargarConversaciones(slug), cargarTranscripciones(slug)]);
+  });
+}
+
+function dejarDeEscuchar() {
+  if (enVivo) enVivo.close();
+  enVivo = null;
+  marcarLeidas();
 }
 
 /**
@@ -681,7 +770,9 @@ setInterval(() => {
 }, REFRESCO_CONVERSACIONES_MS);
 
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) actualizarConversaciones();
+  if (document.hidden) return;
+  if (seccionActiva() === 'conversaciones') marcarLeidas();
+  actualizarConversaciones();
 });
 
 $('vaciar-conversaciones').addEventListener('click', async () => {
@@ -795,7 +886,10 @@ for (const tab of document.querySelectorAll('.seccion-tab')) {
       bloque.hidden = bloque.dataset.seccion !== tab.dataset.seccion;
     }
 
-    if (tab.dataset.seccion === 'conversaciones') actualizarConversaciones();
+    if (tab.dataset.seccion === 'conversaciones') {
+      marcarLeidas();
+      actualizarConversaciones();
+    }
   });
 }
 

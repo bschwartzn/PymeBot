@@ -528,3 +528,35 @@ input[type="range"] { width: 100%; accent-color: var(--brand); cursor: pointer; 
 .dialogo h2 { margin: 0; font-size: 18px; }
 .dialogo .ayuda { margin: 0; }
 .dialogo-acciones { display: flex; justify-content: flex-end; gap: 8px; }
+
+/* ==================== En vivo ==================== */
+
+.en-vivo {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-left: 8px; padding: 2px 9px; border-radius: 999px;
+  font-size: 12px; font-weight: 600;
+  color: var(--ok); background: var(--ok-bg);
+}
+.en-vivo::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%;
+  background: currentColor; animation: latido 1.6s ease-in-out infinite;
+}
+.en-vivo.desconectado { color: var(--warn); background: var(--warn-bg); }
+.en-vivo.desconectado::before { animation: none; }
+@keyframes latido { 50% { opacity: .3; } }
+
+.seccion-tab.con-nuevas { color: var(--brand); font-weight: 700; }
+
+.aviso-flotante {
+  position: fixed; right: 20px; bottom: 20px; z-index: 50;
+  max-width: min(380px, calc(100vw - 40px));
+  padding: 12px 16px; border-radius: 12px;
+  background: var(--ink); color: #fff; font-size: 14px; line-height: 1.4;
+  box-shadow: 0 8px 28px rgba(20, 28, 40, .25);
+}
+.aviso-flotante.pendiente { background: var(--warn); }
+.aviso-flotante.urgente { background: var(--error); }
+
+@media (prefers-reduced-motion: reduce) {
+  .en-vivo::before { animation: none; }
+}

@@ -167,6 +167,9 @@ function arrancar() {
       cerrando = true;
       console.log(`\n  ${senal} recibida: cerrando ordenadamente…`);
 
+      // Los paneles conectados en tiempo real mantienen conexiones abiertas: sin cerrarlas,
+      // el servidor esperaría hasta la red de seguridad de 10 segundos. Reconectan solos.
+      app.locals.avisos.cerrarTodo();
       server.close(() => {
         console.log('  Listo.');
         process.exit(0);

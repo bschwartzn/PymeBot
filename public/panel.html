@@ -77,6 +77,8 @@
         </div>
       </header>
 
+      <div id="aviso-flotante" class="aviso-flotante" role="status" aria-live="polite" hidden></div>
+
       <dialog id="dialogo-clave" class="dialogo">
         <form id="form-clave" class="acceso-form" method="dialog">
           <h2>Cambiar contraseña</h2>
@@ -276,6 +278,7 @@
             <fieldset class="bloque" data-seccion="conversaciones" hidden>
               <p class="ayuda bloque-intro">
                 Lo que preguntaron tus clientes en los últimos 14 días.
+                <span id="en-vivo" class="en-vivo" hidden>En vivo</span>
               </p>
 
               <div class="cifras" id="cifras"></div>
