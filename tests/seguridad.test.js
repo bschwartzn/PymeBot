@@ -150,8 +150,19 @@ test('las pruebas de la dueña no se mezclan con las conversaciones de sus clien
     assert.strictEqual(delCliente.body.prueba, false);
     assert.strictEqual((await cliente('GET', '/api/business?slug=spa')).body.esDueno, false);
 
+    // La prueba de la dueña queda guardada y marcada, para que la pueda leer…
     const registro = srv.conversations.leer('spa');
-    assert.deepStrictEqual(registro.map((r) => r.pregunta), ['horario?']);
+    assert.deepStrictEqual(
+      registro.map((r) => [r.pregunta, Boolean(r.prueba)]),
+      [['a que hora abren', true], ['horario?', false]],
+    );
+
+    // …y aparece en sus conversaciones, pero las cifras solo cuentan al cliente.
+    const lista = (await duena('GET', '/api/businesses/spa/conversations')).body.conversaciones;
+    assert.deepStrictEqual(lista.map((c) => c.prueba).sort(), [false, true]);
+    const cifras = (await duena('GET', '/api/businesses/spa/metrics')).body;
+    assert.strictEqual(cifras.mensajes, 1);
+    assert.strictEqual(cifras.conversaciones, 1);
   } finally {
     await srv.close();
   }

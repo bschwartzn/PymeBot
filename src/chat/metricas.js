@@ -52,7 +52,8 @@ function quedoSinResponder(r) {
 
 function resumir(registros, { dias = DIAS_POR_DEFECTO, ahora = Date.now() } = {}) {
   const desde = new Date(ahora - dias * 24 * 60 * 60 * 1000).toISOString();
-  const recientes = registros.filter((r) => r.at >= desde);
+  // Las pruebas de la dueña se pueden leer en las conversaciones, pero no falsean las cifras.
+  const recientes = registros.filter((r) => r.at >= desde && !r.prueba);
 
   const conversaciones = new Set(recientes.map((r) => r.conversationId));
   const sinRespuesta = recientes.filter(quedoSinResponder);
@@ -115,6 +116,8 @@ function conversaciones(registros, { limite = 50 } = {}) {
         fin: registro.at,
         mensajes: [],
         sinRespuesta: 0,
+        // Una conversación de la dueña probando su bot, no de un cliente.
+        prueba: Boolean(registro.prueba),
       });
     }
 

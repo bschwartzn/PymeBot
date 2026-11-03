@@ -607,6 +607,14 @@ async function cargarTranscripciones(slug) {
       cabecera.appendChild(fallo);
     }
 
+    if (conversacion.prueba) {
+      const prueba = document.createElement('span');
+      prueba.className = 'marca-canal marca-prueba';
+      prueba.textContent = 'tu prueba';
+      prueba.title = 'La escribiste tú con la sesión del panel abierta. No cuenta en las cifras.';
+      cabecera.appendChild(prueba);
+    }
+
     const canal = document.createElement('span');
     canal.className = 'marca-canal';
     canal.textContent = conversacion.canal;
@@ -722,13 +730,16 @@ function escucharEnVivo(slug) {
     }
 
     const mirando = seccionActiva() === 'conversaciones' && !document.hidden;
-    if (!mirando) {
+    // Las pruebas de la dueña aparecen en la lista, pero no son mensajes nuevos de clientes.
+    if (!mirando && !datos.prueba) {
       sinLeer += 1;
       pintarSinLeer();
     }
 
     const pregunta = datos.pregunta ? `«${datos.pregunta}»` : 'un mensaje';
-    if (datos.pideUnaPersona) {
+    if (datos.prueba) {
+      avisoFlotante(`Tu prueba quedó en Conversaciones: ${pregunta}`);
+    } else if (datos.pideUnaPersona) {
       avisoFlotante(`Un cliente pide hablar con una persona: ${pregunta}`, 'urgente');
     } else if (datos.sinRespuesta) {
       avisoFlotante(`El bot no supo responder: ${pregunta}`, 'pendiente');

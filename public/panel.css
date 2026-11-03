@@ -488,6 +488,13 @@ input[type="range"] { width: 100%; accent-color: var(--brand); cursor: pointer; 
   padding: 2px 9px;
   flex: none;
 }
+.conversacion .marca-prueba {
+  color: var(--brand);
+  background: transparent;
+  border: 1px dashed var(--brand);
+  text-transform: none;
+  letter-spacing: 0;
+}
 .conversacion .fallo {
   font-size: 11.5px;
   color: var(--warn);

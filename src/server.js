@@ -346,8 +346,8 @@ function createApp({
     if (noEncontrado) return chatNoDisponible(res);
     if (!business) return sinNegocios(res);
 
-    // Lo que la dueña escribe para probar su bot no se mezcla con lo que preguntan sus
-    // clientes: si no, las cifras y la lista de "no supo responder" quedarían falseadas.
+    // Lo que la dueña escribe para probar su bot se guarda marcado como prueba: lo puede
+    // leer en el panel, pero no se mezcla con las cifras de sus clientes.
     const esPrueba = Boolean(req.user && business.ownerId === req.user.id);
 
     let resultado;
@@ -359,24 +359,24 @@ function createApp({
         canal: 'web',
         // En la web, la conversación la identifica lo que guardó el navegador.
         idExterno: typeof sessionId === 'string' ? sessionId : null,
-        registrar: !esPrueba,
+        prueba: esPrueba,
       });
     } catch (err) {
       if (err instanceof MensajeInvalido) return res.status(400).json({ error: err.message });
       throw err;
     }
 
-    // El panel de la dueña, si está abierto, se entera en el momento.
-    if (!esPrueba) {
-      avisos.avisar(slug, 'mensaje', {
-        conversacion: resultado.conversacion,
-        pregunta: String(message).slice(0, 200),
-        intent: resultado.intent,
-        // Lo que más le importa saber al instante: que el bot no supo, o que piden a alguien.
-        sinRespuesta: !resultado.matched || resultado.intent === 'sin_dato',
-        pideUnaPersona: resultado.intent === 'hablar_con_persona',
-      });
-    }
+    // El panel de la dueña, si está abierto, se entera en el momento. Sus propias pruebas
+    // también, para que las vea aparecer, pero marcadas: el panel no las cuenta como nuevas.
+    avisos.avisar(slug, 'mensaje', {
+      conversacion: resultado.conversacion,
+      pregunta: String(message).slice(0, 200),
+      intent: resultado.intent,
+      prueba: esPrueba,
+      // Lo que más le importa saber al instante: que el bot no supo, o que piden a alguien.
+      sinRespuesta: !resultado.matched || resultado.intent === 'sin_dato',
+      pideUnaPersona: resultado.intent === 'hablar_con_persona',
+    });
 
     res.json({
       sessionId: resultado.conversacion,

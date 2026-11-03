@@ -573,6 +573,8 @@ function distancia(a, b) {
   return filas[a.length][b.length];
 }
 
+module.exports = { normalize, fold, tokenize, wordsMatch, casiIgual };
+
 /**
  * Motor de intenciones.
  *
@@ -583,6 +585,7 @@ function distancia(a, b) {
  * Es determinista, se testea con facilidad y no depende de ningún servicio externo.
  */
 
+const { normalize, fold, tokenize, wordsMatch, casiIgual } = require('./text');
 
 /**
  * Puntaje mínimo por defecto para aceptar una intención. Debajo de esto, respondemos el
@@ -838,6 +841,8 @@ function respond(message, business, session = null) {
 
   return { reply, intent: intent.id, score, matched: true };
 }
+
+module.exports = { respond, matchIntent, buildFallback, thresholdFor, CONFIDENCE_THRESHOLD, CORTESIA };
 
   /** Todos los negocios configurados, empaquetados por la build. */
   const NEGOCIOS = [

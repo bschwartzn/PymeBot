@@ -131,7 +131,7 @@ test('la dueña recibe al instante cada mensaje de un cliente', async () => {
   }
 });
 
-test('las pruebas de la dueña no le llegan como mensajes de clientes', async () => {
+test('las pruebas de la dueña le llegan al panel marcadas como prueba', async () => {
   const srv = await servidor();
   try {
     const cookie = await srv.entrar('duena@spa.cl');
@@ -139,7 +139,8 @@ test('las pruebas de la dueña no le llegan como mensajes de clientes', async ()
     await srv.esperar(50);
     await srv.chat('horario', cookie);
     await srv.esperar(100);
-    assert.deepStrictEqual(panel.eventos, []);
+    assert.strictEqual(panel.eventos.length, 1);
+    assert.strictEqual(panel.eventos[0].datos.prueba, true);
     panel.cerrar();
   } finally {
     await srv.close();

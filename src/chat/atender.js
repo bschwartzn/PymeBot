@@ -38,9 +38,11 @@ function crearAtencion({ sessions, conversations = null }) {
    * @param {string} entrada.slug       su identificador, para el registro
    * @param {string} entrada.canal      'web', 'whatsapp', …
    * @param {string} [entrada.idExterno] identificador de la conversación en ese canal
-   * @param {boolean} [entrada.registrar] false para las pruebas del dueño: no cuentan
+   * @param {boolean} [entrada.registrar] false para no dejar ningún registro
+   * @param {boolean} [entrada.prueba] la dueña probando su bot: se guarda marcado, para
+   *   que pueda leerlo, pero no cuenta en las cifras
    */
-  return function atender({ texto, negocio, slug, canal = 'web', idExterno = null, registrar = true }) {
+  return function atender({ texto, negocio, slug, canal = 'web', idExterno = null, registrar = true, prueba = false }) {
     if (typeof texto !== 'string' || texto.trim() === '') {
       throw new MensajeInvalido('El mensaje no puede estar vacío.');
     }
@@ -68,6 +70,7 @@ function crearAtencion({ sessions, conversations = null }) {
           intent: resultado.intent,
           matched: resultado.matched,
           score: Number(resultado.score.toFixed(2)),
+          prueba,
         });
       } catch (err) {
         console.error('No se pudo registrar la conversación:', err.message);
