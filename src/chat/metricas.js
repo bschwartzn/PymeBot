@@ -53,7 +53,8 @@ function quedoSinResponder(r) {
 function resumir(registros, { dias = DIAS_POR_DEFECTO, ahora = Date.now() } = {}) {
   const desde = new Date(ahora - dias * 24 * 60 * 60 * 1000).toISOString();
   // Las pruebas de la dueña se pueden leer en las conversaciones, pero no falsean las cifras.
-  const recientes = registros.filter((r) => r.at >= desde && !r.prueba);
+  // Tampoco cuentan los mensajes de la atención en vivo: no los respondió el bot.
+  const recientes = registros.filter((r) => r.at >= desde && !r.prueba && !r.enVivo);
 
   const conversaciones = new Set(recientes.map((r) => r.conversationId));
   const sinRespuesta = recientes.filter(quedoSinResponder);
@@ -118,6 +119,8 @@ function conversaciones(registros, { limite = 50 } = {}) {
         sinRespuesta: 0,
         // Una conversación de la dueña probando su bot, no de un cliente.
         prueba: Boolean(registro.prueba),
+        // La atendió una persona en algún momento.
+        enVivo: false,
       });
     }
 
@@ -129,8 +132,11 @@ function conversaciones(registros, { limite = 50 } = {}) {
       respuesta: registro.respuesta,
       intent: registro.intent,
       matched: registro.matched,
+      // 'dueno' cuando lo escribió la dueña desde el panel.
+      autor: registro.autor || null,
     });
-    if (quedoSinResponder(registro)) conversacion.sinRespuesta += 1;
+    if (registro.enVivo) conversacion.enVivo = true;
+    if (!registro.enVivo && quedoSinResponder(registro)) conversacion.sinRespuesta += 1;
   }
 
   // Las más recientes primero: es lo que el dueño quiere mirar al entrar.

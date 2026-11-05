@@ -50,7 +50,7 @@ class ConversationLog {
    * Anota un intercambio: lo que escribió el cliente y lo que respondió el bot.
    * Nunca lanza: perder una línea del registro no puede tumbar una conversación.
    */
-  registrar(slug, { conversationId, channel, pregunta, respuesta, intent, matched, score, prueba = false }) {
+  registrar(slug, { conversationId, channel, pregunta, respuesta, intent, matched, score, prueba = false, enVivo = false, autor = null }) {
     const file = this.pathFor(slug);
     if (!file) return false;
 
@@ -65,6 +65,10 @@ class ConversationLog {
       score,
       // Solo se anota cuando es una prueba de la dueña: las líneas de clientes quedan igual.
       ...(prueba ? { prueba: true } : {}),
+      // Mensajes de la atención en vivo: lo que escribió la dueña, o lo que le escribió el
+      // cliente mientras ella atendía. Se leen en la conversación, pero no son del bot.
+      ...(enVivo ? { enVivo: true } : {}),
+      ...(autor ? { autor } : {}),
     });
 
     try {

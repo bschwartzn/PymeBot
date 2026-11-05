@@ -136,7 +136,9 @@ async function enviar(texto) {
 
     sessionId = datos.sessionId;
     guardarSesion(sessionId);
-    burbuja(datos.reply, 'bot');
+    // Mientras atiende una persona, el bot no responde: la respuesta llega por novedades.
+    if (datos.reply) burbuja(datos.reply, 'bot');
+    if (desde === null) revisarNovedades();
   } catch (err) {
     pensando.remove();
     burbuja('No pudimos conectar. Revisa tu conexión e inténtalo de nuevo.', 'aviso');
@@ -151,4 +153,49 @@ formEl.addEventListener('submit', (evento) => {
   enviar(campoEl.value);
 });
 
+/* --------------------------------------------------------- atención en vivo */
+
+/*
+ * La dueña puede entrar a la conversación desde su panel. Lo que ella escribe llega por
+ * aquí: el chat pregunta cada pocos segundos si hay algo nuevo desde el último mensaje que
+ * vio. Se cuenta por número de mensaje y no por hora, porque el reloj del teléfono puede
+ * estar mal.
+ */
+const NOVEDADES_MS = 3000;
+let desde = null;
+let revisando = false;
+
+function burbujaDelEquipo(texto) {
+  const el = burbuja(texto, 'equipo');
+  const quien = document.createElement('span');
+  quien.className = 'quien';
+  quien.textContent = 'Equipo';
+  el.prepend(quien);
+}
+
+async function revisarNovedades() {
+  if (!sessionId || revisando || document.hidden) return;
+  revisando = true;
+  try {
+    const parametros = new URLSearchParams({ sessionId });
+    if (desde !== null) parametros.set('desde', String(desde));
+    const res = await fetch(`/api/chat/novedades?${parametros}`);
+    if (!res.ok) return;
+    const datos = await res.json();
+    for (const mensaje of datos.mensajes || []) {
+      if (mensaje.quien === 'dueno') burbujaDelEquipo(mensaje.texto);
+      else burbuja(mensaje.texto, 'sistema');
+    }
+    if (typeof datos.desde === 'number') desde = datos.desde;
+  } catch (err) {
+    /* sin conexión: se vuelve a intentar en el próximo turno */
+  } finally {
+    revisando = false;
+  }
+}
+
+setInterval(revisarNovedades, NOVEDADES_MS);
+document.addEventListener('visibilitychange', revisarNovedades);
+
 cargarNegocio();
+revisarNovedades();

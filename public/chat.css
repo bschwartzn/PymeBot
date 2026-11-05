@@ -139,6 +139,31 @@ body {
   border-bottom-right-radius: 5px;
 }
 
+/* Lo que escribe una persona del negocio desde su panel: se distingue del bot. */
+.burbuja.equipo {
+  align-self: flex-start;
+  background: var(--panel);
+  border: 1.5px solid var(--marca);
+  border-bottom-left-radius: 5px;
+}
+.burbuja.equipo .quien {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--marca);
+  margin-bottom: 2px;
+}
+
+/* Cuando una persona entra o sale de la conversación. */
+.burbuja.sistema {
+  align-self: center;
+  background: transparent;
+  color: var(--suave);
+  font-size: 13.5px;
+  text-align: center;
+  padding: 4px 10px;
+}
+
 .burbuja.aviso {
   align-self: center;
   background: var(--error-bg);

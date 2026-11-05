@@ -559,6 +559,171 @@ function cuando(iso) {
   return `${fecha.toLocaleDateString('es-CL', { day: 'numeric', month: 'short' })} ${hora}`;
 }
 
+/* ----------------------------------------------------- atención en vivo */
+
+/*
+ * Las conversaciones en curso, para entrar a una y escribirle al cliente. Se repinta
+ * seguido, así que lo que la dueña está escribiendo se guarda aparte y se repone: si no,
+ * cada actualización le borraría la respuesta a medio escribir.
+ */
+const borradores = new Map();
+const abiertasEnVivo = new Set();
+const cerradasEnVivo = new Set();
+
+function estadoEnVivo(conversacion) {
+  if (conversacion.modo === 'persona') return { texto: 'La atiendes tú', clase: 'tuya' };
+  if (conversacion.esperaPersona) return { texto: 'Pide una persona', clase: 'espera' };
+  return { texto: 'Responde el bot', clase: 'bot' };
+}
+
+async function accionEnVivo(slug, id, accion, texto) {
+  const { ok, datos } = await api('POST', `/api/businesses/${slug}/en-vivo/${encodeURIComponent(id)}/${accion}`, texto === undefined ? {} : { texto });
+  if (!ok) {
+    mostrarMensaje('error', (datos && datos.error) || 'No se pudo completar la acción.');
+    return false;
+  }
+  await cargarEnVivo(slug);
+  return true;
+}
+
+async function cargarEnVivo(slug) {
+  const contenedor = $('atencion');
+  if (!contenedor) return;
+  const { ok, datos } = await api('GET', `/api/businesses/${slug}/en-vivo`);
+  if (!ok || !datos || !Array.isArray(datos.conversaciones) || slug !== slugActual) return;
+
+  // Lo que estaba enfocado se recupera después de repintar.
+  const enfocado = document.activeElement && document.activeElement.dataset
+    ? document.activeElement.dataset.borrador
+    : null;
+  contenedor.innerHTML = '';
+
+  if (datos.conversaciones.length === 0) {
+    const p = document.createElement('p');
+    p.className = 'vacio-seccion';
+    p.textContent = 'No hay nadie conversando con tu bot en este momento.';
+    contenedor.appendChild(p);
+    return;
+  }
+
+  for (const conversacion of datos.conversaciones) {
+    const estado = estadoEnVivo(conversacion);
+    const caja = document.createElement('details');
+    caja.className = `conversacion en-vivo-caja ${estado.clase}`;
+    caja.dataset.id = conversacion.id;
+    // Quien espera una persona se abre solo: es lo que la dueña tiene que ver primero. Si
+    // ella la cierra, se respeta.
+    caja.open = !cerradasEnVivo.has(conversacion.id) &&
+      (abiertasEnVivo.has(conversacion.id) || conversacion.esperaPersona || conversacion.modo === 'persona');
+    caja.addEventListener('toggle', () => {
+      if (caja.open) {
+        abiertasEnVivo.add(conversacion.id);
+        cerradasEnVivo.delete(conversacion.id);
+      } else {
+        abiertasEnVivo.delete(conversacion.id);
+        cerradasEnVivo.add(conversacion.id);
+      }
+    });
+
+    const cabecera = document.createElement('summary');
+    const ultimoDelCliente = [...conversacion.mensajes].reverse().find((m) => m.quien === 'cliente');
+    const momento = document.createElement('span');
+    momento.className = 'cuando';
+    momento.append(
+      cuando(conversacion.ultimo),
+      Object.assign(document.createElement('span'), {
+        className: 'resumen',
+        textContent: ultimoDelCliente ? `  ·  «${ultimoDelCliente.texto.slice(0, 60)}»` : '',
+      }),
+    );
+    cabecera.appendChild(momento);
+
+    if (conversacion.prueba) {
+      cabecera.appendChild(Object.assign(document.createElement('span'), {
+        className: 'marca-canal marca-prueba',
+        textContent: 'tu prueba',
+      }));
+    }
+    cabecera.appendChild(Object.assign(document.createElement('span'), {
+      className: `marca-estado ${estado.clase}`,
+      textContent: estado.texto,
+    }));
+    caja.appendChild(cabecera);
+
+    const hilo = document.createElement('div');
+    hilo.className = 'transcripcion';
+    for (const mensaje of conversacion.mensajes) {
+      const dicho = document.createElement('div');
+      dicho.className = `dicho ${mensaje.quien === 'cliente' ? 'cliente' : mensaje.quien === 'dueno' ? 'dueno' : mensaje.quien === 'sistema' ? 'sistema' : 'bot'}`;
+      dicho.textContent = mensaje.texto;
+      hilo.appendChild(dicho);
+    }
+
+    // Responder, tomar o devolver.
+    const responder = document.createElement('form');
+    responder.className = 'responder-en-vivo';
+    const campo = document.createElement('textarea');
+    campo.rows = 2;
+    campo.maxLength = 1000;
+    campo.placeholder = 'Escríbele al cliente…';
+    campo.dataset.borrador = conversacion.id;
+    campo.value = borradores.get(conversacion.id) || '';
+    campo.addEventListener('input', () => borradores.set(conversacion.id, campo.value));
+    // Enter envía; Shift + Enter hace un salto de línea.
+    campo.addEventListener('keydown', (evento) => {
+      if (evento.key === 'Enter' && !evento.shiftKey) {
+        evento.preventDefault();
+        responder.requestSubmit();
+      }
+    });
+    responder.appendChild(campo);
+
+    const acciones = document.createElement('div');
+    acciones.className = 'acciones-en-vivo';
+    const enviar = document.createElement('button');
+    enviar.className = 'btn';
+    enviar.type = 'submit';
+    enviar.textContent = 'Enviar';
+    acciones.appendChild(enviar);
+
+    const cambiar = document.createElement('button');
+    cambiar.className = 'btn-ghost';
+    cambiar.type = 'button';
+    cambiar.textContent = conversacion.modo === 'persona' ? 'Devolver al bot' : 'Tomar sin escribir';
+    cambiar.addEventListener('click', () =>
+      accionEnVivo(slug, conversacion.id, conversacion.modo === 'persona' ? 'devolver' : 'tomar'));
+    acciones.appendChild(cambiar);
+    responder.appendChild(acciones);
+
+    responder.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      const texto = campo.value.trim();
+      if (!texto) return;
+      enviar.disabled = true;
+      abiertasEnVivo.add(conversacion.id);
+      if (await accionEnVivo(slug, conversacion.id, 'responder', texto)) {
+        borradores.delete(conversacion.id);
+        const nuevo = contenedor.querySelector(`textarea[data-borrador="${CSS.escape(conversacion.id)}"]`);
+        if (nuevo) {
+          nuevo.value = '';
+          nuevo.focus();
+        }
+      } else {
+        enviar.disabled = false;
+      }
+    });
+
+    hilo.appendChild(responder);
+    caja.appendChild(hilo);
+    contenedor.appendChild(caja);
+
+    if (enfocado === conversacion.id) {
+      campo.focus();
+      campo.setSelectionRange(campo.value.length, campo.value.length);
+    }
+  }
+}
+
 async function cargarTranscripciones(slug) {
   const contenedor = $('conversaciones');
 
@@ -625,15 +790,22 @@ async function cargarTranscripciones(slug) {
     const hilo = document.createElement('div');
     hilo.className = 'transcripcion';
     for (const mensaje of conversacion.mensajes) {
-      const dijo = document.createElement('div');
-      dijo.className = 'dicho cliente';
-      dijo.textContent = mensaje.pregunta;
-      hilo.appendChild(dijo);
+      // En la atención en vivo hay líneas con un solo lado: el cliente le escribe a la
+      // dueña (sin respuesta del bot), o la dueña le escribe al cliente.
+      if (mensaje.pregunta) {
+        const dijo = document.createElement('div');
+        dijo.className = 'dicho cliente';
+        dijo.textContent = mensaje.pregunta;
+        hilo.appendChild(dijo);
+      }
 
-      const contesto = document.createElement('div');
-      contesto.className = `dicho bot${(mensaje.matched === false && mensaje.intent !== 'pausado') || mensaje.intent === 'sin_dato' ? ' no-supo' : ''}`;
-      contesto.textContent = mensaje.respuesta;
-      hilo.appendChild(contesto);
+      if (mensaje.respuesta) {
+        const contesto = document.createElement('div');
+        const noSupo = (mensaje.matched === false && mensaje.intent !== 'pausado') || mensaje.intent === 'sin_dato';
+        contesto.className = mensaje.autor === 'dueno' ? 'dicho dueno' : `dicho bot${noSupo ? ' no-supo' : ''}`;
+        contesto.textContent = mensaje.respuesta;
+        hilo.appendChild(contesto);
+      }
     }
     caja.appendChild(hilo);
 
@@ -654,6 +826,7 @@ async function refrescar(slug) {
     cargarCompartir(slug),
     cargarConversaciones(slug),
     cargarTranscripciones(slug),
+    cargarEnVivo(slug),
   ]);
 }
 
@@ -737,7 +910,9 @@ function escucharEnVivo(slug) {
     }
 
     const pregunta = datos.pregunta ? `«${datos.pregunta}»` : 'un mensaje';
-    if (datos.prueba) {
+    if (datos.enVivo) {
+      avisoFlotante(`El cliente que atiendes te escribió: ${pregunta}`, 'urgente');
+    } else if (datos.prueba) {
       avisoFlotante(`Tu prueba quedó en Conversaciones: ${pregunta}`);
     } else if (datos.pideUnaPersona) {
       avisoFlotante(`Un cliente pide hablar con una persona: ${pregunta}`, 'urgente');
@@ -748,7 +923,7 @@ function escucharEnVivo(slug) {
     }
 
     // Se actualiza aunque la ventana no esté a la vista: al volver, ya está al día.
-    Promise.all([cargarConversaciones(slug), cargarTranscripciones(slug)]);
+    Promise.all([cargarConversaciones(slug), cargarTranscripciones(slug), cargarEnVivo(slug)]);
   });
 }
 
@@ -773,12 +948,22 @@ function seccionActiva() {
 async function actualizarConversaciones() {
   if (!slugActual || document.hidden || formEl.hidden) return;
   const slug = slugActual;
-  await Promise.all([cargarConversaciones(slug), cargarTranscripciones(slug)]);
+  await Promise.all([cargarConversaciones(slug), cargarTranscripciones(slug), cargarEnVivo(slug)]);
 }
 
 setInterval(() => {
   if (seccionActiva() === 'conversaciones') actualizarConversaciones();
 }, REFRESCO_CONVERSACIONES_MS);
+
+// La atención en vivo se revisa más seguido: ahí hay un cliente esperando. Los avisos en
+// tiempo real ya la actualizan al llegar un mensaje; esto cubre lo demás (una conversación
+// que se cerró, o si el aviso se perdió por una reconexión).
+setInterval(() => {
+  const escribiendo = document.activeElement && document.activeElement.closest('#atencion textarea');
+  if (slugActual && !document.hidden && !formEl.hidden && seccionActiva() === 'conversaciones' && !escribiendo) {
+    cargarEnVivo(slugActual);
+  }
+}, 5000);
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;

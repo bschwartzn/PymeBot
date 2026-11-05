@@ -35,14 +35,33 @@ class SessionStore {
       lastSeenAt: Date.now(),
       greeted: false,
       messages: [],
+      // Quién responde: 'bot' (por defecto) o 'persona', cuando la dueña tomó la conversación.
+      modo: 'bot',
+      // El cliente pidió hablar con una persona y nadie le ha respondido todavía.
+      esperaPersona: false,
+      // Número del último mensaje: el chat pide "lo nuevo desde el N" sin depender del reloj.
+      seq: 0,
     };
     this.sessions.set(session.id, session);
     return session;
   }
 
+  /** La sesión pedida, o null. A diferencia de `get`, nunca crea una nueva. */
+  find(sessionId) {
+    this.purgeExpired();
+    return (sessionId && this.sessions.get(sessionId)) || null;
+  }
+
+  /** Las sesiones vivas de un negocio, para el panel. */
+  listFor(slug) {
+    this.purgeExpired();
+    return [...this.sessions.values()].filter((s) => s.slug === slug && s.messages.length > 0);
+  }
+
   /** Agrega un mensaje al historial, recortando los más antiguos si hace falta. */
   addMessage(session, role, text) {
-    session.messages.push({ role, text, at: Date.now() });
+    session.seq = (session.seq || 0) + 1;
+    session.messages.push({ role, text, at: Date.now(), n: session.seq });
     if (session.messages.length > this.maxHistory) {
       session.messages = session.messages.slice(-this.maxHistory);
     }

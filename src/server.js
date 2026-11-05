@@ -373,20 +373,48 @@ function createApp({
       pregunta: String(message).slice(0, 200),
       intent: resultado.intent,
       prueba: esPrueba,
+      // La dueña está atendiendo esta conversación: el mensaje es para ella.
+      enVivo: Boolean(resultado.enVivo),
       // Lo que más le importa saber al instante: que el bot no supo, o que piden a alguien.
-      sinRespuesta: !resultado.matched || resultado.intent === 'sin_dato',
+      sinRespuesta: !resultado.enVivo && (!resultado.matched || resultado.intent === 'sin_dato'),
       pideUnaPersona: resultado.intent === 'hablar_con_persona',
     });
 
     res.json({
       sessionId: resultado.conversacion,
       business: slug,
+      // null mientras atiende una persona: el bot no responde, y la respuesta llega después.
       reply: resultado.reply,
+      enVivo: Boolean(resultado.enVivo),
       intent: resultado.intent,
       matched: resultado.matched,
       score: resultado.score,
       prueba: esPrueba,
     });
+  });
+
+  /*
+   * Lo nuevo de una conversación para el chat del cliente: lo que le escribió la dueña y
+   * los avisos de cuando entra o sale. El chat lo pide cada pocos segundos.
+   *
+   * Basta con el id de la conversación, que es un UUID que solo conoce ese navegador. Se
+   * pide "desde el mensaje N" y no "desde la hora H": el reloj del teléfono puede estar mal.
+   */
+  const limitarNovedades = rateLimit({ max: 600, windowMs: 60 * 1000 });
+
+  app.get('/api/chat/novedades', limitarNovedades, (req, res) => {
+    const sesion = sessions.find(typeof req.query.sessionId === 'string' ? req.query.sessionId : null);
+    if (!sesion) return res.json({ modo: 'bot', desde: 0, mensajes: [] });
+
+    // Sin "desde", el chat recién abre: se le da el punto de partida, no lo anterior.
+    const desde = Number(req.query.desde);
+    const mensajes = Number.isFinite(desde) && req.query.desde !== undefined
+      ? sesion.messages
+        .filter((m) => m.n > desde && (m.role === 'dueno' || m.role === 'sistema'))
+        .map((m) => ({ quien: m.role, texto: m.text, n: m.n }))
+      : [];
+
+    res.json({ modo: sesion.modo, desde: sesion.seq || 0, mensajes });
   });
 
   /**
@@ -566,6 +594,65 @@ function createApp({
       res.status(429).json({ error: 'Hay demasiados paneles abiertos para este negocio.' });
     }
   });
+
+  /*
+   * Atención en vivo: las conversaciones en curso, para que la dueña entre a una, le
+   * escriba al cliente y se la devuelva al bot. Viven en memoria mientras el cliente siga
+   * activo (30 minutos sin escribir y se cierran), igual que la memoria del bot.
+   */
+  function vistaEnVivo(sesion) {
+    return {
+      id: sesion.id,
+      modo: sesion.modo,
+      esperaPersona: Boolean(sesion.esperaPersona),
+      prueba: Boolean(sesion.prueba),
+      canal: sesion.canal || 'web',
+      inicio: new Date(sesion.createdAt).toISOString(),
+      ultimo: new Date(sesion.lastSeenAt).toISOString(),
+      mensajes: sesion.messages.map((m) => ({
+        quien: m.role === 'user' ? 'cliente' : m.role,
+        texto: m.text,
+        at: new Date(m.at).toISOString(),
+      })),
+    };
+  }
+
+  app.get('/api/businesses/:slug/en-vivo', requireAuth, requireOwnedBusiness, (req, res) => {
+    const lista = sessions
+      .listFor(req.params.slug)
+      // Primero quien espera una persona, después las que atiende ella, y el resto por hora.
+      .sort((a, b) =>
+        Number(b.esperaPersona) - Number(a.esperaPersona) ||
+        Number(b.modo === 'persona') - Number(a.modo === 'persona') ||
+        b.lastSeenAt - a.lastSeenAt)
+      .map(vistaEnVivo);
+    res.json({ conversaciones: lista });
+  });
+
+  function accionEnVivo(accion) {
+    return (req, res) => {
+      let sesion;
+      try {
+        sesion = accion({
+          slug: req.params.slug,
+          id: req.params.id,
+          texto: req.body && req.body.texto,
+        });
+      } catch (err) {
+        if (err instanceof MensajeInvalido) return res.status(400).json({ error: err.message });
+        throw err;
+      }
+      if (!sesion) {
+        return res.status(404).json({ error: 'Esa conversación ya terminó: el cliente lleva un rato sin escribir.' });
+      }
+      res.json({ conversacion: vistaEnVivo(sesion) });
+    };
+  }
+
+  const rutaEnVivo = '/api/businesses/:slug/en-vivo/:id';
+  app.post(`${rutaEnVivo}/responder`, limitarEscritura, requireAuth, requireOwnedBusiness, accionEnVivo(atender.responderComoDueno));
+  app.post(`${rutaEnVivo}/tomar`, limitarEscritura, requireAuth, requireOwnedBusiness, accionEnVivo(atender.tomar));
+  app.post(`${rutaEnVivo}/devolver`, limitarEscritura, requireAuth, requireOwnedBusiness, accionEnVivo(atender.devolver));
 
   /** Qué preguntaron los clientes, y qué no supo responder el bot. */
   app.get('/api/businesses/:slug/metrics', requireAuth, requireOwnedBusiness, (req, res) => {
